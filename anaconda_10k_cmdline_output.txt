@@ -1,0 +1,196 @@
+(luminancegs) I:\Python\Research\3DGS\Luminance-GS\Luminance-GS\Luminance-GS\examples>python simple_trainer_ours.py --data_dir ../data/LOM_full/buu --exp_name low --result_dir ../results/buu_low
+[Parser] 25 images, taken by 1 cameras.
+Warning: COLMAP Camera is not PINHOLE. Images have distortion.
+the image train is 0 []
+the image train is 0 ['10.JPG']
+the image train is 0 ['10.JPG', '11.JPG']
+the image train is 0 ['10.JPG', '11.JPG', '12.JPG']
+the image train is 0 ['10.JPG', '11.JPG', '12.JPG', '14.JPG']
+the image train is 0 ['10.JPG', '11.JPG', '12.JPG', '14.JPG', '15.JPG']
+the image train is 0 ['10.JPG', '11.JPG', '12.JPG', '14.JPG', '15.JPG', '16.JPG']
+the image train is 0 ['10.JPG', '11.JPG', '12.JPG', '14.JPG', '15.JPG', '16.JPG', '18.JPG']
+the image train is 0 ['10.JPG', '11.JPG', '12.JPG', '14.JPG', '15.JPG', '16.JPG', '18.JPG', '2.JPG']
+the image train is 0 ['10.JPG', '11.JPG', '12.JPG', '14.JPG', '15.JPG', '16.JPG', '18.JPG', '2.JPG', '20.JPG']
+the image train is 0 ['10.JPG', '11.JPG', '12.JPG', '14.JPG', '15.JPG', '16.JPG', '18.JPG', '2.JPG', '20.JPG', '21.JPG']
+the image train is 0 ['10.JPG', '11.JPG', '12.JPG', '14.JPG', '15.JPG', '16.JPG', '18.JPG', '2.JPG', '20.JPG', '21.JPG', '22.JPG']
+the image train is 0 ['10.JPG', '11.JPG', '12.JPG', '14.JPG', '15.JPG', '16.JPG', '18.JPG', '2.JPG', '20.JPG', '21.JPG', '22.JPG', '23.JPG']
+the image train is 0 ['10.JPG', '11.JPG', '12.JPG', '14.JPG', '15.JPG', '16.JPG', '18.JPG', '2.JPG', '20.JPG', '21.JPG', '22.JPG', '23.JPG', '25.JPG']
+the image train is 0 ['10.JPG', '11.JPG', '12.JPG', '14.JPG', '15.JPG', '16.JPG', '18.JPG', '2.JPG', '20.JPG', '21.JPG', '22.JPG', '23.JPG', '25.JPG', '3.JPG']
+the image train is 0 ['10.JPG', '11.JPG', '12.JPG', '14.JPG', '15.JPG', '16.JPG', '18.JPG', '2.JPG', '20.JPG', '21.JPG', '22.JPG', '23.JPG', '25.JPG', '3.JPG', '4.JPG']
+the image train is 0 ['10.JPG', '11.JPG', '12.JPG', '14.JPG', '15.JPG', '16.JPG', '18.JPG', '2.JPG', '20.JPG', '21.JPG', '22.JPG', '23.JPG', '25.JPG', '3.JPG', '4.JPG', '5.JPG']
+the image train is 0 ['10.JPG', '11.JPG', '12.JPG', '14.JPG', '15.JPG', '16.JPG', '18.JPG', '2.JPG', '20.JPG', '21.JPG', '22.JPG', '23.JPG', '25.JPG', '3.JPG', '4.JPG', '5.JPG', '6.JPG']
+the image train is 0 ['10.JPG', '11.JPG', '12.JPG', '14.JPG', '15.JPG', '16.JPG', '18.JPG', '2.JPG', '20.JPG', '21.JPG', '22.JPG', '23.JPG', '25.JPG', '3.JPG', '4.JPG', '5.JPG', '6.JPG', '7.JPG']
+the image train is 0 ['10.JPG', '11.JPG', '12.JPG', '14.JPG', '15.JPG', '16.JPG', '18.JPG', '2.JPG', '20.JPG', '21.JPG', '22.JPG', '23.JPG', '25.JPG', '3.JPG', '4.JPG', '5.JPG', '6.JPG', '7.JPG', '8.JPG']
+the image train is 0 ['10.JPG', '11.JPG', '12.JPG', '14.JPG', '15.JPG', '16.JPG', '18.JPG', '2.JPG', '20.JPG', '21.JPG', '22.JPG', '23.JPG', '25.JPG', '3.JPG', '4.JPG', '5.JPG', '6.JPG', '7.JPG', '8.JPG', '24.JPG']
+the image train is 0 ['10.JPG', '11.JPG', '12.JPG', '14.JPG', '15.JPG', '16.JPG', '18.JPG', '2.JPG', '20.JPG', '21.JPG', '22.JPG', '23.JPG', '25.JPG', '3.JPG', '4.JPG', '5.JPG', '6.JPG', '7.JPG', '8.JPG', '24.JPG', '9.JPG']
+Model initialized. Number of GS: 1090
+  0%|                                                                                                                                                                                                             | 0/10000 [00:00<?, ?it/s]C:\Users\BBM\miniconda3\envs\luminancegs\lib\site-packages\torch\utils\cpp_extension.py:25: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  from pkg_resources import packaging  # type: ignore[attr-defined]
+loss=0.799| sh degree=0| :   6%|██████████                                                                                                                                                              | 600/10000 [00:40<09:54, 15.81it/s]Step 600: 39 GSs duplicated, 368 GSs split. Now having 1497 GSs.
+Step 600: 541 GSs pruned. Now having 956 GSs.
+loss=0.840| sh degree=0| :   7%|███████████▊                                                                                                                                                            | 700/10000 [00:46<09:10, 16.91it/s]Step 700: 146 GSs duplicated, 618 GSs split. Now having 1720 GSs.
+Step 700: 18 GSs pruned. Now having 1702 GSs.
+loss=0.797| sh degree=0| :   8%|█████████████▍                                                                                                                                                          | 800/10000 [00:53<11:16, 13.59it/s]Step 800: 408 GSs duplicated, 915 GSs split. Now having 3025 GSs.
+Step 800: 16 GSs pruned. Now having 3009 GSs.
+loss=0.751| sh degree=0| :   9%|███████████████                                                                                                                                                         | 900/10000 [01:00<10:31, 14.40it/s]Step 900: 818 GSs duplicated, 1111 GSs split. Now having 4938 GSs.
+Step 900: 14 GSs pruned. Now having 4924 GSs.
+loss=0.793| sh degree=1| :  10%|████████████████▋                                                                                                                                                      | 1000/10000 [01:07<10:00, 14.99it/s]Step 1000: 1234 GSs duplicated, 1193 GSs split. Now having 7351 GSs.
+Step 1000: 19 GSs pruned. Now having 7332 GSs.
+loss=0.544| sh degree=1| :  11%|██████████████████▎                                                                                                                                                    | 1099/10000 [01:13<09:31, 15.57it/s]Step 1100: 1210 GSs duplicated, 1291 GSs split. Now having 9833 GSs.
+Step 1100: 43 GSs pruned. Now having 9790 GSs.
+loss=0.420| sh degree=1| :  12%|████████████████████                                                                                                                                                   | 1199/10000 [01:20<09:37, 15.24it/s]Step 1200: 1420 GSs duplicated, 1608 GSs split. Now having 12818 GSs.
+Step 1200: 21 GSs pruned. Now having 12797 GSs.
+loss=0.492| sh degree=1| :  13%|█████████████████████▋                                                                                                                                                 | 1299/10000 [01:26<09:53, 14.67it/s]Step 1300: 1543 GSs duplicated, 2016 GSs split. Now having 16356 GSs.
+Step 1300: 32 GSs pruned. Now having 16324 GSs.
+loss=0.221| sh degree=1| :  14%|███████████████████████▎                                                                                                                                               | 1399/10000 [01:33<09:30, 15.06it/s]Step 1400: 1616 GSs duplicated, 2266 GSs split. Now having 20206 GSs.
+Step 1400: 21 GSs pruned. Now having 20185 GSs.
+loss=0.249| sh degree=1| :  15%|█████████████████████████                                                                                                                                              | 1499/10000 [01:39<10:09, 13.96it/s]Step 1500: 1738 GSs duplicated, 2273 GSs split. Now having 24196 GSs.
+Step 1500: 55 GSs pruned. Now having 24141 GSs.
+loss=0.194| sh degree=1| :  16%|██████████████████████████▋                                                                                                                                            | 1599/10000 [01:46<08:45, 15.98it/s]Step 1600: 2004 GSs duplicated, 2345 GSs split. Now having 28490 GSs.
+Step 1600: 52 GSs pruned. Now having 28438 GSs.
+loss=0.230| sh degree=1| :  17%|████████████████████████████▎                                                                                                                                          | 1699/10000 [01:53<09:16, 14.92it/s]Step 1700: 2081 GSs duplicated, 2088 GSs split. Now having 32607 GSs.
+Step 1700: 77 GSs pruned. Now having 32530 GSs.
+loss=0.198| sh degree=1| :  18%|██████████████████████████████                                                                                                                                         | 1799/10000 [01:59<09:04, 15.06it/s]Step 1800: 2049 GSs duplicated, 1938 GSs split. Now having 36517 GSs.
+Step 1800: 70 GSs pruned. Now having 36447 GSs.
+loss=0.246| sh degree=1| :  19%|███████████████████████████████▋                                                                                                                                       | 1899/10000 [02:06<09:09, 14.73it/s]Step 1900: 2090 GSs duplicated, 1684 GSs split. Now having 40221 GSs.
+Step 1900: 78 GSs pruned. Now having 40143 GSs.
+loss=0.576| sh degree=2| :  20%|█████████████████████████████████▍                                                                                                                                     | 2000/10000 [02:13<08:58, 14.86it/s]Step 2000: 1994 GSs duplicated, 1417 GSs split. Now having 43554 GSs.
+Step 2000: 84 GSs pruned. Now having 43470 GSs.
+loss=0.181| sh degree=2| :  21%|███████████████████████████████████                                                                                                                                    | 2099/10000 [02:19<08:39, 15.21it/s]Step 2100: 1244 GSs duplicated, 1755 GSs split. Now having 46469 GSs.
+Step 2100: 1285 GSs pruned. Now having 45184 GSs.
+loss=0.200| sh degree=2| :  22%|████████████████████████████████████▋                                                                                                                                  | 2199/10000 [02:26<08:50, 14.71it/s]Step 2200: 1855 GSs duplicated, 2118 GSs split. Now having 49157 GSs.
+Step 2200: 694 GSs pruned. Now having 48463 GSs.
+loss=0.165| sh degree=2| :  23%|██████████████████████████████████████▍                                                                                                                                | 2299/10000 [02:33<09:19, 13.75it/s]Step 2300: 1518 GSs duplicated, 1655 GSs split. Now having 51636 GSs.
+Step 2300: 517 GSs pruned. Now having 51119 GSs.
+loss=0.154| sh degree=2| :  24%|████████████████████████████████████████                                                                                                                               | 2399/10000 [02:39<08:47, 14.41it/s]Step 2400: 1997 GSs duplicated, 1821 GSs split. Now having 54937 GSs.
+Step 2400: 388 GSs pruned. Now having 54549 GSs.
+loss=0.172| sh degree=2| :  25%|█████████████████████████████████████████▋                                                                                                                             | 2499/10000 [02:46<08:09, 15.31it/s]Step 2500: 2046 GSs duplicated, 1782 GSs split. Now having 58377 GSs.
+Step 2500: 382 GSs pruned. Now having 57995 GSs.
+loss=0.196| sh degree=2| :  26%|███████████████████████████████████████████▍                                                                                                                           | 2599/10000 [02:53<08:46, 14.04it/s]Step 2600: 2012 GSs duplicated, 1593 GSs split. Now having 61600 GSs.
+Step 2600: 323 GSs pruned. Now having 61277 GSs.
+loss=0.130| sh degree=2| :  27%|█████████████████████████████████████████████                                                                                                                          | 2699/10000 [03:00<08:17, 14.69it/s]Step 2700: 1993 GSs duplicated, 1308 GSs split. Now having 64578 GSs.
+Step 2700: 349 GSs pruned. Now having 64229 GSs.
+loss=0.131| sh degree=2| :  28%|██████████████████████████████████████████████▋                                                                                                                        | 2799/10000 [03:07<08:00, 14.98it/s]Step 2800: 1939 GSs duplicated, 1247 GSs split. Now having 67415 GSs.
+Step 2800: 287 GSs pruned. Now having 67128 GSs.
+loss=0.131| sh degree=2| :  29%|████████████████████████████████████████████████▍                                                                                                                      | 2899/10000 [03:13<08:01, 14.76it/s]Step 2900: 1967 GSs duplicated, 1082 GSs split. Now having 70177 GSs.
+Step 2900: 319 GSs pruned. Now having 69858 GSs.
+loss=0.228| sh degree=3| :  30%|██████████████████████████████████████████████████                                                                                                                     | 2999/10000 [03:20<07:35, 15.38it/s]Step 3000: 1887 GSs duplicated, 956 GSs split. Now having 72701 GSs.
+Step 3000: 344 GSs pruned. Now having 72357 GSs.
+loss=0.114| sh degree=3| :  31%|███████████████████████████████████████████████████▊                                                                                                                   | 3099/10000 [03:27<07:27, 15.42it/s]Step 3100: 987 GSs duplicated, 1240 GSs split. Now having 74584 GSs.
+Step 3100: 18263 GSs pruned. Now having 56321 GSs.
+loss=0.130| sh degree=3| :  32%|█████████████████████████████████████████████████████▍                                                                                                                 | 3199/10000 [03:34<07:54, 14.33it/s]Step 3200: 1279 GSs duplicated, 1443 GSs split. Now having 59043 GSs.
+Step 3200: 471 GSs pruned. Now having 58572 GSs.
+loss=0.167| sh degree=3| :  33%|███████████████████████████████████████████████████████                                                                                                                | 3299/10000 [03:41<07:22, 15.14it/s]Step 3300: 1247 GSs duplicated, 1167 GSs split. Now having 60986 GSs.
+Step 3300: 401 GSs pruned. Now having 60585 GSs.
+loss=0.115| sh degree=3| :  34%|████████████████████████████████████████████████████████▊                                                                                                              | 3399/10000 [03:48<07:22, 14.91it/s]Step 3400: 1083 GSs duplicated, 990 GSs split. Now having 62658 GSs.
+Step 3400: 407 GSs pruned. Now having 62251 GSs.
+loss=0.150| sh degree=3| :  35%|██████████████████████████████████████████████████████████▍                                                                                                            | 3499/10000 [03:54<07:43, 14.02it/s]Step 3500: 1132 GSs duplicated, 874 GSs split. Now having 64257 GSs.
+Step 3500: 354 GSs pruned. Now having 63903 GSs.
+loss=0.107| sh degree=3| :  36%|████████████████████████████████████████████████████████████                                                                                                           | 3599/10000 [04:01<07:41, 13.86it/s]Step 3600: 1097 GSs duplicated, 770 GSs split. Now having 65770 GSs.
+Step 3600: 333 GSs pruned. Now having 65437 GSs.
+loss=0.123| sh degree=3| :  37%|█████████████████████████████████████████████████████████████▊                                                                                                         | 3699/10000 [04:08<07:34, 13.87it/s]Step 3700: 909 GSs duplicated, 635 GSs split. Now having 66981 GSs.
+Step 3700: 311 GSs pruned. Now having 66670 GSs.
+loss=0.188| sh degree=3| :  38%|███████████████████████████████████████████████████████████████▍                                                                                                       | 3799/10000 [04:15<07:06, 14.54it/s]Step 3800: 930 GSs duplicated, 601 GSs split. Now having 68201 GSs.
+Step 3800: 290 GSs pruned. Now having 67911 GSs.
+loss=0.104| sh degree=3| :  39%|█████████████████████████████████████████████████████████████████                                                                                                      | 3899/10000 [04:22<06:42, 15.15it/s]Step 3900: 979 GSs duplicated, 644 GSs split. Now having 69534 GSs.
+Step 3900: 267 GSs pruned. Now having 69267 GSs.
+loss=0.160| sh degree=3| :  40%|██████████████████████████████████████████████████████████████████▊                                                                                                    | 3999/10000 [04:28<06:17, 15.91it/s]Step 4000: 870 GSs duplicated, 511 GSs split. Now having 70648 GSs.
+Step 4000: 246 GSs pruned. Now having 70402 GSs.
+loss=0.180| sh degree=3| :  41%|████████████████████████████████████████████████████████████████████▍                                                                                                  | 4099/10000 [04:35<06:30, 15.10it/s]Step 4100: 728 GSs duplicated, 448 GSs split. Now having 71578 GSs.
+Step 4100: 232 GSs pruned. Now having 71346 GSs.
+loss=0.124| sh degree=3| :  42%|██████████████████████████████████████████████████████████████████████                                                                                                 | 4199/10000 [04:42<06:30, 14.85it/s]Step 4200: 832 GSs duplicated, 378 GSs split. Now having 72556 GSs.
+Step 4200: 248 GSs pruned. Now having 72308 GSs.
+loss=0.101| sh degree=3| :  43%|███████████████████████████████████████████████████████████████████████▊                                                                                               | 4299/10000 [04:49<06:42, 14.17it/s]Step 4300: 710 GSs duplicated, 399 GSs split. Now having 73417 GSs.
+Step 4300: 219 GSs pruned. Now having 73198 GSs.
+loss=0.135| sh degree=3| :  44%|█████████████████████████████████████████████████████████████████████████▍                                                                                             | 4399/10000 [04:56<06:12, 15.03it/s]Step 4400: 677 GSs duplicated, 378 GSs split. Now having 74253 GSs.
+Step 4400: 213 GSs pruned. Now having 74040 GSs.
+loss=0.101| sh degree=3| :  45%|███████████████████████████████████████████████████████████████████████████▏                                                                                           | 4499/10000 [05:03<06:32, 14.02it/s]Step 4500: 683 GSs duplicated, 392 GSs split. Now having 75115 GSs.
+Step 4500: 235 GSs pruned. Now having 74880 GSs.
+loss=0.164| sh degree=3| :  46%|████████████████████████████████████████████████████████████████████████████▊                                                                                          | 4599/10000 [05:10<06:33, 13.72it/s]Step 4600: 734 GSs duplicated, 363 GSs split. Now having 75977 GSs.
+Step 4600: 219 GSs pruned. Now having 75758 GSs.
+loss=0.128| sh degree=3| :  47%|██████████████████████████████████████████████████████████████████████████████▍                                                                                        | 4699/10000 [05:17<06:00, 14.70it/s]Step 4700: 647 GSs duplicated, 321 GSs split. Now having 76726 GSs.
+Step 4700: 191 GSs pruned. Now having 76535 GSs.
+loss=0.116| sh degree=3| :  48%|████████████████████████████████████████████████████████████████████████████████▏                                                                                      | 4799/10000 [05:24<06:08, 14.10it/s]Step 4800: 549 GSs duplicated, 282 GSs split. Now having 77366 GSs.
+Step 4800: 210 GSs pruned. Now having 77156 GSs.
+loss=0.151| sh degree=3| :  49%|█████████████████████████████████████████████████████████████████████████████████▊                                                                                     | 4899/10000 [05:30<05:51, 14.52it/s]Step 4900: 554 GSs duplicated, 302 GSs split. Now having 78012 GSs.
+Step 4900: 150 GSs pruned. Now having 77862 GSs.
+loss=0.097| sh degree=3| :  50%|███████████████████████████████████████████████████████████████████████████████████▍                                                                                   | 4999/10000 [05:37<06:02, 13.80it/s]Step:  4999 {'mem': 0.4944777488708496, 'ellipse_time': 337.83377408981323, 'num_GS': 77862}
+Running evaluation...
+PSNR: 21.919, SSIM: 0.9125, LPIPS: 0.188 Time: 0.000s/image Number of GS: 77862
+Rendering trajectory: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 140/140 [00:00<00:00, 267.72it/s]
+IMAGEIO FFMPEG_WRITER WARNING: input image is not divisible by macro_block_size=16, resizing from (500, 375) to (512, 384) to ensure video compatibility with most codecs and players. To prevent resizing, make your input image divisible by the macro_block_size or set the macro_block_size to 1 (risking incompatibility).
+Video saved to ../results/buu_low/videos/traj_4999.mp4
+loss=0.124| sh degree=3| :  50%|███████████████████████████████████████████████████████████████████████████████████▍                                                                                   | 4999/10000 [05:41<06:02, 13.80it/s]Step 5000: 590 GSs duplicated, 242 GSs split. Now having 78694 GSs.
+Step 5000: 165 GSs pruned. Now having 78529 GSs.
+loss=0.111| sh degree=3| :  51%|█████████████████████████████████████████████████████████████████████████████████████▏                                                                                 | 5099/10000 [05:48<05:26, 14.99it/s]Step 5100: 597 GSs duplicated, 311 GSs split. Now having 79437 GSs.
+Step 5100: 176 GSs pruned. Now having 79261 GSs.
+loss=0.132| sh degree=3| :  52%|██████████████████████████████████████████████████████████████████████████████████████▊                                                                                | 5200/10000 [05:55<05:13, 15.33it/s]Step 5200: 470 GSs duplicated, 221 GSs split. Now having 79952 GSs.
+Step 5200: 173 GSs pruned. Now having 79779 GSs.
+loss=0.100| sh degree=3| :  53%|████████████████████████████████████████████████████████████████████████████████████████▌                                                                              | 5300/10000 [06:02<05:16, 14.87it/s]Step 5300: 574 GSs duplicated, 246 GSs split. Now having 80599 GSs.
+Step 5300: 178 GSs pruned. Now having 80421 GSs.
+loss=0.149| sh degree=3| :  54%|██████████████████████████████████████████████████████████████████████████████████████████▏                                                                            | 5400/10000 [06:09<05:09, 14.84it/s]Step 5400: 589 GSs duplicated, 251 GSs split. Now having 81261 GSs.
+Step 5400: 169 GSs pruned. Now having 81092 GSs.
+loss=0.121| sh degree=3| :  55%|███████████████████████████████████████████████████████████████████████████████████████████▊                                                                           | 5500/10000 [06:16<04:54, 15.30it/s]Step 5500: 398 GSs duplicated, 202 GSs split. Now having 81692 GSs.
+Step 5500: 193 GSs pruned. Now having 81499 GSs.
+loss=0.140| sh degree=3| :  56%|█████████████████████████████████████████████████████████████████████████████████████████████▌                                                                         | 5600/10000 [06:23<04:51, 15.08it/s]Step 5600: 447 GSs duplicated, 208 GSs split. Now having 82154 GSs.
+Step 5600: 184 GSs pruned. Now having 81970 GSs.
+loss=0.180| sh degree=3| :  57%|███████████████████████████████████████████████████████████████████████████████████████████████▏                                                                       | 5700/10000 [06:30<05:02, 14.24it/s]Step 5700: 624 GSs duplicated, 237 GSs split. Now having 82831 GSs.
+Step 5700: 155 GSs pruned. Now having 82676 GSs.
+loss=0.123| sh degree=3| :  58%|████████████████████████████████████████████████████████████████████████████████████████████████▊                                                                      | 5800/10000 [06:37<05:04, 13.78it/s]Step 5800: 394 GSs duplicated, 182 GSs split. Now having 83252 GSs.
+Step 5800: 169 GSs pruned. Now having 83083 GSs.
+loss=0.129| sh degree=3| :  59%|██████████████████████████████████████████████████████████████████████████████████████████████████▌                                                                    | 5900/10000 [06:44<04:40, 14.59it/s]Step 5900: 452 GSs duplicated, 213 GSs split. Now having 83748 GSs.
+Step 5900: 154 GSs pruned. Now having 83594 GSs.
+loss=0.121| sh degree=3| :  60%|████████████████████████████████████████████████████████████████████████████████████████████████████▏                                                                  | 6000/10000 [06:51<04:30, 14.79it/s]Step 6000: 519 GSs duplicated, 213 GSs split. Now having 84326 GSs.
+Step 6000: 149 GSs pruned. Now having 84177 GSs.
+loss=0.151| sh degree=3| :  61%|█████████████████████████████████████████████████████████████████████████████████████████████████████▊                                                                 | 6100/10000 [06:58<04:23, 14.80it/s]Step 6100: 513 GSs duplicated, 919 GSs split. Now having 85609 GSs.
+Step 6100: 12003 GSs pruned. Now having 73606 GSs.
+loss=0.153| sh degree=3| :  62%|███████████████████████████████████████████████████████████████████████████████████████████████████████▌                                                               | 6200/10000 [07:05<04:31, 13.98it/s]Step 6200: 579 GSs duplicated, 710 GSs split. Now having 74895 GSs.
+Step 6200: 254 GSs pruned. Now having 74641 GSs.
+loss=0.181| sh degree=3| :  63%|█████████████████████████████████████████████████████████████████████████████████████████████████████████▏                                                             | 6300/10000 [07:12<04:18, 14.30it/s]Step 6300: 487 GSs duplicated, 427 GSs split. Now having 75555 GSs.
+Step 6300: 201 GSs pruned. Now having 75354 GSs.
+loss=0.124| sh degree=3| :  64%|██████████████████████████████████████████████████████████████████████████████████████████████████████████▉                                                            | 6400/10000 [07:19<04:07, 14.57it/s]Step 6400: 443 GSs duplicated, 348 GSs split. Now having 76145 GSs.
+Step 6400: 160 GSs pruned. Now having 75985 GSs.
+loss=0.180| sh degree=3| :  65%|████████████████████████████████████████████████████████████████████████████████████████████████████████████▌                                                          | 6500/10000 [07:25<03:55, 14.87it/s]Step 6500: 403 GSs duplicated, 265 GSs split. Now having 76653 GSs.
+Step 6500: 156 GSs pruned. Now having 76497 GSs.
+loss=0.152| sh degree=3| :  66%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████▏                                                        | 6600/10000 [07:32<03:48, 14.91it/s]Step 6600: 387 GSs duplicated, 229 GSs split. Now having 77113 GSs.
+Step 6600: 146 GSs pruned. Now having 76967 GSs.
+loss=0.140| sh degree=3| :  67%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████▉                                                       | 6700/10000 [07:39<03:45, 14.60it/s]Step 6700: 384 GSs duplicated, 222 GSs split. Now having 77573 GSs.
+Step 6700: 141 GSs pruned. Now having 77432 GSs.
+loss=0.120| sh degree=3| :  68%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████▌                                                     | 6800/10000 [07:46<03:36, 14.81it/s]Step 6800: 373 GSs duplicated, 195 GSs split. Now having 78000 GSs.
+Step 6800: 125 GSs pruned. Now having 77875 GSs.
+loss=0.109| sh degree=3| :  69%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████▏                                                   | 6899/10000 [07:53<03:29, 14.82it/s]Step 6900: 315 GSs duplicated, 190 GSs split. Now having 78380 GSs.
+Step 6900: 126 GSs pruned. Now having 78254 GSs.
+loss=0.107| sh degree=3| :  70%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▉                                                  | 6999/10000 [08:00<03:26, 14.51it/s]Running evaluation...
+PSNR: 21.996, SSIM: 0.9135, LPIPS: 0.185 Time: 0.005s/image Number of GS: 78254
+Rendering trajectory: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 140/140 [00:00<00:00, 279.98it/s]
+IMAGEIO FFMPEG_WRITER WARNING: input image is not divisible by macro_block_size=16, resizing from (500, 375) to (512, 384) to ensure video compatibility with most codecs and players. To prevent resizing, make your input image divisible by the macro_block_size or set the macro_block_size to 1 (risking incompatibility).
+Video saved to ../results/buu_low/videos/traj_6999.mp4
+loss=0.113| sh degree=3| :  70%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▉                                                  | 6999/10000 [08:04<03:26, 14.51it/s]Step 7000: 367 GSs duplicated, 214 GSs split. Now having 78835 GSs.
+Step 7000: 104 GSs pruned. Now having 78731 GSs.
+loss=0.110| sh degree=3| :  71%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▌                                                | 7099/10000 [08:11<03:03, 15.82it/s]Step 7100: 313 GSs duplicated, 201 GSs split. Now having 79245 GSs.
+Step 7100: 112 GSs pruned. Now having 79133 GSs.
+loss=0.162| sh degree=3| :  72%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▏                                              | 7199/10000 [08:18<03:13, 14.47it/s]Step 7200: 272 GSs duplicated, 141 GSs split. Now having 79546 GSs.
+Step 7200: 91 GSs pruned. Now having 79455 GSs.
+loss=0.125| sh degree=3| :  73%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▉                                             | 7299/10000 [08:25<03:05, 14.55it/s]Step 7300: 385 GSs duplicated, 187 GSs split. Now having 80027 GSs.
+Step 7300: 103 GSs pruned. Now having 79924 GSs.
+loss=0.161| sh degree=3| :  74%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▌                                           | 7399/10000 [08:32<02:53, 14.99it/s]Step 7400: 278 GSs duplicated, 153 GSs split. Now having 80355 GSs.
+Step 7400: 137 GSs pruned. Now having 80218 GSs.
+loss=0.107| sh degree=3| :  75%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▏                                         | 7499/10000 [08:39<02:51, 14.61it/s]Step 7500: 300 GSs duplicated, 161 GSs split. Now having 80679 GSs.
+Step 7500: 98 GSs pruned. Now having 80581 GSs.
+loss=0.097| sh degree=3| :  76%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▉                                        | 7599/10000 [08:46<02:44, 14.57it/s]Step 7600: 283 GSs duplicated, 165 GSs split. Now having 81029 GSs.
+Step 7600: 119 GSs pruned. Now having 80910 GSs.
+loss=0.124| sh degree=3| :  77%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▌                                      | 7699/10000 [08:53<02:58, 12.86it/s]Step 7700: 304 GSs duplicated, 162 GSs split. Now having 81376 GSs.
+Step 7700: 110 GSs pruned. Now having 81266 GSs.
+loss=0.121| sh degree=3| :  78%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▏                                    | 7799/10000 [09:01<02:45, 13.33it/s]Step 7800: 290 GSs duplicated, 154 GSs split. Now having 81710 GSs.
+Step 7800: 105 GSs pruned. Now having 81605 GSs.
+loss=0.125| sh degree=3| :  79%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▉                                   | 7899/10000 [09:08<02:41, 13.02it/s]Step 7900: 264 GSs duplicated, 152 GSs split. Now having 82021 GSs.
+Step 7900: 121 GSs pruned. Now having 81900 GSs.
+loss=0.096| sh degree=3| : 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▉| 9999/10000 [11:39<00:00, 14.34it/s]Step:  9999 {'mem': 0.5057716369628906, 'ellipse_time': 699.7759411334991, 'num_GS': 81900}
+Running evaluation...
+PSNR: 21.730, SSIM: 0.9127, LPIPS: 0.180 Time: 0.007s/image Number of GS: 81900
+Rendering trajectory: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 140/140 [00:00<00:00, 281.86it/s]
+IMAGEIO FFMPEG_WRITER WARNING: input image is not divisible by macro_block_size=16, resizing from (500, 375) to (512, 384) to ensure video compatibility with most codecs and players. To prevent resizing, make your input image divisible by the macro_block_size or set the macro_block_size to 1 (risking incompatibility).
+Video saved to ../results/buu_low/videos/traj_9999.mp4
+loss=0.096| sh degree=3| : 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 10000/10000 [11:43<00:00, 14.21it/s]
+
+(luminancegs) I:\Python\Research\3DGS\Luminance-GS\Luminance-GS\Luminance-GS\examples>
