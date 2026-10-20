@@ -159,9 +159,21 @@ class Config:
     # Save training images to tensorboard
     tb_save_image: bool = False
 
+    # Random seed (the original code hard-codes 42)
+    seed: int = 42
+    # Detach the pseudo-enhanced target so the enhancement loss stops training the curve
+    detach_pseudo_target: bool = False
+    # Rung 0 diagnostics: loss components, per-view curve snapshots, pseudo-target analysis
+    diagnostics: bool = False
+    # Steps (1-indexed, like eval_steps) at which to snapshot every training view's curve
+    diag_steps: List[int] = field(
+        default_factory=lambda: [1, 500, 1000, 2000, 3000, 4000, 5000, 7000, 10_000]
+    )
+
     def adjust_steps(self, factor: float):
         self.eval_steps = [int(i * factor) for i in self.eval_steps]
         self.save_steps = [int(i * factor) for i in self.save_steps]
+        self.diag_steps = [int(i * factor) for i in self.diag_steps]
         self.max_steps = int(self.max_steps * factor)
         self.sh_degree_interval = int(self.sh_degree_interval * factor)
         self.refine_start_iter = int(self.refine_start_iter * factor)
@@ -250,7 +262,7 @@ class Runner:
     """Engine for training and testing."""
 
     def __init__(self, cfg: Config) -> None:
-        set_random_seed(42)
+        set_random_seed(cfg.seed)
 
         self.cfg = cfg
         self.device = "cuda"
@@ -457,6 +469,51 @@ class Runner:
         
         return render_colors_enh, render_colors_low, render_enh_alphas, render_low_alphas, info   # return colors and alphas
 
+    def curve_forward(self, pixels: Tensor, camtoworlds: Tensor, image_ids: Tensor) -> Dict[str, Tensor]:
+        """Per-view tone curve, shape prior and pseudo-enhanced target for one view.
+        Shared by the training step and the diagnostics so the two cannot drift apart."""
+        device = self.device
+
+        curve_adj_bias = self.curve_adjust(pixels.permute(0,3,1,2), camtoworlds) # encode low-light GT and camera position to get adjust curve
+
+        gamma_alpha_beta = self.curve_adjust_gamma(pixels.permute(0,3,1,2), camtoworlds)
+
+        curve_preclamp = self.curve + curve_adj_bias
+        curve_adj = torch.clamp(curve_preclamp, 0, 1)    # Clamp the curve in range of (0, 1)
+
+        normal= (self.axis1_para[image_ids] + torch.Tensor([1, 0, 0]).to(device)).unsqueeze(0)
+
+        normal2 = (self.axis2_para[image_ids] + torch.Tensor([1, 0]).to(device)).unsqueeze(0)
+
+        bias = torch.zeros([1, 3]).to(device)
+
+        t1s, t2s, t3s, bias  = pixel_project(pixels.permute(0,3,1,2), normal, normal2, bias)
+        t1s_out = [LUT_mapping(t1s, curve_adj), t1s[1], t1s[2], t1s[3]]
+        t2s_out = [LUT_mapping(t2s, curve_adj), t2s[1], t2s[2], t2s[3]]
+        t3s_out = [LUT_mapping(t3s, curve_adj), t3s[1], t3s[2], t3s[3]]
+
+        pixels_enh = pixel_project_back(t1s_out, t2s_out, t3s_out, bias).permute(0,2,3,1)
+
+        gamma = gamma_alpha_beta[:,0]
+        alpha, beta = gamma_alpha_beta[:,1], gamma_alpha_beta[:,2]
+
+        gamma = torch.Tensor([1.0]).to(device) + 0.1*gamma
+        alpha = torch.Tensor([0.5]).to(device) + 0.002*alpha
+        beta = torch.Tensor([1.0]).to(device) + 0.002*beta
+
+        pesdo_curve = gamma_curve(self.pesdo_curve, gamma)  # Pseudo-gamma curve
+        pesdo_curve = s_curve(pesdo_curve, alpha, beta) # Pseudo-scurve curve
+
+        return {
+            "curve_bias": curve_adj_bias,       # [1, 255]
+            "curve_preclamp": curve_preclamp,   # [1, 255]
+            "curve_adj": curve_adj,             # [1, 255]
+            "gamma": gamma, "alpha": alpha, "beta": beta,  # [1] each, after scaling
+            "pesdo_curve": pesdo_curve,         # [1, 255]
+            "pixels_enh": pixels_enh,           # [1, H, W, 3], pseudo-enhanced target
+            "projected": (t1s[0], t2s[0], t3s[0]),  # LUT inputs, [1, H, W] each
+        }
+
     def train(self):
         cfg = self.cfg
         device = self.device
@@ -574,36 +631,13 @@ class Runner:
                 colors_enh = colors_enh + bkgd * (1.0 - alphas_enh)
 
             info["means2d"].retain_grad()  # used for running stats
-            
-            curve_adj_bias = self.curve_adjust(pixels.permute(0,3,1,2), camtoworlds) # encode low-light GT and camera position to get adjust curve
-            
-            gamma_alpha_beta = self.curve_adjust_gamma(pixels.permute(0,3,1,2), camtoworlds)
 
-            curve_adj = torch.clamp(self.curve + curve_adj_bias, 0, 1)    # Clamp the curve in range of (0, 1)
-
-            normal= (self.axis1_para[image_ids] + torch.Tensor([1, 0, 0]).to(colors_low.device)).unsqueeze(0)
-            
-            normal2 = (self.axis2_para[image_ids] + torch.Tensor([1, 0]).to(colors_low.device)).unsqueeze(0)
-            
-            bias = torch.zeros([1, 3]).to(colors_low.device)
-            
-            t1s, t2s, t3s, bias  = pixel_project(pixels.permute(0,3,1,2), normal, normal2, bias)
-            t1s_out = [LUT_mapping(t1s, curve_adj), t1s[1], t1s[2], t1s[3]] 
-            t2s_out = [LUT_mapping(t2s, curve_adj), t2s[1], t2s[2], t2s[3]] 
-            t3s_out = [LUT_mapping(t3s, curve_adj), t3s[1], t3s[2], t3s[3]] 
-
-            pixels_enh = pixel_project_back(t1s_out, t2s_out, t3s_out, bias).permute(0,2,3,1)
-            
-            gamma = gamma_alpha_beta[:,0]
-            alpha, beta = gamma_alpha_beta[:,1], gamma_alpha_beta[:,2]
-            
-            gamma = torch.Tensor([1.0]).to(device) + 0.1*gamma
-            alpha = torch.Tensor([0.5]).to(device) + 0.002*alpha 
-            beta = torch.Tensor([1.0]).to(device) + 0.002*beta
-            
-            pesdo_curve = gamma_curve(self.pesdo_curve, gamma)  # Pseudo-gamma curve
-            pesdo_curve = s_curve(pesdo_curve, alpha, beta) # Pseudo-scurve curve
-            
+            curve_out = self.curve_forward(pixels, camtoworlds, image_ids)
+            curve_adj = curve_out["curve_adj"]
+            pesdo_curve = curve_out["pesdo_curve"]
+            pixels_enh = curve_out["pixels_enh"]
+            if cfg.detach_pseudo_target:
+                pixels_enh = pixels_enh.detach()
 
             con_degree = (self.constrast_level/torch.mean(pixels)).item()   # frame-adaptive contrast degree, Eq.8 in paper
             loss_co = loss_contrast(pixels.permute(0,3,1,2), colors_enh.permute(0,3,1,2), contrast=con_degree)

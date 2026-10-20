@@ -60,7 +60,7 @@ class HistogramPriorLoss(nn.Module):
         cdf = cdf / (cdf[-1] + 1e-8)
         return cdf.unsqueeze(0)  
 
-    def forward(self, output, input, psedo_curve, step, exp_name=""):
+    def forward(self, output, input, psedo_curve, step, exp_name="", return_parts=False):
 
         hist_eq_prior = self.compute_histogram_equalization(input)
 
@@ -71,11 +71,16 @@ class HistogramPriorLoss(nn.Module):
         smooth_loss = torch.mean((output[:, 1:] - output[:, :-1]) ** 2)
 
         total_loss = curve_loss + self.lambda_smooth * smooth_loss + 0.5 * psedo_curve_loss
+        w = 1.0
 
         if step >= 3000:
             w = 0.1 if exp_name == "over_exp" else 0.5
             total_loss = w * curve_loss + self.lambda_smooth * smooth_loss + 0.5 * psedo_curve_loss
 
+        if return_parts:
+            # unweighted terms; total = w_cdf*cdf + lambda_smooth*smooth + 0.5*pseudo
+            parts = {"cdf": curve_loss, "pseudo": psedo_curve_loss, "smooth": smooth_loss, "w_cdf": w}
+            return total_loss, parts
         return total_loss
 
 
