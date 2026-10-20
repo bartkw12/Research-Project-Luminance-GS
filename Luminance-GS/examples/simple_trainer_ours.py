@@ -44,6 +44,7 @@ from rendering_double import rasterization_dual
 
 from tools import pixel_project, pixel_project_back, LUT_mapping
 from losses import L_spa, HistogramPriorLoss, gamma_curve, s_curve
+from diagnostics import Diagnostics
 
 
 @dataclass
@@ -571,6 +572,8 @@ class Runner:
         )
         trainloader_iter = iter(trainloader)
 
+        diag = Diagnostics(self) if cfg.diagnostics else None
+
         # Training loop.
         global_tic = time.time()
         pbar = tqdm.tqdm(range(init_step, max_steps))
@@ -650,11 +653,14 @@ class Runner:
             ssimloss_enh = 1.0 - self.ssim(pixels_enh.permute(0,3,1,2), colors_enh.permute(0,3,1,2))
             loss_regress_enh = l1loss_enh * (1.0 - cfg.ssim_lambda) + ssimloss_enh * cfg.ssim_lambda
             
-            hist_loss = loss_histo(curve_adj, pixels, pesdo_curve, step, exp_name=cfg.exp_name)
-            
+            hist_loss, hist_parts = loss_histo(curve_adj, pixels, pesdo_curve, step, exp_name=cfg.exp_name, return_parts=True)
+
             loss = loss_regress_low + 0.5*loss_regress_enh + loss_co + 10 * hist_loss
-            
+
             loss.backward()
+
+            if diag is not None:
+                diag.log_losses(step, loss, loss_regress_low, loss_regress_enh, loss_co, hist_loss, hist_parts)
 
             desc = f"loss={loss.item():.3f}| " f"sh degree={sh_degree_to_use}| "
 
@@ -781,6 +787,10 @@ class Runner:
             for scheduler in scheulers:
                 scheduler.step()
 
+            # snapshot curves after step+1 updates (1-indexed, like eval_steps)
+            if diag is not None and step + 1 in cfg.diag_steps:
+                diag.snapshot_curves(step + 1)
+
             # save checkpoint
             if step in [i - 1 for i in cfg.save_steps] or step == max_steps - 1:
                 mem = torch.cuda.max_memory_allocated() / 1024**3
@@ -815,6 +825,9 @@ class Runner:
                 self.viewer.state.num_train_rays_per_sec = num_train_rays_per_sec
                 # Update the scene.
                 self.viewer.update(step, num_train_rays_per_step)
+
+        if diag is not None:
+            diag.final_snapshot(max_steps)
 
     @torch.no_grad()
     def update_running_stats(self, info: Dict):
