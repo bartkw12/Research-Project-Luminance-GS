@@ -1,0 +1,12 @@
+{
+  "snapshot_curves": {
+    "calls": 9,
+    "total_s": 6.208548545837402,
+    "mean_s": 0.689838727315267
+  },
+  "final_snapshot": {
+    "calls": 1,
+    "total_s": 2.229027271270752,
+    "mean_s": 2.229027271270752
+  }
+}
