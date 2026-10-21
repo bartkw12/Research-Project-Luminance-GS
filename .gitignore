@@ -1,4 +1,4 @@
-__pycache__/
+﻿__pycache__/
 *.pyc
 .DS_Store
 Luminance-GS/data/
@@ -7,7 +7,7 @@ Luminance-GS/data/
 # Rung 0 runs: keep cfg.json, stats/*.json and diagnostics/*.csv per run; summary/ is committed in full
 Luminance-GS/results/rung0/smoke*/
 Luminance-GS/results/rung0/logs/
-Luminance-GS/results/rung0/batch_console.log
+Luminance-GS/results/rung0/batch_console*.log
 Luminance-GS/results/rung0/*/renders/
 Luminance-GS/results/rung0/*/renders_depth/
 Luminance-GS/results/rung0/*/videos/
