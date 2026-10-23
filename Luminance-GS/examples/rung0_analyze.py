@@ -72,10 +72,10 @@ def read_csv(path):
         return list(csv.DictReader(f))
 
 
-def write_csv(name, rows):
+def write_csv(name, rows, out_dir=None):
     if not rows:
         return
-    with open(SUMMARY / f"{name}.csv", "w", newline="") as f:
+    with open((out_dir or SUMMARY) / f"{name}.csv", "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
         w.writeheader()
         w.writerows(rows)
@@ -101,8 +101,8 @@ def mean_std(x):
     return float(np.mean(x)), float(np.std(x, ddof=1)) if len(x) > 1 else float("nan")
 
 
-def savefig(fig, name):
-    fig.savefig(FIG / f"{name}.png", dpi=150, bbox_inches="tight")
+def savefig(fig, name, out_dir=None):
+    fig.savefig((out_dir or FIG) / f"{name}.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
 
 
