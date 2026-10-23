@@ -4,6 +4,22 @@
 Luminance-GS/data/
 *.pt
 
+# Claude Code: personal settings and the Stop hook's state file
+.claude/settings.local.json
+.claude/log_reminder_state
+
+# Any run under results/ (Rung 2 onwards too): keep cfg.json, stats/, CSV/JSON tables and summary folders
+Luminance-GS/results/**/smoke*/
+Luminance-GS/results/**/logs/
+Luminance-GS/results/**/batch_console*.log
+Luminance-GS/results/**/ckpts/
+Luminance-GS/results/**/renders/
+Luminance-GS/results/**/renders_depth/
+Luminance-GS/results/**/videos/
+Luminance-GS/results/**/tb/
+Luminance-GS/results/**/*.npz
+Luminance-GS/results/**/diagnostics/*.png
+
 # Rung 0 runs: keep cfg.json, stats/*.json and diagnostics/*.csv per run; summary/ is committed in full
 Luminance-GS/results/rung0/smoke*/
 Luminance-GS/results/rung0/logs/
