@@ -170,6 +170,12 @@ class Config:
     diag_steps: List[int] = field(
         default_factory=lambda: [1, 500, 1000, 2000, 3000, 4000, 5000, 7000, 10_000]
     )
+    # Rung 0.5: keep the per-view colour basis at its RGB init; the curve is still trained by the enhancement loss
+    freeze_color_basis: bool = False
+    # Rung 0.5: the enhancement loss stops training the curve but still trains the colour basis
+    detach_curve_in_target: bool = False
+    # At the first step, print which parameters receive gradient from the enhancement loss (smoke tests only)
+    grad_check: bool = False
 
     def adjust_steps(self, factor: float):
         self.eval_steps = [int(i * factor) for i in self.eval_steps]
@@ -474,6 +480,7 @@ class Runner:
         """Per-view tone curve, shape prior and pseudo-enhanced target for one view.
         Shared by the training step and the diagnostics so the two cannot drift apart."""
         device = self.device
+        cfg = self.cfg
 
         curve_adj_bias = self.curve_adjust(pixels.permute(0,3,1,2), camtoworlds) # encode low-light GT and camera position to get adjust curve
 
@@ -482,16 +489,23 @@ class Runner:
         curve_preclamp = self.curve + curve_adj_bias
         curve_adj = torch.clamp(curve_preclamp, 0, 1)    # Clamp the curve in range of (0, 1)
 
-        normal= (self.axis1_para[image_ids] + torch.Tensor([1, 0, 0]).to(device)).unsqueeze(0)
+        axis1, axis2 = self.axis1_para[image_ids], self.axis2_para[image_ids]
+        if cfg.freeze_color_basis:
+            axis1, axis2 = axis1.detach(), axis2.detach()
 
-        normal2 = (self.axis2_para[image_ids] + torch.Tensor([1, 0]).to(device)).unsqueeze(0)
+        normal= (axis1 + torch.Tensor([1, 0, 0]).to(device)).unsqueeze(0)
+
+        normal2 = (axis2 + torch.Tensor([1, 0]).to(device)).unsqueeze(0)
 
         bias = torch.zeros([1, 3]).to(device)
 
+        # the LUT gather is the only path from the enhancement loss to the curve; hist_loss gets the attached curve_adj
+        curve_lut = curve_adj.detach() if cfg.detach_curve_in_target else curve_adj
+
         t1s, t2s, t3s, bias  = pixel_project(pixels.permute(0,3,1,2), normal, normal2, bias)
-        t1s_out = [LUT_mapping(t1s, curve_adj), t1s[1], t1s[2], t1s[3]]
-        t2s_out = [LUT_mapping(t2s, curve_adj), t2s[1], t2s[2], t2s[3]]
-        t3s_out = [LUT_mapping(t3s, curve_adj), t3s[1], t3s[2], t3s[3]]
+        t1s_out = [LUT_mapping(t1s, curve_lut), t1s[1], t1s[2], t1s[3]]
+        t2s_out = [LUT_mapping(t2s, curve_lut), t2s[1], t2s[2], t2s[3]]
+        t3s_out = [LUT_mapping(t3s, curve_lut), t3s[1], t3s[2], t3s[3]]
 
         pixels_enh = pixel_project_back(t1s_out, t2s_out, t3s_out, bias).permute(0,2,3,1)
 
@@ -656,6 +670,9 @@ class Runner:
             hist_loss, hist_parts = loss_histo(curve_adj, pixels, pesdo_curve, step, exp_name=cfg.exp_name, return_parts=True)
 
             loss = loss_regress_low + 0.5*loss_regress_enh + loss_co + 10 * hist_loss
+
+            if cfg.grad_check and step == init_step:
+                self.grad_check(loss_regress_enh, image_ids)
 
             loss.backward()
 
@@ -826,8 +843,35 @@ class Runner:
                 # Update the scene.
                 self.viewer.update(step, num_train_rays_per_step)
 
+        if cfg.freeze_color_basis:
+            assert all(bool((p == 0).all()) for p in self.axis1_para + self.axis2_para), \
+                "colour basis moved despite --freeze_color_basis"
+            print("[freeze_color_basis] colour basis is still exactly zero (RGB) for every view")
+
         if diag is not None:
             diag.final_snapshot(max_steps)
+
+    def grad_check(self, loss_regress_enh: Tensor, image_ids: Tensor):
+        """Print which parameters receive gradient from the enhancement loss.
+        Uses autograd.grad, so no .grad is written and training continues unchanged."""
+        groups = {
+            "curve": [self.curve],
+            "curve_adjust (bias net)": list(self.curve_adjust.parameters()),
+            "curve_adjust_gamma (prior net)": list(self.curve_adjust_gamma.parameters()),
+            "axis1[id] (colour basis)": [self.axis1_para[image_ids]],
+            "axis2[id] (colour basis)": [self.axis2_para[image_ids]],
+        }
+        flat = [p for ps in groups.values() for p in ps]
+        grads = iter(torch.autograd.grad(loss_regress_enh, flat, allow_unused=True, retain_graph=True))
+        print(f"[grad_check] gradient from loss_regress_enh (freeze_color_basis={self.cfg.freeze_color_basis}, "
+              f"detach_curve_in_target={self.cfg.detach_curve_in_target}, detach_pseudo_target={self.cfg.detach_pseudo_target})")
+        for name, ps in groups.items():
+            gs = [g for g in (next(grads) for _ in ps) if g is not None]
+            if gs:
+                norm = torch.sqrt(sum((g.float() ** 2).sum() for g in gs)).item()
+                print(f"[grad_check]   {name:32s} grad norm {norm:.3e} ({len(gs)}/{len(ps)} tensors)")
+            else:
+                print(f"[grad_check]   {name:32s} None")
 
     @torch.no_grad()
     def update_running_stats(self, info: Dict):
