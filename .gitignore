@@ -15,3 +15,7 @@ Luminance-GS/results/rung0/*/tb/
 Luminance-GS/results/rung0/*/ckpts/
 Luminance-GS/results/rung0/*/diagnostics/*.npz
 Luminance-GS/results/rung0/*/diagnostics/*.png
+# Rung 0.5 re-scoring: keep only the tables and summaries
+Luminance-GS/results/rung0/*/rescore/*
+!Luminance-GS/results/rung0/*/rescore/*.csv
+!Luminance-GS/results/rung0/*/rescore/*.json

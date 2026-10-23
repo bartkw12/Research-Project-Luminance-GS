@@ -176,6 +176,10 @@ class Config:
     detach_curve_in_target: bool = False
     # At the first step, print which parameters receive gradient from the enhancement loss (smoke tests only)
     grad_check: bool = False
+    # Rung 0.5 re-scoring: a finished run folder to score (its final ckpt and curve_state.pt) instead of training
+    rescore_run: Optional[str] = None
+    # Run folder whose splats give the depth and alpha for the consistency warp (default: the run itself)
+    ref_depth_run: Optional[str] = None
 
     def adjust_steps(self, factor: float):
         self.eval_steps = [int(i * factor) for i in self.eval_steps]
@@ -476,9 +480,10 @@ class Runner:
         
         return render_colors_enh, render_colors_low, render_enh_alphas, render_low_alphas, info   # return colors and alphas
 
-    def curve_forward(self, pixels: Tensor, camtoworlds: Tensor, image_ids: Tensor) -> Dict[str, Tensor]:
+    def curve_forward(self, pixels: Tensor, camtoworlds: Tensor, image_ids: Tensor, zero_basis: bool = False) -> Dict[str, Tensor]:
         """Per-view tone curve, shape prior and pseudo-enhanced target for one view.
-        Shared by the training step and the diagnostics so the two cannot drift apart."""
+        Shared by the training step and the diagnostics so the two cannot drift apart.
+        zero_basis (diagnostics only) uses the colour basis at its RGB initialisation."""
         device = self.device
         cfg = self.cfg
 
@@ -492,6 +497,8 @@ class Runner:
         axis1, axis2 = self.axis1_para[image_ids], self.axis2_para[image_ids]
         if cfg.freeze_color_basis:
             axis1, axis2 = axis1.detach(), axis2.detach()
+        if zero_basis:
+            axis1, axis2 = torch.zeros_like(axis1), torch.zeros_like(axis2)
 
         normal= (axis1 + torch.Tensor([1, 0, 0]).to(device)).unsqueeze(0)
 
@@ -1187,7 +1194,12 @@ class Runner:
 def main(cfg: Config):
     runner = Runner(cfg)
 
-    if cfg.ckpt is not None:
+    if cfg.rescore_run is not None:
+        # score a finished run; nothing is trained
+        with open(f"{cfg.result_dir}/cfg.json", "w") as f:
+            json.dump(vars(cfg), f)
+        Diagnostics(runner, out_dir=cfg.result_dir, loss_log=False).rescore(cfg.rescore_run, cfg.ref_depth_run)
+    elif cfg.ckpt is not None:
         # run eval only
         ckpt = torch.load(cfg.ckpt, map_location=runner.device)
         for k in runner.splats.keys():

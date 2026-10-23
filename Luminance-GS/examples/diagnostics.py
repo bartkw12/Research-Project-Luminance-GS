@@ -39,6 +39,15 @@ N_NEIGHBOURS = 2
 ALPHA_MIN = 0.5         # pixels with lower accumulated opacity have unreliable depth
 DEPTH_REL_TOL = 0.05    # occlusion test: |z_proj - z_rendered| < 5% of z_rendered
 
+# Rung 0.5 colour metrics
+COLOR_DARK_NORM = 0.05 * 3 ** 0.5   # GT pixels with |rgb| below this are too dark for a reliable colour
+HUE_GT_SAT_MIN = 0.3                # hue error only where the GT is clearly coloured ...
+HUE_GT_VAL_MIN = 0.1
+HUE_PRED_SAT_MIN = 0.05             # ... and the prediction has a defined hue
+HUE_MIN_PIXELS = 500                # fewer masked pixels in a view -> NaN
+# fixed views for re-score example images (the Rung 0 qualitative figures)
+RESCORE_EXAMPLES = {"bike": "29", "shrub": "26"}
+
 
 @contextlib.contextmanager
 def rng_guard():
@@ -92,6 +101,69 @@ def psnr_gt_mean(pred, target) -> float:
     return psnr(pred, target)
 
 
+def to_png_levels(img: torch.Tensor) -> torch.Tensor:
+    """The 8-bit values eval() writes to renders/*.png ((x * 255).astype(uint8) truncates), back in [0, 1]."""
+    return torch.floor(img.clamp(0, 1) * 255.0) / 255.0
+
+
+def rgb_to_hsv(img: torch.Tensor):
+    """[..., 3] RGB in [0, 1] -> hue (degrees, 0 where undefined), saturation, value."""
+    v, arg = img.max(-1)
+    delta = v - img.min(-1).values
+    s = torch.where(v > 0, delta / v.clamp_min(1e-8), torch.zeros_like(v))
+    r, g, b = img.unbind(-1)
+    d = delta.clamp_min(1e-8)
+    h = torch.where(arg == 0, torch.remainder((g - b) / d, 6.0),
+                    torch.where(arg == 1, (b - r) / d + 2.0, (r - g) / d + 4.0)) * 60.0
+    return torch.where(delta > 0, h, torch.zeros_like(h)), s, v
+
+
+def color_metrics(pred: torch.Tensor, gt: torch.Tensor, prefix: str = "") -> Dict[str, float]:
+    """Brightness-invariant colour errors of pred vs gt, both [H, W, 3] in [0, 1].
+    ang_err: angle between RGB vectors; hue_err_sat: circular HSV hue difference on coloured GT pixels;
+    sat_ratio: mean prediction saturation / mean GT saturation (< 1 = washed out)."""
+    nan = float("nan")
+    pn, gn = pred.norm(dim=-1), gt.norm(dim=-1)
+    m = (gn > COLOR_DARK_NORM) & (pn > 1e-6)
+    out = {}
+    if m.any():
+        cos = ((pred * gt).sum(-1)[m] / (pn[m] * gn[m])).clamp(-1, 1)
+        ang = torch.rad2deg(torch.arccos(cos))
+        out["ang_err_deg"], out["ang_err_p95_deg"] = _f(ang.mean()), _f(torch.quantile(ang, 0.95))
+    else:
+        out["ang_err_deg"] = out["ang_err_p95_deg"] = nan
+    hp, sp, _ = rgb_to_hsv(pred)
+    hg, sg, vg = rgb_to_hsv(gt)
+    out["sat_ratio"] = _f(sp[m].mean() / sg[m].mean().clamp_min(1e-8)) if m.any() else nan
+    coloured = (sg > HUE_GT_SAT_MIN) & (vg > HUE_GT_VAL_MIN)
+    mh = coloured & (sp > HUE_PRED_SAT_MIN)
+    if int(coloured.sum()) >= HUE_MIN_PIXELS and int(mh.sum()) > 0:
+        dh = torch.remainder((hp - hg)[mh].abs(), 360.0)
+        out["hue_err_sat_deg"] = _f(torch.minimum(dh, 360.0 - dh).mean())
+    else:
+        out["hue_err_sat_deg"] = nan
+    out["hue_px_frac"] = _f(coloured.float().mean())
+    out["hue_excluded_frac"] = _f(1.0 - mh.sum() / coloured.sum().clamp_min(1))
+    return {prefix + k: v for k, v in out.items()}
+
+
+@contextlib.contextmanager
+def swapped_splats(runner, splats_state: Dict[str, torch.Tensor]):
+    """Render with another run's Gaussians (e.g. a shared reference depth), then restore."""
+    saved = runner.splats
+    runner.splats = torch.nn.ParameterDict(
+        {k: torch.nn.Parameter(v.to(runner.device), requires_grad=False) for k, v in splats_state.items()})
+    try:
+        yield
+    finally:
+        runner.splats = saved
+
+
+def final_ckpt_path(run_dir: Path) -> Path:
+    cfg = json.loads((run_dir / "cfg.json").read_text())
+    return run_dir / "ckpts" / f"ckpt_{cfg['max_steps'] - 1}.pt"
+
+
 def to_uint8(img: torch.Tensor) -> np.ndarray:
     """[H, W, C] or [H, W] float tensor in [0, 1] -> uint8 HxWx3 array."""
     img = img.detach().float().clamp(0, 1).cpu().numpy()
@@ -123,11 +195,11 @@ def load_train_gt(parser, index: int) -> np.ndarray:
 
 
 class Diagnostics:
-    def __init__(self, runner):
+    def __init__(self, runner, out_dir=None, loss_log: bool = True):
         self.runner = runner
         self.cfg = runner.cfg
         self.device = runner.device
-        self.out_dir = Path(self.cfg.result_dir) / "diagnostics"
+        self.out_dir = Path(out_dir) if out_dir is not None else Path(self.cfg.result_dir) / "diagnostics"
         self.out_dir.mkdir(parents=True, exist_ok=True)
         self.hist = HistogramPriorLoss()
         self.timing: Dict[str, List[float]] = {}
@@ -136,9 +208,11 @@ class Diagnostics:
         self.view_index = [int(trainset.indices[i]) for i in range(len(trainset))]
         self.view_names = [runner.parser.image_names[k] for k in self.view_index]
 
-        self._loss_file = open(self.out_dir / "loss_log.csv", "w", newline="")
-        self._loss_csv = csv.DictWriter(self._loss_file, fieldnames=LOSS_FIELDS)
-        self._loss_csv.writeheader()
+        self._loss_file = None
+        if loss_log:
+            self._loss_file = open(self.out_dir / "loss_log.csv", "w", newline="")
+            self._loss_csv = csv.DictWriter(self._loss_file, fieldnames=LOSS_FIELDS)
+            self._loss_csv.writeheader()
 
     # ------------------------------------------------------------------ utils
     def _view(self, i: int):
@@ -228,27 +302,42 @@ class Diagnostics:
         self._time("final_snapshot", time.time() - tic)
         self.close()
 
-    def _score_views(self, step: int):
+    def _render(self, c2w, K, width: int, height: int):
+        cfg = self.cfg
+        return self.runner.rasterize_splats(
+            camtoworlds=c2w, Ks=K, width=width, height=height, sh_degree=cfg.sh_degree,
+            near_plane=cfg.near_plane, far_plane=cfg.far_plane, render_mode="RGB+ED",
+        )
+
+    def _score_views(self, step: int, ref_splats=None, extended: bool = False):
+        """Training-view pseudo-targets and renders vs GT. ref_splats: take depth and alpha for the
+        warp from these Gaussians instead of the run's own. extended (re-scoring): add colour metrics
+        and the zero-basis counterfactual pseudo-target, and save only the fixed example views."""
         runner, cfg = self.runner, self.cfg
         n = len(runner.trainset)
-        examples = sorted({0, n // 2, n - 1})[:N_EXAMPLE_VIEWS]
+        if extended:
+            stem = RESCORE_EXAMPLES.get(Path(cfg.data_dir).name)
+            examples = [i for i in range(n) if Path(self.view_names[i]).stem == stem]
+        else:
+            examples = sorted({0, n // 2, n - 1})[:N_EXAMPLE_VIEWS]
         views, rows = [], []
         for i in range(n):
             pixels, c2w, K, ids = self._view(i)
             height, width = pixels.shape[1:3]
             pseudo_raw = runner.curve_forward(pixels, c2w, ids)["pixels_enh"]
-            renders_enh, renders_low, alphas_enh, _, _ = runner.rasterize_splats(
-                camtoworlds=c2w, Ks=K, width=width, height=height, sh_degree=cfg.sh_degree,
-                near_plane=cfg.near_plane, far_plane=cfg.far_plane, render_mode="RGB+ED",
-            )
+            renders_enh, renders_low, alphas_enh, _, _ = self._render(c2w, K, width, height)
             render = torch.clamp(renders_enh[..., :3], 0.0, 1.0)
             render_low = renders_low[..., :3]
             depth = renders_enh[..., 3]                                     # [1, H, W], camera-space z
+            if ref_splats is not None:
+                with swapped_splats(runner, ref_splats):
+                    ref_enh, _, alphas_enh, _, _ = self._render(c2w, K, width, height)
+                depth = ref_enh[..., 3]
             pseudo = torch.clamp(pseudo_raw, 0.0, 1.0)
             gt = torch.from_numpy(load_train_gt(runner.parser, self.view_index[i])).float().to(self.device)[None] / 255.0
             assert gt.shape == pixels.shape, f"GT {tuple(gt.shape)} vs input {tuple(pixels.shape)}"
 
-            rows.append({
+            row = {
                 "view": self.view_names[i],
                 "mean_input": _f(pixels.mean()),
                 "mean_pseudo": _f(pseudo_raw.mean()),
@@ -264,12 +353,32 @@ class Diagnostics:
                 "render_psnr": psnr(nchw(render), nchw(gt)),
                 "render_ssim": ssim(nchw(render), nchw(gt)),
                 "render_psnr_gtmean": psnr_gt_mean(nchw(render), nchw(gt)),
-            })
+            }
+            view = {"pseudo": pseudo[0], "render": render[0], "gt": gt[0], "depth": depth[0],
+                    "alpha": alphas_enh[0, ..., 0], "K": K[0], "c2w": c2w[0]}
+            if extended:
+                # counterfactual: the same curve with the colour basis reset to RGB
+                pseudo0 = torch.clamp(runner.curve_forward(pixels, c2w, ids, zero_basis=True)["pixels_enh"], 0.0, 1.0)
+                view["pseudo0"] = pseudo0[0]
+                row.update({
+                    "pseudo0_psnr": psnr(nchw(pseudo0), nchw(gt)),
+                    "pseudo0_psnr_gtmean": psnr_gt_mean(nchw(pseudo0), nchw(gt)),
+                    "pseudo0_vs_pseudo_l1": _f((pseudo0 - pseudo).abs().mean()),
+                    "pseudo0_vs_pseudo_maxabs": _f((pseudo0 - pseudo).abs().max()),
+                    **color_metrics(pseudo[0], gt[0], "pseudo_"),
+                    **color_metrics(pseudo0[0], gt[0], "pseudo0_"),
+                    **color_metrics(render[0], gt[0], "render_"),
+                })
+            rows.append(row)
             if i in examples:
+                stem = Path(self.view_names[i]).stem
                 canvas = np.concatenate([to_uint8(pixels[0]), to_uint8(pseudo[0]), to_uint8(render[0]), to_uint8(gt[0])], axis=1)
-                imageio.imwrite(self.out_dir / f"example_{Path(self.view_names[i]).stem}_in_pseudo_render_gt.png", canvas)
-            views.append({"pseudo": pseudo[0], "render": render[0], "gt": gt[0], "depth": depth[0],
-                          "alpha": alphas_enh[0, ..., 0], "K": K[0], "c2w": c2w[0]})
+                imageio.imwrite(self.out_dir / f"example_{stem}_in_pseudo_render_gt.png", canvas)
+                if extended:
+                    diff = ((pseudo0 - pseudo).abs() * 4.0)[0]
+                    canvas = np.concatenate([to_uint8(pseudo[0]), to_uint8(pseudo0[0]), to_uint8(diff)], axis=1)
+                    imageio.imwrite(self.out_dir / f"example_{stem}_pseudo_zerobasis_diffx4.png", canvas)
+            views.append(view)
 
         with open(self.out_dir / "pseudo_targets.csv", "w", newline="") as f:
             w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
@@ -277,17 +386,17 @@ class Diagnostics:
             w.writerows(rows)
         return views
 
-    def _consistency(self, views):
+    def _consistency(self, views, keys=("pseudo", "render", "gt")):
         centres = torch.stack([v["c2w"][:3, 3] for v in views])
         dist = torch.cdist(centres, centres)
         dist.fill_diagonal_(float("inf"))
         rows = []
         for i in range(len(views)):
             for j in torch.argsort(dist[i])[:N_NEIGHBOURS].tolist():
-                warped, valid = self._warp(views[i], views[j], ["pseudo", "render", "gt"])
+                warped, valid = self._warp(views[i], views[j], list(keys))
                 row = {"view_i": self.view_names[i], "view_j": self.view_names[j],
                        "cam_dist": _f(dist[i, j]), "valid_frac": _f(valid.float().mean())}
-                for key in ("pseudo", "render", "gt"):
+                for key in keys:
                     diff = (views[i][key] - warped[key]).abs().mean(-1)
                     l1 = diff[valid].mean() if valid.any() else torch.tensor(float("nan"))
                     row[f"l1_{key}"] = _f(l1)
@@ -354,8 +463,91 @@ class Diagnostics:
             "axis2": torch.stack([p.detach().cpu() for p in runner.axis2_para]),
         }, self.out_dir / "curve_state.pt")
 
+    # ------------------------------------------------------------ re-score
+    def _load_run_state(self, run_dir: Path) -> str:
+        """Load a finished run's splats (final ckpt) and curve state (diagnostics/curve_state.pt)."""
+        runner, cfg = self.runner, self.cfg
+        run_cfg = json.loads((run_dir / "cfg.json").read_text())
+        for k in ("data_dir", "exp_name", "data_factor", "test_every"):
+            assert run_cfg[k] == getattr(cfg, k), f"{k}: run has {run_cfg[k]!r}, re-score got {getattr(cfg, k)!r}"
+        ckpt_path = final_ckpt_path(run_dir)
+        ckpt = torch.load(ckpt_path, map_location=self.device)
+        for k in runner.splats.keys():
+            runner.splats[k].data = ckpt["splats"][k]
+        st = torch.load(run_dir / "diagnostics" / "curve_state.pt", map_location=self.device)
+        assert st["axis1"].shape[0] == len(runner.axis1_para), "curve_state.pt has a different number of views"
+        runner.curve.data.copy_(st["curve"].to(self.device))
+        runner.curve_adjust.load_state_dict(st["curve_adjust"])
+        runner.curve_adjust_gamma.load_state_dict(st["curve_adjust_gamma"])
+        for p, a in zip(runner.axis1_para, st["axis1"]):
+            p.data.copy_(a.to(self.device))
+        for p, a in zip(runner.axis2_para, st["axis2"]):
+            p.data.copy_(a.to(self.device))
+        return str(ckpt_path)
+
+    @torch.no_grad()
+    def rescore(self, run_dir, ref_dir=None):
+        """Re-score a finished run without training: training-view pseudo-targets and renders with colour
+        metrics and the zero-basis counterfactual, cross-view consistency (warp with ref_dir's depth if
+        given), and validation metrics. Writes pseudo_targets.csv, consistency.csv, val_metrics.csv and
+        val_summary.json to out_dir."""
+        tic = time.time()
+        run_dir = Path(run_dir)
+        ckpt_path = self._load_run_state(run_dir)
+        ref_splats = None
+        if ref_dir is not None:
+            ref_splats = torch.load(final_ckpt_path(Path(ref_dir)), map_location=self.device)["splats"]
+        with rng_guard(), eval_mode(*self._curve_modules()):
+            views = self._score_views(int(json.loads((run_dir / "cfg.json").read_text())["max_steps"]),
+                                      ref_splats=ref_splats, extended=True)
+            self._consistency(views, keys=("pseudo", "pseudo0", "render", "gt"))
+            del views
+            val_rows = self._score_val()
+        summary = {k: float(np.nanmean([r[k] for r in val_rows])) for k in val_rows[0] if k != "view"}
+        summary.update({"n_views": len(val_rows), "run": str(run_dir), "ckpt": ckpt_path,
+                        "ref_depth_run": None if ref_dir is None else str(ref_dir), "seconds": time.time() - tic})
+        with open(self.out_dir / "val_summary.json", "w") as f:
+            json.dump(summary, f, indent=1)
+        self._time("rescore", time.time() - tic)
+        print(f"[rescore] {run_dir.name}: val PSNR {summary['psnr']:.3f}, PSNR gt-mean {summary['psnr_gtmean']:.3f}, "
+              f"LPIPS {summary['lpips']:.3f}, hue err {summary['hue_err_sat_deg']:.2f} deg ({summary['seconds']:.0f} s)")
+        self.close()
+
+    def _score_val(self):
+        """Validation views rendered as Runner.eval() does, against the normal-light validation images."""
+        runner = self.runner
+        valset = runner.valset
+        rows = []
+        for i in range(len(valset)):
+            data = valset[i]
+            gt = data["image"][None].to(self.device) / 255.0
+            c2w, K = data["camtoworld"][None].to(self.device), data["K"][None].to(self.device)
+            height, width = gt.shape[1:3]
+            colors_enh, _, _, _, _ = self._render(c2w, K, width, height)
+            pred = torch.clamp(colors_enh[..., :3], 0.0, 1.0)
+            p, g = nchw(pred), nchw(gt)
+            png = nchw(to_png_levels(pred)).double()
+            rows.append({
+                "view": runner.parser.image_names[int(valset.indices[i])],
+                "psnr": runner.psnr(p, g).item(),
+                "ssim": runner.ssim(p, g).item(),
+                "lpips": runner.lpips(p, g).item(),
+                "psnr_gtmean": psnr_gt_mean(p, g),
+                # same 8-bit truncation and float64 maths as rung0_analyze.py, for checking against Rung 0
+                "psnr_png": psnr(png, g.double()),
+                "psnr_gtmean_png": psnr_gt_mean(png, g.double()),
+                "mean_render": _f(pred.mean()),
+                "mean_gt": _f(gt.mean()),
+                **color_metrics(pred[0], gt[0]),
+            })
+        with open(self.out_dir / "val_metrics.csv", "w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+            w.writeheader()
+            w.writerows(rows)
+        return rows
+
     def close(self):
-        if not self._loss_file.closed:
+        if self._loss_file is not None and not self._loss_file.closed:
             self._loss_file.close()
         summary = {k: {"calls": len(v), "total_s": sum(v), "mean_s": sum(v) / len(v)} for k, v in self.timing.items()}
         with open(self.out_dir / "timing.json", "w") as f:
