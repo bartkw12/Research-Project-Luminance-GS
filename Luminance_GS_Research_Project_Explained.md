@@ -515,8 +515,13 @@ beta  = 1.0 + 0.002 * b
 pesdo_curve = s_curve(gamma_curve(linspace(0, 1, 255), gamma), alpha, beta)
 ```
 
-$$P_k(x) = S_{\alpha,\beta}\big(\operatorname{clamp}(x, 10^{-3}, 1)^{\gamma}\big),\qquad
-S_{\alpha,\beta}(u) = \begin{cases}\alpha - \alpha\,(1-u/\alpha)^{\beta} & u\le\alpha\\ \alpha + (1-\alpha)\Big(\frac{u-\alpha}{1-\alpha}\Big)^{\beta} & u>\alpha\end{cases}$$
+$$P_k(x) = S_{\alpha,\beta}\big(\operatorname{clamp}(x, 10^{-3}, 1)^{\gamma}\big)$$
+
+where the S-curve is defined in two pieces:
+
+$$S_{\alpha,\beta}(u) = \alpha - \alpha\,(1-u/\alpha)^{\beta}\quad\text{for } u\le\alpha$$
+
+$$S_{\alpha,\beta}(u) = \alpha + (1-\alpha)\left(\frac{u-\alpha}{1-\alpha}\right)^{\beta}\quad\text{for } u>\alpha$$
 
 The ×0.002 scaling means α and β can barely move. Rung 0 confirmed it: α stays at 0.506-0.510 and β at 1.004-1.010, so S is about the identity. **In practice P_k is a gamma curve with one free number per view.**
 
@@ -579,7 +584,7 @@ w(t) = 1 before step 3000, then 0.5 (0.1 for overexposure).
 
 **Total:**
 
-$$\boxed{\mathcal{L} = \mathcal{L}_{low} + 0.5\,\mathcal{L}_{enh} + \mathcal{L}_{spa} + 10\,\mathcal{L}_{hist}}$$
+$$\mathcal{L} = \mathcal{L}_{low} + 0.5\,\mathcal{L}_{enh} + \mathcal{L}_{spa} + 10\,\mathcal{L}_{hist}$$
 
 Because of the ×10, **the curve terms dominate**. On buu, the weighted CDF term is about 0.85 of a total of about 1.25 at the start. At the end, the histogram terms (0.11) are about 5× all image terms combined (0.022) (`loss_components.png`). In plain words, the curve is shaped mostly by the priors, not by what the 3D scene can render.
 
