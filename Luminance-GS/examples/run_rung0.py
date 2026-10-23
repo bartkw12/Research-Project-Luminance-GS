@@ -23,7 +23,13 @@ EXAMPLES = Path(__file__).resolve().parent
 DATA = EXAMPLES.parent / "data" / "LOM_full"
 
 ALL_SCENES = ["buu", "chair", "sofa", "bike", "shrub"]
-VARIANTS = {"baseline": [], "detach": ["--detach_pseudo_target"]}
+VARIANTS = {
+    "baseline": [],
+    "detach": ["--detach_pseudo_target"],
+    # Rung 0.5 factorial: each new cell cuts one of the two gradient paths that "detach" cuts
+    "frozenbasis": ["--freeze_color_basis"],
+    "detachcurve": ["--detach_curve_in_target"],
+}
 
 
 def run_name(scene: str, variant: str, seed: int) -> str:
