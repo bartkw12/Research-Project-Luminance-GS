@@ -94,4 +94,23 @@ Over 10k steps: the SH degree rises every 1000 steps up to 3; densification runs
 
 ## What Rung 2 changes (planned)
 
-Rung 2 replaces L_g, the bias net and the shape net with `L_k(x) = F(min(1, 2^{s_k} x))`: one shared monotone curve F (K = 32 softplus increments, knots dense near black, F(0) = 0, F(1) = 1, linear interpolation so gradient reaches `s_k`) and one exposure `s_k` per view with mean fixed at 0. The rendering, the Gaussians and L_low, L_enh and L_spa stay as they are. Full design: section 8.6 of the explainer.
+Rung 2 replaces L_g, the bias net, the shape net and the colour basis with `L_k(x) = F(min(1, 2^{s_k} x))`:
+
+- one shared monotone curve F: K = 32 softplus increments, knots dense near black, F(0) = 0, F(1) = 1, linear interpolation so gradient can reach `s_k`;
+- one exposure `s_k` per view, a free scalar with mean fixed at 0, so it is relative exposure and F carries the overall brightening;
+- a fixed RGB basis: F is applied to R, G and B directly (Rung 0.5 showed the learned basis costs nothing to remove once the curve is detached).
+
+L_hist becomes L_curve: the MSE between F(min(1, 2^{s_k} x_b)) and CDF_k on the 255-bin grid, plus a smoothness term on F. The rendering, the Gaussians and L_low, L_enh and L_spa stay as they are. Full design: section 8.6 of the explainer. Decisions and ablation order: `Luminance-GS/Implementation_guides/Rung0.5_interpretation.md`. Flag names are decided in the Rung 2 plan.
+
+**Default mode: detached** (chosen by Rung 0.5, where cutting L_enh from the curve explained 85 to 100% of the detach gain).
+
+| Parameters | L_curve | L_enh, default | L_enh, attached-`s_k` ablation |
+|---|---|---|---|
+| F knot heights | yes | no | no |
+| `s_k` | yes | no | yes |
+
+- **In the default, nothing rendered reaches F or `s_k`.** The pseudo-targets depend only on the dark photos and the training step, so F and `s_k` could even be fitted before training. 3D consistency has to come from the shared F.
+- **Attached-`s_k` ablation:** evaluate F with detached knot heights but a differentiable input y = 2^{s_k} x, so L_enh reaches `s_k` only (∂F/∂s_k = F'(y)·y·ln 2). One number per view cannot recolour part of an image, so the hue flip should not return.
+- **Colour-preserving ablation:** apply F to the luminance Y and scale RGB, `out = rgb · F(2^{s_k} Y) / max(Y, ε)`, clipped to [0, 1]. This keeps hue and saturation, apart from clipping in highlights.
+- **Brightness:** with mean `s_k` = 0, global brightness is set by F's fit to the HE-CDFs and, for the render, by L_spa. The exposure model does not remove the offset from the ground truth's brightness, so brightness-matched PSNR stays the primary metric.
+- **Noise:** with F detached, its dark-end slope is the only thing that sets how much each photo's noise is amplified. Check that the smoothness weight keeps F off the HE-CDF's steep jump near black.
