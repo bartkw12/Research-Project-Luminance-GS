@@ -9,13 +9,27 @@
       "Bash(git reset *)",
       "Bash(git switch *)",
       "Bash(git checkout *)",
+      "Bash(git pull *)",
+      "Bash(git restore *)",
+      "Bash(git clean *)",
+      "Bash(git stash *)",
+      "Bash(git branch -D *)",
       "PowerShell(git commit *)",
       "PowerShell(git push *)",
       "PowerShell(git merge *)",
       "PowerShell(git rebase *)",
       "PowerShell(git reset *)",
       "PowerShell(git switch *)",
-      "PowerShell(git checkout *)"
+      "PowerShell(git checkout *)",
+      "PowerShell(git pull *)",
+      "PowerShell(git restore *)",
+      "PowerShell(git clean *)",
+      "PowerShell(git stash *)",
+      "PowerShell(git branch -D *)",
+      "Edit(/Luminance-GS/results/rung0/summary/**)",
+      "Edit(/Luminance-GS/results/rung0/summary_rung05/**)",
+      "Edit(/Luminance-GS/Implementation_guides/Rung0_results.md)",
+      "Edit(/Luminance-GS/Implementation_guides/Rung0.5_results.md)"
     ]
   },
   "hooks": {
@@ -24,7 +38,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/log_reminder.py\"",
+            "command": "python",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/log_reminder.py"],
             "timeout": 30
           }
         ]
