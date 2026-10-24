@@ -138,3 +138,49 @@ Entries up to 2026-10-23 were backfilled from git history, the run folders and t
 - **Reproduce:** PR "Add Claude Code project setup" on GitHub.
 - **Results:** none.
 - **Next:** log the Rung 0.5 results with `/log-experiment` when the batch finishes.
+
+### 2026-10-24: Fixed the Claude Code setup
+
+- **Rung / type:** setup
+- **Why:** a review of the 2026-10-23 setup (PR #4) found that it was not active and was partly out of date.
+- **What was done:**
+  - Found that VS Code had been opened on the parent folder, not the repository. Claude Code reads `.claude/settings.json` only from the folder it starts in, so the Stop hook and the git `ask` rules were never loaded, and `CLAUDE.md` loaded only on demand. From now on, open the repository folder itself.
+  - `CLAUDE.md`: Rung 0.5 marked done, H3 marked not supported, the Rung 2 reference baseline (`detach`) recorded, and the shell and Python notes corrected (sessions use PowerShell; plain `python` has no torch).
+  - Added a git-ignored `CLAUDE.local.md` with the env interpreter path.
+  - `.claude/settings.json`:
+    - `ask` rules for `git pull`, `restore`, `clean`, `stash` and `branch -D`;
+    - `ask` rules for Claude's edits to the finished Rung 0 and 0.5 summaries and reports;
+    - the Stop hook switched to exec form, so it no longer depends on which shell runs it.
+  - Skills: commands that work in PowerShell; the helper script is now located through `${CLAUDE_SKILL_DIR}`.
+  - `docs/experiment_protocol.md`: final Rung 0.5 run times and the chosen reference cell.
+  - Deleted the duplicate `Luminance_GS_Research_Project_Explained.md` at the repository root (broken links; the copy in `docs/` is the canonical one).
+- **Reproduce:** branch `rung0-diagnostics`, on top of commit `1081d0c`.
+- **Results:** none.
+- **Next:** reopen VS Code on the repository folder, check that the hook and the rules load, and log the Rung 0.5 results with `/log-experiment`.
+
+### 2026-10-24: Rung 0.5 results: the detach gain comes from the curve, not the colour basis
+
+- **Rung / type:** Rung 0.5 · experiment
+- **Why:** finish the 2×2 started in the 2026-10-23 entry "Rung 0.5, untangling the detach result (in progress)". The aim is to separate the two things `--detach_pseudo_target` does (the enhancement loss stops training the curve, and the colour basis stays frozen at RGB), test H3, and pick the reference baseline for Rung 2.
+- **What was done:** finished the 30-run batch (`results/rung0/runs.csv` now has 15 runs in each of the four cells). Re-scored all 60 runs from their checkpoints with one shared reference depth per scene, the colour metrics and the zero-basis counterfactual. Wrote `Luminance-GS/Implementation_guides/Rung0.5_results.md`. Checks left pending in the 2026-10-23 entry: the confound is real (every basis parameter is exactly 0 in all 15 detach runs), and the gradient check matched the plan in all four cells.
+- **Reproduce:** branch `rung05-diagnostics`, commits `4d1263b` to `ce69255` (runs and summaries in `559815a`), merged into `rung0-diagnostics`. Logged at `1081d0c` with `examples/` clean. From `examples/`: `python run_rung0.py --variants frozenbasis detachcurve` (5 scenes, seeds 0 1 2, 10k steps), then `python rescore_runs.py`, then `python rung05_analyze.py`. `frozenbasis` = `--freeze_color_basis`, `detachcurve` = `--detach_curve_in_target`; `detach` = `--detach_pseudo_target` (the Rung 0 runs).
+- **Results** (validation, mean over seeds 0 to 2; each cell is raw PSNR / brightness-matched PSNR / SSIM / LPIPS; source `Luminance-GS/results/rung0/summary_rung05/tables.md`, table 1):
+
+  | Scene | baseline (official) | frozenbasis | detachcurve | detach |
+  |---|---|---|---|---|
+  | buu | 20.81 / 26.00 / .909 / .186 | 22.36 / 27.11 / .917 / .166 | 20.63 / 26.08 / .903 / .200 | 21.56 / 26.37 / .904 / .203 |
+  | chair | 17.76 / 20.94 / .839 / .338 | 18.65 / 21.49 / .845 / .322 | 18.34 / 22.78 / .849 / .313 | 18.82 / 23.09 / .853 / .311 |
+  | sofa | 23.22 / 25.23 / .899 / .276 | 23.92 / 25.91 / .907 / .252 | 23.85 / 28.04 / .910 / .243 | 23.47 / 27.41 / .904 / .260 |
+  | bike | 18.42 / 19.45 / .752 / .409 | 18.56 / 19.02 / .743 / .409 | 16.02 / 21.31 / .766 / .292 | 16.02 / 21.31 / .764 / .291 |
+  | shrub | 12.13 / 18.37 / .616 / .263 | 13.52 / 19.05 / .639 / .247 | 10.71 / 17.42 / .568 / .317 | 11.76 / 18.06 / .597 / .288 |
+  | pooled | 18.47 / 22.00 / .803 / .294 | 19.40 / 22.52 / .810 / .279 | 17.91 / 23.13 / .799 / .273 | 18.33 / 23.25 / .804 / .270 |
+
+  - Factorial effects, pooled, paired by seed (table 2a). Brightness-matched PSNR: curve +0.93 dB (5.1× noise), basis +0.32 dB (1.8×, not real), interaction −0.40 dB (2.2×), total detach gain +1.26 dB (6.8×). Raw PSNR: curve −0.82 dB (3.1×), basis +0.68 dB (2.6×).
+  - Share of the brightness-matched detach gain explained by detaching the curve first (table 2b): chair 85%, sofa 129%, bike 100%, pooled 90%. Freezing the basis explains 10% (applied last) to 42% (applied first) pooled, and none on bike.
+  - Exceptions: on buu, detaching the curve worsens LPIPS by 0.026 (4.5×). Shrub shows no real effect of either factor (seed noise 0.75 dB).
+  - Bike hue flip (view 29, seed 0): the wheel is still red with `frozenbasis` and yellow in both detached cells. Pseudo-target hue error by cell: 20.7°, 16.0°, 10.8°, 10.7° (table 3). On validation renders the hue metric ranks the cells the other way, because the detached renders are desaturated (bike saturation ratio 0.50 vs 0.77); the metric is unreliable there.
+  - The learned basis rotates only 0.02° to 0.49° on average (table 5), yet resetting it to RGB improves the baseline pseudo-targets in every scene, by +0.16 to +0.93 dB brightness-matched PSNR.
+  - Pseudo-target inconsistency with a shared depth, relative L1 over the ground-truth level (table 4): higher with a detached curve in 4 of 5 scenes (baseline → detach: sofa 1.16 → 1.67, bike 1.11 → 1.72); shrub is the exception.
+  - Minutes per run (table 6): baseline 12.6, frozenbasis 13.1, detachcurve 11.3, detach 7.9. The re-score reproduces every run's validation PSNR to below 0.001 dB.
+- **Takeaway:** H3 is not supported. Freezing the colour basis neither explains most of the detach gain nor removes the bike hue flip. Detaching the curve explains 85 to 100% of the gain wherever the gain is real (measured). *Inferred:* the hue flip comes from the curve chasing the render. Once the curve is detached, a fixed RGB basis costs nothing real (detach − detachcurve ranges from −0.63 dB on sofa, 1.6× noise, to +0.65 dB on shrub). Detaching has costs: worse LPIPS on buu, paler renders, lower raw PSNR, and less view-consistent pseudo-targets.
+- **Next:** Rung 2 trains a detached curve with a fixed RGB basis. Its reference baseline is the `detach` cell, with `baseline` kept in every table as "official" and the full 2×2 reported as an ablation. Track saturation and pseudo-target consistency in Rung 2. Write the Rung 2 plan and build the varying-exposure LOM set.
