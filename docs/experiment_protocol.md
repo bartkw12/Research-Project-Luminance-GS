@@ -17,7 +17,7 @@ How experiments in this project are set up, scored and compared, so results from
 - **Variants** are entries in `VARIANTS` in `examples/run_rung0.py` (name → extra flags). `baseline` (no flags) is the official code and stays in every table, labelled "official".
 - **Batch runner:** `python run_rung0.py --scenes ... --variants ... --seeds 0 1 2 [--root ...] [--dry_run]`. It is resumable: a run counts as done when `stats/val_step9999.json` exists, and an incomplete run folder is deleted and restarted. Each run logs to `<root>/logs/<run>.log` and adds a row to `<root>/runs.csv` (finish time, ok, return code, minutes).
 - **Smoke test first:** about 300 steps per new flag set, for example `--max_steps 300 --eval_steps 300 --save_steps 300 --diag_steps 1 300 --diagnostics`, into a `smoke*` folder (git-ignored).
-- **Cost:** one run takes about 10 to 14 minutes (Rung 0: baseline 12.6 minutes on average; Rung 0.5 so far: `frozenbasis` 11.6, `detachcurve` 10.3; Rung 0 `detach` about 7 to 9). One configuration on 5 scenes × 3 seeds takes about 3 hours. Before any batch over an hour, the PC must not sleep: `powercfg /change standby-timeout-ac 0` in a Windows terminal, restored afterwards.
+- **Cost:** one run takes about 8 to 14 minutes (mean minutes per 10k-step run: `baseline` 12.6, `frozenbasis` 13.1, `detachcurve` 11.3, `detach` 7.9; source `Rung0.5_results.md` Q7). One configuration on 5 scenes × 3 seeds takes about 3 hours. Before any batch over an hour, the PC must not sleep: `powercfg /change standby-timeout-ac 0` in a Windows terminal, restored afterwards.
 
 ## Per-run outputs
 
@@ -68,7 +68,7 @@ Comparison rules:
 2. Express each effect in units of the pooled per-run seed std ("×noise"). Call it real only above about 2×.
 3. Report per scene first, then pooled over scenes. Note which scenes carry an effect.
 4. For factorial designs (Rung 0.5), report main effects and the interaction, as in `rung05_analyze.py`.
-5. Keep the official configuration in every table as "official", next to whichever cell Rung 0.5 picks as the reference baseline for Rung 2.
+5. Keep the official configuration in every table as "official", next to the `detach` cell, which Rung 0.5 chose as the reference baseline for Rung 2.
 6. A negative or null result is still a result. Log it with the same care.
 
 ## Analysis and reporting
