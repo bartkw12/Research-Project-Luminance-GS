@@ -43,16 +43,16 @@ A from-the-ground-up guide to the paper, this repository, and Bart's ECE 701 res
   - The S-curve prior never moves.
   - The priors outweigh the image losses about 5 to 1.
   - Cutting the gradient from the image loss into the pseudo-target ("detach") gives up to +2.2 dB, but that result is confounded with switching off the per-view colour basis.
+- **Rung 0.5 (done)** untangled the detach result with a 2×2 experiment. Stopping the image loss from training the curve explains 85–100% of the gain where it is real, and also removes the bike hue flip. The colour basis does neither. So Rung 2 trains its curve from the priors only ("detached"), uses a fixed RGB basis, and is compared against the `detach` cell.
 - **Your direction (Rung 2):** replace the free 255-value per-view curve and its two networks (about 255k parameters) with an explicit model, **one shared monotone curve plus one exposure number per view**:
 
   $$L_k(x) = F\big(\min(1,\ 2^{s_k}x)\big)$$
 
   It has about 32 + N parameters for N training views. It matches the structure Rung 0 found and the physics of a camera, and it should handle photos with different exposures much better.
-- **Rung 0.5 (now)** untangles the detach result with a 2×2 experiment, which decides two Rung 2 design choices.
 - **Success** means three things:
-  - H1: match the original on the LOM dataset within seed noise, with far fewer parameters.
+  - H1: match the `detach` reference on the LOM dataset within seed noise, with far fewer parameters.
   - H2: beat it on a new varying-exposure version of LOM, with learned exposures that track the true ones.
-  - H3: show that the colour basis caused the hue flips.
+  - H3 (revised after Rung 0.5): feeding the image loss back through only the per-view exposures recovers buu's LPIPS without bringing back the hue flips. The original H3 (the colour basis caused the hue flips) was not supported.
 
 ---
 
@@ -97,8 +97,8 @@ This is direction 1 from the meeting with Wei: a new low-light-to-normal-light t
 
 ```mermaid
 flowchart LR
-    R0["Rung 0<br/>Measure the curves<br/>DONE"] --> R05["Rung 0.5<br/>Untangle the detach result<br/>NOW"]
-    R05 --> R2["Rung 2 (core)<br/>Shared monotone curve<br/>+ one exposure per view"]
+    R0["Rung 0<br/>Measure the curves<br/>DONE"] --> R05["Rung 0.5<br/>Untangle the detach result<br/>DONE"]
+    R05 --> R2["Rung 2 (core, NEXT)<br/>Shared monotone curve<br/>+ one exposure per view"]
     VE["New varying-exposure<br/>LOM test set"] --> R2
     R2 --> R3["Rung 3 (optional)<br/>Local monotone curves"]
 ```
@@ -538,7 +538,7 @@ The numbers are illustrative, roughly read off the buu curve in `q1_curve_shapes
 
 The pixel is 5× brighter, but its colour ratio has halved. A single global curve that is very steep near black **compresses colour differences**, so dark saturated colours come out pale. *Inferred:* this, together with the lifted black level, is why renders look grey and washed out on bike and shrub.
 
-*Inferred hue-flip mechanism (tested in Rung 0.5).* Once the basis rotates even slightly away from RGB, the encoded value of a dark pixel shifts. For example, an axis n2 ∝ (−0.1, 0.99, 0) has min −0.1, so a pure-green value of 0.07 encodes to about 0.15 instead of 0.07. That is a different spot on the steepest part of the curve. Small basis changes can therefore cause large colour changes after the curve.
+*Hue-flip mechanism proposed before Rung 0.5 (not supported as the cause of the flip).* Once the basis rotates even slightly away from RGB, the encoded value of a dark pixel shifts. For example, an axis n2 ∝ (−0.1, 0.99, 0) has min −0.1, so a pure-green value of 0.07 encodes to about 0.15 instead of 0.07. That is a different spot on the steepest part of the curve. Small basis changes can therefore cause large colour changes after the curve. Rung 0.5 found that this does happen, but as a cast over the whole image: resetting a trained basis to RGB improves the pseudo-targets in every scene. The red bike wheel, however, stays red with the basis frozen and turns yellow once the curve is detached. *Inferred:* the flip comes from the curve chasing the render (section 8.5).
 
 ### 6.4 Is the curve a loss? (No.) How the curve actually learns
 
@@ -675,7 +675,7 @@ Rung 0 measured the original, without changing it. It ran 30 runs: 5 scenes × {
 | Black level? | Black input maps to 0.30-0.64 in the prior (1e-3 clamp). Learned curves follow part way. | Anchor F(0) = 0. *Inferred* cause of the washed-out look. |
 | Which bins are used? | Only 14-25% of bins. | Most of the curve gets no image gradient. |
 | Which losses dominate? | Histogram terms are about 5× the image terms at the end. | The priors, not the images, shape the curve. |
-| Does detach help? | Brightness-matched PSNR: chair +2.16, sofa +2.16, bike +1.86 dB (5-19× noise). Bike LPIPS −0.118. About 40% faster. | Big, but **confounded** with the frozen colour basis, so Rung 0.5 is needed. |
+| Does detach help? | Brightness-matched PSNR: chair +2.16, sofa +2.16, bike +1.86 dB (5-19× noise). Bike LPIPS −0.118. About 40% faster. | Big, but **confounded** with the frozen colour basis, so Rung 0.5 is needed. (Answer in section 8.5: the curve, not the basis.) |
 | Seed noise | Raw PSNR std: buu 0.21, chair 0.37, sofa 0.58, bike 0.45, shrub 1.13 dB | Sets the detectable effects (section 8.9). |
 | Pseudo-target quality (oracle) | 12.1-25.2 dB raw, 17.8-26.8 dB brightness-matched against the training-view ground truth. The render beats its own targets by 0.1-0.9 dB. | Multi-view fusion averages out per-view errors. |
 | Cross-view consistency | Baseline pseudo-targets are 0.69-1.30× as inconsistent as real photos. Detached ones are 1.0-2.0×. | Targets are already about as consistent as real photos, so local adaptivity (Rung 3) is optional. |
@@ -708,7 +708,7 @@ Detached (colour basis frozen at RGB as a side effect): both wheels stay yellow.
 
 ### 8.1 The problem in one sentence
 
-Luminance-GS spends about 255k parameters and two neural networks on a per-view tone curve. That curve really varies across views along **one** brightness-like direction, is dominated by hand-set priors, and lifts the black level. Its colour basis may cause hue flips. It also has no explicit way to handle photos taken at **different exposures**, which is the normal situation for real captures.
+Luminance-GS spends about 255k parameters and two neural networks on a per-view tone curve. That curve really varies across views along **one** brightness-like direction, is dominated by hand-set priors, and lifts the black level. When the image loss trains it, it chases the render and flips hues (Rung 0.5). It also has no explicit way to handle photos taken at **different exposures**, which is the normal situation for real captures.
 
 ### 8.2 Research question
 
@@ -718,20 +718,22 @@ Luminance-GS spends about 255k parameters and two neural networks on a per-view 
 
 | | Hypothesis | Tested by |
 |---|---|---|
-| **H1** | On LOM low-light and overexposure, Rung 2 **matches** the baseline within the detectable effect, while removing the bias network and the shape-prior network. | Rung 2 vs baseline, 5 scenes × 3 seeds |
+| **H1** | On LOM low-light and overexposure, Rung 2 **matches** the `detach` reference within the detectable effect, while removing the bias network, the shape-prior network and the colour basis. | Rung 2 vs `detach` (official `baseline` also shown), 5 scenes × 3 seeds |
 | **H2** | On scenes with per-view exposure variation, Rung 2 **beats** the baseline, and the learned exposures s_k **correlate with the true ones**. | The new varying-exposure LOM set |
-| **H3** | A **fixed colour basis removes the hue flips** and accounts for most of the detach gain. | Rung 0.5 (2×2), colour metrics |
+| **H3** | Feeding the image loss back through **only the per-view exposures** s_k (F stays detached) recovers the buu LPIPS lost by detaching, **without bringing back the hue flips**, and keeps the `detach` gains elsewhere. | Rung 2 with attached s_k vs default Rung 2 |
+
+The original H3, "a fixed colour basis removes the hue flips and accounts for most of the detach gain", was tested by Rung 0.5 and **not supported** (section 8.5). The new H3 replaces it.
 
 ### 8.4 The rung ladder
 
 ```mermaid
 flowchart TD
     R0["Rung 0: diagnostics (done)<br/>30 runs, measured curves, priors, detach, seed noise"]
-    R05["Rung 0.5: untangle detach (now)<br/>2x2: curve attached or detached x basis learned or frozen<br/>+ shared-depth consistency + colour metrics"]
+    R05["Rung 0.5: untangle detach (done)<br/>2x2: curve attached or detached x basis learned or frozen<br/>answer: the curve, not the basis"]
     R1["Rung 1: compact monotone curve<br/>folded into Rung 2 as F's parameterisation"]
-    R2["Rung 2: shared curve + exposure (core)<br/>L_k(x) = F(min(1, 2^s_k x))"]
+    R2["Rung 2: shared curve + exposure (core, next)<br/>L_k(x) = F(min(1, 2^s_k x))<br/>detached F, fixed RGB basis"]
     VE["Varying-exposure LOM set<br/>random gain 2^u per view, u in -1..1"]
-    R3["Rung 3: local monotone curves (optional)<br/>decided at the Nov 13 check-in"]
+    R3["Rung 3: local monotone curves (optional, demoted)<br/>decided at the Nov 13 check-in"]
     R0 --> R05 --> R2
     R1 --> R2
     VE --> R2
@@ -750,6 +752,13 @@ flowchart TD
 - **Outcome → Rung 2 design:** whether Rung 2 keeps a per-view colour basis or uses plain RGB, and whether its curve is trained attached or detached by default.
 - The full instructions for Claude Code are in [`Rung0.5_diagnostics_plan.md`](../Luminance-GS/Implementation_guides/Rung0.5_diagnostics_plan.md).
 
+**Outcome (Oct 24).** Full report: [`Rung0.5_results.md`](../Luminance-GS/Implementation_guides/Rung0.5_results.md). What it means for Rung 2: [`Rung0.5_interpretation.md`](../Luminance-GS/Implementation_guides/Rung0.5_interpretation.md).
+
+- **H3 not supported.** Freezing the basis explains 10–42% of the pooled detach gain, depending on the order of comparison, and none of it on bike. The bike wheel stays red with `frozenbasis`.
+- **Detaching the curve explains 85–100%** of the gain wherever the gain is real (5–27× noise). Both detached cells keep the wheels yellow. *Inferred:* the flip came from the curve chasing the render.
+- **Costs of detaching:** worse buu LPIPS (+0.026, 4.5×), lower raw PSNR, and less view-consistent pseudo-targets (0.97–1.72× the ground-truth level, against 0.69–1.29×). Detaching does **not** make renders paler: it raises saturation on buu, chair and sofa.
+- **Decision:** Rung 2 uses a detached curve and a fixed RGB basis. Its reference baseline is the `detach` cell (pooled brightness-matched PSNR 23.25 dB, LPIPS 0.270), and the official `baseline` stays in every table.
+
 ### 8.6 Rung 2 in depth: one shared curve plus one exposure per view
 
 #### The model
@@ -765,7 +774,7 @@ $$L_k(x) = F\big(\min(1,\ 2^{s_k}\,x)\big)$$
 
 - **s_k** is a free scalar per view, in stops. It is learned directly with no network. A view that is darker than the others gets a larger s_k.
 - **F** is a monotone piecewise-linear curve with K = 32 segments, shared by all views. It replaces both L_g and the bias network.
-- The colour basis is fixed to RGB, or kept, depending on Rung 0.5. F is applied to R, G and B as now.
+- The colour basis is fixed to RGB (decided by Rung 0.5). F is applied to R, G and B directly.
 
 #### Why this form (three reasons)
 
@@ -809,6 +818,16 @@ $$\mathcal{L}_{curve} = \frac{1}{255}\sum_{b}\Big(F\big(\min(1,2^{s_k}x_b)\big) 
 - **Drop** the bias network and the gamma/S-curve shape network. An optional ablation keeps a single global gamma prior (1 parameter, no 1e-3 clamp) as a regulariser.
 - Because F is shared, the CDF term now acts like **histogram matching across views**. Each view's s_k is pushed to line its histogram up with the shared curve.
 
+#### Training mode: detached by default
+
+Rung 0.5 chose the detached mode, so L_enh does not train F. F and s_k then learn only from L_curve, which compares curves with each photo's HE-CDF and never sees a render.
+
+- **Consequence:** the pseudo-targets depend only on the dark photos and the training step. No 3D information reaches them, and F and s_k could even be fitted before training. The default is therefore close to "2D enhancement, then 3DGS", except that one shared curve and one exposure per view tie the views together. Say so in the report (Q2 in section 9).
+- **Attached-s_k ablation (H3):** let L_enh reach s_k but not F, by evaluating F with detached knot heights and a differentiable input. 3D feedback then enters through one number per view, which cannot recolour a wheel. It is the main ablation, on LOM and on the varying-exposure set. *Inferred:* on that set, the render may help tell a view's exposure apart from its content.
+- **Colour-preserving ablation:** apply F to the luminance Y and scale RGB, out = rgb · F(2^{s_k} Y) / Y. This keeps hue and saturation (apart from clipping), and targets the paleness every cell shows (section 6.3, worked example).
+- **What it will not fix: global brightness.** With mean s_k = 0 the exposures are relative, and overall brightness still comes from the CDF fit (and from L_spa for the render). Brightness-matched PSNR stays the primary metric.
+- **What structure alone will not fix: pseudo-target consistency.** Per-view curve variation is already one-dimensional and small in both modes (Rung 0), so the detached targets' extra inconsistency comes from the curve's shape. *Inferred:* F's dark-end slope, set by the smoothness weight, is the lever.
+
 #### Side by side
 
 | Component | Baseline (repo) | Rung 2 |
@@ -816,9 +835,10 @@ $$\mathcal{L}_{curve} = \frac{1}{255}\sum_{b}\Big(F\big(\min(1,2^{s_k}x_b)\big) 
 | Shared curve | L_g: 255 free values, not monotone | F: K = 32, monotone, F(0) = 0 |
 | Per-view curve change | bias network, **143,743** params → 255 values per view | **1 number per view** (s_k) |
 | Shape prior | shape network, **111,235** params → γ, α, β per view | removed (optional 1 global γ) |
-| Colour basis | 5 numbers per view | fixed RGB, or kept (Rung 0.5 decides) |
+| Colour basis | 5 numbers per view | fixed RGB |
 | Lookup | truncated LUT, no gradient to pixel values | interpolated, gradient flows to s_k |
-| **Total curve parameters** | **≈ 255,000 + 5N** | **≈ 32 + N** (+5N if the basis is kept) |
+| Image loss into the curve | attached (official); cut in the `detach` reference | F detached; s_k attached only in the H3 ablation |
+| **Total curve parameters** | **≈ 255,000 + 5N** | **≈ 32 + N** |
 | Test-time rendering | unchanged (curve not used) | unchanged (curve not used) |
 
 **Overexposure** uses the same form. s_k is then a darkening gain, and F maps bright values down. Only the CDF weight changes, as in the original.
@@ -833,7 +853,7 @@ LOM's dark views are **evenly lit**: all views in a scene have similar brightnes
 2. Make I'_k = clip(2^(u_k)·I_k, 0, 1) and re-quantise to 8 bits.
 3. Keep the test views and the `high/` ground truth **unchanged**.
 
-Run the baseline and Rung 2 on it. Since the input was scaled by 2^(u_k), the ideal learned exposure is **s_k ≈ −u_k + constant**. So the key plot is learned s_k against true u_k: slope ≈ −1, correlation close to −1. For the baseline you can plot its PC1 score against u_k for comparison. Optional second test: the paper's varying-exposure Mip-NeRF 360 set, if available (slower and less controlled).
+Run the baseline and Rung 2 on it. Since the input was scaled by 2^(u_k), the ideal learned exposure is **s_k ≈ −u_k + constant**. So the key plot is learned s_k against true u_k: slope ≈ −1, correlation close to −1. For the baseline you can plot its PC1 score against u_k for comparison. Plot the initialisation log2(m̄/m_k) too. It already tracks u_k through each view's mean brightness, and a histogram-only s_k follows it almost by construction, so Rung 2 should beat it. Optional second test: the paper's varying-exposure Mip-NeRF 360 set, if available (slower and less controlled).
 
 ### 8.8 Rung 3 (optional stretch): local monotone curves
 
@@ -842,6 +862,8 @@ A global curve maps equal input values to equal outputs everywhere in the image,
 $$L_k(x,p) = \sum_{m=1}^{M} w_{k,m}(p)\,F_m(x),\qquad w_{k,m}(p)\ge 0,\ \ \sum_m w_{k,m}(p)=1$$
 
 A convex mix of increasing curves is still increasing, so tone order is preserved at every pixel. An additive residual like Luminance-GS++'s cannot guarantee that. Rung 0 showed the pseudo-targets are already as consistent as real photos, so Rung 3 goes ahead only if Rung 2's full runs are done by the mid-November check-in.
+
+Rung 0.5 demoted it further. Its case rested on global curves limiting colour, but the hue flip came from curve chasing, which detaching fixes. Paleness is colour compression, which local brightness curves do not fix. Per-pixel freedom also tends to reduce cross-view consistency. Spare time goes first to the attached-s_k and colour-preserving ablations.
 
 ### 8.9 What you will have to do
 
@@ -852,13 +874,13 @@ gantt
     axisFormat %b %d
     section Diagnostics
     Rung 0 (done)                    :done, r0, 2026-10-19, 2026-10-21
-    Rung 0.5 2x2 and re-scoring      :active, r05, 2026-10-22, 2026-10-26
+    Rung 0.5 2x2 and re-scoring      :done, r05, 2026-10-22, 2026-10-24
     Varying-exposure set + baseline  :ve, 2026-10-22, 2026-10-28
     section Method
     Build Rung 2                     :r2, 2026-10-27, 2026-11-07
     Full runs on all three test sets :runs, 2026-11-08, 2026-11-22
     Check-in with Wei                :milestone, ci, 2026-11-13, 0d
-    Ablations (or Rung 3)            :abl, 2026-11-23, 2026-11-29
+    Ablations (Rung 3 only if time)  :abl, 2026-11-23, 2026-11-29
     section Write-up
     Figures and tables               :fig, 2026-11-30, 2026-12-05
     Experiments freeze               :milestone, frz, 2026-12-05, 0d
@@ -866,25 +888,25 @@ gantt
 
 Checklist:
 
-1. **Rung 0.5:** give `Rung0.5_diagnostics_plan.md` to Claude Code and run it. Read `Rung0.5_results.md`. Decide the colour basis and the default mode for Rung 2.
-2. **Varying-exposure set:** write the gain script, record each view's u_k, and run the baseline on it (5 scenes × 3 seeds). These are the numbers Rung 2 must beat.
-3. **Build Rung 2 behind flags** (defaults reproduce the original): the monotone F module (with a unit test that F is increasing, F(0) = 0 and gradients reach s_k), per-view s_k with the gauge fix, the new curve loss, and the removal of the two networks. Run a smoke test on one scene.
-4. **Full runs:** LOM low-light, LOM overexposure and the varying-exposure set, 3 seeds each, in the chosen mode, plus the other mode on low-light.
+1. **Rung 0.5 (done, Oct 24):** decided a detached curve, a fixed RGB basis and `detach` as the reference. Before showing it to Wei, re-render the bike 2×2 for seeds 1 and 2 (a re-score takes about 9 s).
+2. **Varying-exposure set:** write the gain script, record each view's u_k, and run the official baseline and the `detach` reference on it (5 scenes × 3 seeds). These are the numbers Rung 2 must beat.
+3. **Build Rung 2 behind flags** (defaults reproduce the original): the monotone F module (with a unit test that F is increasing, F(0) = 0 and gradients reach s_k), per-view s_k with the gauge fix, the new curve loss, the removal of the two networks and the colour basis, and a switch that attaches s_k (but not F) to L_enh. Run a smoke test on one scene.
+4. **Full runs:** LOM low-light, LOM overexposure and the varying-exposure set, 3 seeds each, in the detached default, plus the attached-s_k ablation on low-light and the varying-exposure set.
 5. **Check-in with Wei (Nov 13):** show the main tables. Decide on Rung 3 or extra ablations.
-6. **Ablations:** K (16/32/64), knot spacing (uniform/quadratic), basis on/off, attached/detached, gamma prior on/off.
+6. **Ablations, in priority order:** attached s_k (H3); colour-preserving luminance variant; K (16/32/64) and knot spacing (uniform/quadratic); fully attached F; gamma prior on/off.
 7. **Figures and write-up.**
 
-Compute budget: one run takes about 7-12 minutes (detached runs are about 40% faster), so one configuration on 5 scenes × 3 seeds takes about 2-3 hours.
+Compute budget: one run takes about 8-13 minutes (`detach` about 8), so one configuration on 5 scenes × 3 seeds takes about 2-3 hours.
 
 ### 8.10 What you will show
 
-1. **Main table:** raw PSNR, brightness-matched PSNR, SSIM and LPIPS, as mean ± std over 3 seeds, per scene. Baseline vs Rung 2, on LOM low-light and overexposure.
+1. **Main table:** raw PSNR, brightness-matched PSNR, SSIM and LPIPS, as mean ± std over 3 seeds, per scene. Official baseline, `detach` reference and Rung 2, on LOM low-light and overexposure.
 2. **Varying-exposure table:** the same metrics on the new set.
-3. **Exposure scatter:** learned s_k vs true u_k per scene, with the correlation and slope, next to the baseline's PC1 score vs u_k.
+3. **Exposure scatter:** learned s_k vs true u_k per scene, with the correlation and slope, next to the initialisation and the baseline's PC1 score vs u_k.
 4. **Curve figure:** Rung 2's F (and F(2^(s_k)x) per view) against the baseline's per-view curves and the HE-CDF.
 5. **Efficiency table:** curve parameters (≈ 255k vs ≈ 32 + N), wall time per run.
 6. **Qualitative:** side-by-side novel views with zoomed crops on the known failure cases (bike wheels, shrub leaves), plus pseudo-targets of neighbouring views.
-7. **Consistency and colour metrics** from Rung 0.5's shared-depth re-scoring.
+7. **Consistency and colour metrics** from Rung 0.5's shared-depth re-scoring, plus a CIELAB chroma error, which stays stable on pale images where the hue metric does not.
 8. **Ablations** (section 8.9, step 6).
 9. **Motivation figures** from Rungs 0 and 0.5: PC1, bin usage, loss balance, the 2×2.
 
@@ -902,11 +924,11 @@ Detectable effects come from Rung 0 (3 seeds per arm, 1.6 × per-run std).
 
 | Hypothesis | Supported if | If it fails, you learn |
 |---|---|---|
-| **H1** | On every LOM scene, Rung 2's brightness-matched PSNR is within the detectable effect of the baseline or better, with SSIM and LPIPS no worse beyond seed noise, using ≈ 255k fewer curve parameters. | The per-view networks carry more than exposure. The residual after removing PC1 shows what, and a low-rank per-view correction is the fallback. |
+| **H1** | On every LOM scene, Rung 2's brightness-matched PSNR is within the detectable effect of the `detach` reference or better, with SSIM and LPIPS no worse beyond seed noise, using ≈ 255k fewer curve parameters. | The per-view networks carry more than exposure. The residual after removing PC1 shows what, and a low-rank per-view correction is the fallback. |
 | **H2** | On the varying-exposure set, Rung 2 beats the baseline by more than the detectable effect in most scenes (proposed: ≥ 4 of 5). Learned s_k track true u_k (proposed: \|r\| ≥ 0.9, slope near −1). | Exposure is not identifiable from these losses: the curve and exposures trade off. The gauge fix, initialisation and loss weights are the suspects. |
-| **H3** | In Rung 0.5, freezing the basis alone recovers most of the detach gain on chair, sofa and bike. Hue error falls and the bike wheels stay yellow. | The "target chasing the render" effect is the main cause. Rung 2 then defaults to a detached curve, and the basis question becomes secondary. |
+| **H3** | Attaching s_k improves buu LPIPS over default Rung 2 by more than 2× seed noise and keeps brightness-matched PSNR within the detectable effect elsewhere. The bike pseudo-target hue error stays near the `detach` level (10.7°), with yellow wheels in seeds 0–2. Pseudo-target consistency is reported but is not part of the test. | One number per view is too little feedback to help, or it lets brightness drift. Either way it bounds how much the render can usefully tell the curve. |
 
-A negative result on H1 or H3 is still a clean, reportable finding about a CVPR 2025 method, because the diagnostics explain *why*.
+A negative result on H1 or H3 is still a clean, reportable finding about a CVPR 2025 method, because the diagnostics explain *why*. The original H3 (Rung 0.5) already is one: the colour basis was not the cause (section 8.5).
 
 ---
 
@@ -916,7 +938,7 @@ A negative result on H1 or H3 is still a clean, reportable finding about a CVPR 
 I show that Luminance-GS's per-view curve machinery is effectively one shared curve plus one exposure per view, and I replace it with that explicit model. The new model is monotone, anchored at black and about 32 + N parameters instead of about 255k. I test whether it matches the original on LOM and beats it when exposure varies across views.
 
 **Q2. Why not just enhance each photo with a 2D method and train normal 3DGS?**
-Per-image enhancers brighten each view slightly differently, and 3DGS turns those inconsistencies into floaters and colour flicker. The paper's Table 1 shows "enhancer + 3DGS" combinations scoring below Luminance-GS. Joint training keeps the brightening consistent across views.
+This needs an honest answer, because our default is close to that. In the detached mode Rung 0.5 chose, the curve learns only from the histogram prior, which never sees a render, so the pseudo-targets are 2D enhancements of each photo. The difference from an off-the-shelf enhancer is the structure. Every view uses **one shared curve** and differs only by **one exposure number**, so the brightening is consistent across views by construction. Per-image enhancers apply a different, content-dependent transform to each photo, and 3DGS turns those inconsistencies into floaters and colour flicker (the paper's Table 1 shows "enhancer + 3DGS" combinations scoring below Luminance-GS). Rung 0.5 also measured that letting the image loss train the full curve costs about 0.9 dB brightness-matched PSNR pooled and causes the bike hue flip. The attached-exposure ablation (H3) tests whether a little 3D feedback, through one number per view, helps.
 
 **Q3. ChatGPT's original idea was to make the curve monotonic. Is that still the idea?**
 Only partly. Rung 0 showed the learned curves are already monotone except shrub baseline (≤ 5/255), so monotonicity alone would change little. What matters is the structure: a compact curve shared by all views, anchored at black, plus an exposure per view.
@@ -941,13 +963,13 @@ Showing that a simpler model is as good, and better where it should be, is a sta
 - Naka-GS and NOVA-GS work on poses (direction 2), which is orthogonal.
 
 **Q7. Why does detaching the pseudo-target help, and is your comparison fair?**
-In the repo, detaching also cuts the only gradient to the per-view colour basis, so it stays at RGB. The +2 dB therefore mixes two effects. Rung 0.5's 2×2 design separates them, and every comparison is reported in both modes.
+In the repo, detaching also cuts the only gradient to the per-view colour basis, so it stays at RGB, and the Rung 0 result mixed two effects. Rung 0.5's 2×2 separated them. Stopping the image loss from training the curve explains 85–100% of the gain where it is real; freezing the basis explains 10–42% pooled, depending on the order. *Inferred:* when attached, the curve chases the render, which degrades the targets (the bike wheel flips red). Rung 2 is compared against the `detach` cell, and the official configuration stays in every table.
 
 **Q8. How do you know improvements aren't noise?**
 Three seeds per configuration, paired comparisons, and per-scene detectable effects measured in Rung 0. Raw PSNR seed std ranges from 0.21 dB (buu) to 1.13 dB (shrub). A difference counts only if it exceeds about 1.6 × the per-run std.
 
 **Q9. Why report brightness-matched PSNR?**
-An unsupervised method cannot know the "correct" overall brightness. Here it is set by the histogram prior, at about 0.55-0.6 for every scene, while the ground truth ranges from 0.36 to 0.54. Raw PSNR mostly measures that global offset. Brightness-matched (GT-mean) PSNR is standard in low-light enhancement. Both are reported.
+An unsupervised method cannot know the "correct" overall brightness. Here it is set by the histogram prior, at about 0.55-0.6 for every scene, while the ground truth ranges from 0.36 to 0.54. Raw PSNR mostly measures that global offset. Brightness-matched (GT-mean) PSNR is standard in low-light enhancement. Both are reported. Rung 2's exposures do not change this: they are relative (mean 0), so global brightness still comes from the CDF fit.
 
 **Q10. The varying-exposure set is synthetic. Is that a fair test?**
 It is controlled: the true per-view gains are known, so we can check the learned exposures directly, and the ground truth is untouched. Multiplying sRGB values approximates a real exposure change (exact for a power-law encoding). The paper's own varying-exposure benchmark is also synthetic (Mip-NeRF 360 with simulated exposures), and it is an optional second test.
@@ -959,14 +981,12 @@ Yes: shifting all s_k by c and re-scaling F's input gives the same result. Fixin
 No. Test views are rendered from the Gaussians' enhanced colours only. The curve exists to make good training targets. Brightness control at render time would need a separate change.
 
 **Q13. Why are the results washed out (bike, shrub), and does your model fix it?**
-*Inferred:* two causes.
-- The gamma prior clamps its input at 1e-3, so with γ ≈ 0.1 black maps to 0.3-0.6 (a lifted black level).
-- A single steep curve compresses dark colour ratios.
-
-F(0) = 0 fixes the first cause by construction. The second is a limit of any global curve, which is Rung 3's territory.
+Every Rung 0.5 cell is less saturated than the ground truth; the `detach` cell's saturation ratio is 0.50 on chair and bike. Detaching is not the cause: it raises saturation on buu, chair and sofa. *Inferred:* two causes.
+- The gamma prior clamps its input at 1e-3, so with γ ≈ 0.1 black maps to 0.3-0.6 (a lifted black level). F(0) = 0 fixes this by construction.
+- A single steep curve applied to each channel compresses dark colour ratios (section 6.3). The colour-preserving ablation, which applies F to luminance and scales RGB, targets this. Local curves (Rung 3) would not, because they change brightness, not colour ratios.
 
 **Q14. What about the colour matrix M_k from the paper?**
-The repo implements it as a 5-number rotation (3 real degrees of freedom), not a free 3×3 matrix. The paper's own ablation credits it with +0.04 dB on buu. The bike hue flip suggests it can hurt. Rung 0.5 measures it directly and decides whether Rung 2 keeps it.
+The repo implements it as a 5-number rotation (3 real degrees of freedom), not a free 3×3 matrix. The paper's own ablation credits it with +0.04 dB on buu. Rung 0.5 measured it directly. It rotates only 0.02–0.49° on average, freezing it explains 10–42% of the detach gain, and it does not cause the bike hue flip. Resetting a trained basis to RGB even improves the pseudo-targets in every scene. Rung 2 uses a fixed RGB basis.
 
 **Q15. How does this handle overexposure?**
 With the same form. s_k becomes a darkening gain, and F maps bright values down. Only the CDF weight changes, as in the original. It is tested on the LOM overexposure subset.
@@ -975,7 +995,7 @@ With the same form. s_k becomes a darkening gain, and F maps bright values down.
 Then the per-view network carries something beyond exposure. The residual curve variation after PC1 (0.2-0.8% of the variance) shows what. A small low-rank per-view correction is the fallback. Either way, the analysis is a result.
 
 **Q17. Is it feasible by early December on one GPU?**
-Yes. A run takes about 7-12 minutes, and one configuration (5 scenes × 3 seeds) about 2-3 hours. Rung 2 changes only the curve module and its losses; rendering and Gaussians are untouched. Rung 3 is optional and is decided at the Nov 13 check-in.
+Yes. A run takes about 8-13 minutes (`detach` about 8), and one configuration (5 scenes × 3 seeds) about 2-3 hours. Rung 2 changes only the curve module and its losses; rendering and Gaussians are untouched. Rung 3 is optional and is decided at the Nov 13 check-in.
 
 **Q18. What about noise in dark images?**
 The curve amplifies noise in each pseudo-target, but multi-view fusion averages it out: renders beat their own pseudo-targets by 0.1-0.9 dB brightness-matched (Rung 0). Denoising is not the focus of this project.
@@ -998,15 +1018,15 @@ By reading the code (section 6.8). All experiments run the repo's code, with new
   - The curves are monotone, and the per-view variation is one number that tracks brightness.
   - The S-curve prior never moves, the black level is lifted, and the priors outweigh the image terms 5:1.
   - Detach helps by up to 2.2 dB, but that result is confounded with the frozen colour basis.
-- **Rung 0.5 (now):** a 2×2 experiment (curve attached/detached × basis learned/frozen), with shared-depth consistency and colour metrics. It decides the colour basis and the default mode for Rung 2.
-- **Rung 2 (core):** L_k(x) = F(min(1, 2^(s_k)·x)). F is shared, monotone, anchored at black and has K = 32 knots dense near black, with interpolation. s_k is one exposure per view, with mean 0. Parameters drop from about 255k to about 32 + N, and the model is physically grounded.
+- **Rung 0.5 found:** the detach gain, and the fix for the bike hue flip, come from stopping the image loss from training the curve (85–100% of the gain where it is real), not from the colour basis.
+- **Rung 2 (core):** L_k(x) = F(min(1, 2^(s_k)·x)). F is shared, monotone, anchored at black and has K = 32 knots dense near black, with interpolation. s_k is one exposure per view, with mean 0. The colour basis is fixed RGB. By default F and s_k are detached, so they are fitted from the photos' histograms only; attaching s_k is the main ablation. Parameters drop from about 255k to about 32 + N, and the model is physically grounded.
 - **Hypotheses:**
-  - H1: matches on LOM.
+  - H1: matches the `detach` reference on LOM.
   - H2: wins on a varying-exposure LOM set, with s_k tracking the true gains.
-  - H3: the fixed colour basis removes the hue flips.
+  - H3 (revised): attaching only s_k recovers buu's LPIPS without bringing back the hue flips. (Original H3, about the colour basis: not supported.)
 - **Proof:** 5 scenes × 3 seeds, brightness-matched and raw PSNR, SSIM, LPIPS, consistency and colour metrics, an exposure scatter plot, a parameter count, and ablations. Differences count only beyond the detectable effects from Rung 0.
 - **Timeline:**
-  - Rung 0.5 and the varying-exposure set: by Oct 28.
+  - Rung 0.5: done Oct 24. Varying-exposure set: by Oct 28.
   - Rung 2 build: by Nov 7.
   - Full runs: Nov 8-22 (check-in with Wei on Nov 13).
   - Ablations: Nov 23-29.
