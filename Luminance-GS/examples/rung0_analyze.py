@@ -8,7 +8,7 @@ Outputs (summary/):
     numbers.json         headline numbers quoted in Rung0_results.md
     *.csv                one CSV per table
     figures/*.png        one idea per figure
-The narrative report (Rung0_results.md at the repository root) is written by hand
+The narrative report (Luminance-GS/Implementation_guides/Rung0_results.md) is written by hand
 from these outputs.
 """
 
@@ -31,7 +31,6 @@ import numpy as np
 from scipy.optimize import nnls
 
 EXAMPLES = Path(__file__).resolve().parent
-REPO = EXAMPLES.parents[1]
 ROOT = EXAMPLES.parent / "results" / "rung0"
 SUMMARY = ROOT / "summary"
 FIG = SUMMARY / "figures"
@@ -73,10 +72,10 @@ def read_csv(path):
         return list(csv.DictReader(f))
 
 
-def write_csv(name, rows):
+def write_csv(name, rows, out_dir=None):
     if not rows:
         return
-    with open(SUMMARY / f"{name}.csv", "w", newline="") as f:
+    with open((out_dir or SUMMARY) / f"{name}.csv", "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
         w.writeheader()
         w.writerows(rows)
@@ -102,8 +101,8 @@ def mean_std(x):
     return float(np.mean(x)), float(np.std(x, ddof=1)) if len(x) > 1 else float("nan")
 
 
-def savefig(fig, name):
-    fig.savefig(FIG / f"{name}.png", dpi=150, bbox_inches="tight")
+def savefig(fig, name, out_dir=None):
+    fig.savefig((out_dir or FIG) / f"{name}.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -128,7 +127,7 @@ def load_run(scene, variant, seed):
 def load_seed42_reference():
     """Per-run seed-42 values from average_results.md (buu, chair, sofa only)."""
     ref = defaultdict(list)
-    path = REPO / "average_results.md"
+    path = EXAMPLES.parent / "results" / "reproduction" / "average_results.md"
     for line in path.read_text().splitlines():
         m = re.match(r"\|\s*(\w+)\s*\|\s*(\d)\s*\|\s*([\d.]+)\s*\|\s*([\d.]+)\s*\|\s*([\d.]+)\s*\|\s*(\d+)\s*\|", line)
         if m:

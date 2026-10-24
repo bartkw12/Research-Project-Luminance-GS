@@ -1,0 +1,21 @@
+{
+ "psnr": 20.952987670898438,
+ "ssim": 0.9039131800333658,
+ "lpips": 0.19742166002591452,
+ "psnr_gtmean": 26.063421885172527,
+ "psnr_png": 21.102254500045625,
+ "psnr_gtmean_png": 26.08147259113319,
+ "mean_render": 0.5680640935897827,
+ "mean_gt": 0.4907340904076894,
+ "ang_err_deg": 4.121710459391276,
+ "ang_err_p95_deg": 12.189518928527832,
+ "sat_ratio": 0.8754115303357443,
+ "hue_err_sat_deg": 9.733132680257162,
+ "hue_px_frac": 0.5116418401400248,
+ "hue_excluded_frac": 0.010321378707885742,
+ "n_views": 3,
+ "run": "I:\\Python\\Research\\3DGS\\Luminance-GS\\Luminance-GS\\Luminance-GS\\results\\rung0\\buu_detachcurve_seed0",
+ "ckpt": "I:\\Python\\Research\\3DGS\\Luminance-GS\\Luminance-GS\\Luminance-GS\\results\\rung0\\buu_detachcurve_seed0\\ckpts\\ckpt_9999.pt",
+ "ref_depth_run": "I:\\Python\\Research\\3DGS\\Luminance-GS\\Luminance-GS\\Luminance-GS\\results\\rung0\\buu_baseline_seed0",
+ "seconds": 2.8002896308898926
+}
