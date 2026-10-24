@@ -12,8 +12,7 @@ If no argument was given, log the most recent piece of work in this session. The
 
 ## 1. Gather the facts
 
-1. Run these from the repository root:
-   - `date +%F`
+1. Note today's date (`Get-Date -Format yyyy-MM-dd` in PowerShell, `date +%F` in Git Bash), then run these from the repository root:
    - `git branch --show-current`
    - `git rev-parse --short HEAD`
    - `git status --porcelain -- Luminance-GS/examples`
@@ -23,7 +22,7 @@ If no argument was given, log the most recent piece of work in this session. The
 3. For runs, summarise them with the helper script (stdlib only, read-only):
 
    ```
-   python .claude/skills/log-experiment/summarize_runs.py Luminance-GS/results/<root> [--variants ...] [--scenes ...] [--reference baseline]
+   python "${CLAUDE_SKILL_DIR}/summarize_runs.py" Luminance-GS/results/<root> [--variants ...] [--scenes ...] [--reference baseline]
    ```
 
    It reads each run's `stats/val_step*.json` and `rescore/val_summary.json` (if present) and `<root>/runs.csv`. It prints mean ± sample std per scene × variant, differences paired by seed against the reference variant (with ×noise), wall times with sleep outliers excluded, and any incomplete runs.
