@@ -6,19 +6,22 @@ Bart's ECE 701 project (MEng Computer Engineering, McMaster), supervised by Prof
 
 Luminance-GS (Cui, Chu, Harada, CVPR 2025, arXiv 2504.01503) builds a normally lit 3D Gaussian Splatting scene from low-light photos with no normal-light supervision. A learned per-view tone curve brightens each dark photo into a pseudo-target, and the Gaussians learn to render both. Our research question: does that curve machinery (about 255k parameters) reduce to **one shared monotone curve plus one exposure value per view**, `L_k(x) = F(min(1, 2^{s_k} x))`, and does that explicit model match the original with far fewer parameters, and beat it when exposure varies across views?
 
-- **H1:** on LOM, Rung 2 matches the baseline within seed noise.
+- **H1:** on LOM, Rung 2 matches the `detach` reference within the detectable effect, with about 255k fewer curve parameters.
 - **H2:** on a varying-exposure LOM set, Rung 2 wins and the learned `s_k` track the true gains.
-- **H3:** a fixed RGB colour basis removes the hue flips and explains most of the "detach" gain. **Not supported** (Rung 0.5): the attached curve, not the colour basis, explains the detach gain and the bike hue flip.
+- **H3 (new after Rung 0.5):** attaching only the per-view exposure `s_k` to the image loss (F stays detached) recovers the buu LPIPS lost by detaching, without bringing back the hue flips, and keeps the `detach` gains elsewhere.
+- Old H3 (a fixed RGB colour basis removes the hue flips and explains most of the detach gain): **not supported** (Rung 0.5). The attached curve, not the colour basis, explains the detach gain and the bike hue flip.
+
+Framing to keep in mind: in the default (detached) mode the curve is fitted from the 2D photos' histograms only; no rendered information reaches the pseudo-targets. 3D consistency has to come from the one shared F plus exposure alignment, which is close to "2D enhancement, then 3DGS" with a shared curve. The attached-`s_k` ablation is the test of putting 3D feedback back.
 
 ## Rung ladder
 
 | Rung | What | Status |
 |---|---|---|
 | 0 | Diagnostics of the official curve (30 runs) | **Done** (2026-10-21). Curves already monotone; cross-view variation is one number that tracks brightness; detach gain is confounded with a frozen colour basis. |
-| 0.5 | 2×2: colour basis learned/frozen × curve attached/detached, plus shared-depth re-scoring and colour metrics | **Done** (2026-10-23, merged into `rung0-diagnostics`). Detaching the curve explains 85 to 100% of the detach gain where it is real; with a detached curve a fixed RGB basis costs nothing. |
-| 1 | Compact monotone curve (K = 32 knots dense near black, F(0) = 0) | Folded into Rung 2 as the parameterisation of F. |
-| 2 | Shared monotone curve + one exposure per view, plus a varying-exposure LOM test set | **Core, next.** Detached curve, fixed RGB basis. Reference baseline is the `detach` cell; `baseline` stays in every table as "official". |
-| 3 | Local monotone curves (per-pixel mix of shared curves) | Optional; decided at the Nov 13 check-in with Wei. |
+| 0.5 | 2×2: colour basis learned/frozen × curve attached/detached, plus shared-depth re-scoring and colour metrics | **Done** (2026-10-23, merged into `rung0-diagnostics`). Detaching the curve explains 85 to 100% of the detach gain where it is real; with a detached curve a fixed RGB basis costs nothing. What it means for Rung 2: `Rung0.5_interpretation.md`. |
+| 1 | Compact monotone curve (K = 32 knots dense near black, F(0) = 0) | Folded into Rung 2 as the parameterisation of F. With F detached, keep F off the HE-CDF's steep dark-end jump (smoothness). |
+| 2 | Shared monotone curve + one exposure per view, plus a varying-exposure LOM test set | **Core, next.** Defaults: detached F, fixed RGB basis, free `s_k` with mean 0; the bias net, shape net and colour basis are removed. Ablations in order: attached `s_k` (new H3, on LOM and the varying-exposure set), colour-preserving luminance variant, K and knot spacing, attached F. Reference baseline is the `detach` cell; `baseline` stays in every table as "official". |
+| 3 | Local monotone curves (per-pixel mix of shared curves) | Optional, demoted after Rung 0.5: the hue flip came from curve chasing, not from global curves. Spare time goes to the Rung 2 ablations first; decided at the Nov 13 check-in with Wei. |
 
 Update this table whenever a rung changes status.
 
@@ -32,7 +35,7 @@ Update this table whenever a rung changes status.
 - `Luminance-GS/gsplat/`: gsplat 1.0.0 plus the authors' dual rasteriser. Do not modify.
 - `Luminance-GS/data/LOM_full/<scene>/`: dataset, local only (git-ignored).
 - `Luminance-GS/results/`: `reproduction/` (seed-42 reproduction), `rung0/` (all Rung 0 and 0.5 runs, `summary/`, `summary_rung05/`).
-- `Luminance-GS/Implementation_guides/`: rung plans (`Rung*_diagnostics_plan.md`) and reports (`Rung*_results.md`).
+- `Luminance-GS/Implementation_guides/`: rung plans (`Rung*_diagnostics_plan.md`), reports (`Rung*_results.md`) and `Rung0.5_interpretation.md` (the agreed Rung 2 direction).
 - `docs/`: research log and reference docs (index below).
 
 ## Environment and how to run
@@ -42,7 +45,7 @@ Update this table whenever a rung changes status.
 - One run: `python simple_trainer_ours.py --data_dir ../data/LOM_full/buu --exp_name low --result_dir ../results/<rung>/<scene>_<variant>_seed<seed> --seed 0`. `--exp_name` is `low`, `over_exp` or `variance` (MipNeRF360-varying, needs `--data_factor 8`).
 - Batch: `python run_rung0.py --variants baseline detach --seeds 0 1 2 --dry_run`, then without `--dry_run`. It is resumable, logs to `<root>/logs/` and records each run in `<root>/runs.csv`.
 - Our flags (every default reproduces the official code): `--seed`, `--detach_pseudo_target`, `--diagnostics`, `--diag_steps`, `--freeze_color_basis`, `--detach_curve_in_target`, `--grad_check`, `--rescore_run`, `--ref_depth_run`.
-- Cost: one 10k-step run takes about 10 to 14 minutes (detached runs are faster), so one configuration on 5 scenes × 3 seeds takes about 3 hours.
+- Cost: one 10k-step run takes about 8 to 14 minutes (`detach` about 8, the other cells 11 to 13), so one configuration on 5 scenes × 3 seeds takes about 2 to 3 hours.
 
 ## Rules
 
@@ -67,6 +70,7 @@ Read these only when the task needs them. Do not load them all up front.
 | `docs/experiment_protocol.md` | Planning, running or comparing experiments: scenes, seeds, metrics, noise floors, naming, what to commit. |
 | `docs/Luminance_GS_Research_Project_Explained.md` | Long explainer for humans: background, Rung 2 design and maths, likely questions from Wei. Use only when the focused docs are not enough. |
 | `Luminance-GS/Implementation_guides/Rung0_results.md`, `Rung0.5_results.md` | You need exact Rung 0 or 0.5 numbers. |
+| `Luminance-GS/Implementation_guides/Rung0.5_interpretation.md` | Planning or building Rung 2: the agreed defaults, ablation order, revised hypotheses, and corrections to the Rung 0.5 report. |
 | `Luminance-GS/Implementation_guides/Rung*_diagnostics_plan.md` | Historical task plans. |
 
 ## Skills
