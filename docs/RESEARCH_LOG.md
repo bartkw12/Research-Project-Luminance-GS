@@ -184,3 +184,22 @@ Entries up to 2026-10-23 were backfilled from git history, the run folders and t
   - Minutes per run (table 6): baseline 12.6, frozenbasis 13.1, detachcurve 11.3, detach 7.9. The re-score reproduces every run's validation PSNR to below 0.001 dB.
 - **Takeaway:** H3 is not supported. Freezing the colour basis neither explains most of the detach gain nor removes the bike hue flip. Detaching the curve explains 85 to 100% of the gain wherever the gain is real (measured). *Inferred:* the hue flip comes from the curve chasing the render. Once the curve is detached, a fixed RGB basis costs nothing real (detach − detachcurve ranges from −0.63 dB on sofa, 1.6× noise, to +0.65 dB on shrub). Detaching has costs: worse LPIPS on buu, paler renders, lower raw PSNR, and less view-consistent pseudo-targets.
 - **Next:** Rung 2 trains a detached curve with a fixed RGB basis. Its reference baseline is the `detach` cell, with `baseline` kept in every table as "official" and the full 2×2 reported as an ablation. Track saturation and pseudo-target consistency in Rung 2. Write the Rung 2 plan and build the varying-exposure LOM set.
+
+### 2026-10-24: Rung 2 direction after Rung 0.5; H3 replaced
+
+- **Rung / type:** Rung 2 · decision
+- **Why:** turn the Rung 0.5 results into a Rung 2 design. Claude desktop drafted `Luminance-GS/Implementation_guides/Rung0.5_interpretation.md`; Claude Code checked it against the summary tables and the code, corrected it in place (its section 5 lists the changes), and Bart adopted it.
+- **What was done:**
+  - Rung 2 defaults: detached F (K = 32, F(0) = 0), fixed RGB basis, free s_k with mean 0; the bias net, shape net and colour basis are removed. Reference: `detach`; `baseline` stays as "official".
+  - Ablations in order: attached s_k (F detached), on LOM and the varying-exposure set; colour-preserving luminance variant; K and knot spacing; fully attached F.
+  - **New H3:** attaching only s_k to L_enh recovers the buu LPIPS lost by detaching, without bringing back the hue flips. The old H3 (colour basis) is reported as answered.
+  - Framing: in detached mode the curve learns only from `HistogramPriorLoss`, whose inputs are the curve, the dark photo and the prior. No rendered information reaches the pseudo-targets, so the default is close to "2D enhancement, then 3DGS" with one shared curve.
+  - Rung 3 demoted: spare time goes to the Rung 2 ablations first.
+  - Updated `CLAUDE.md`, `docs/curve_estimation.md`, `docs/experiment_protocol.md` (planned CIELAB chroma metric, exposure-recovery check against the s_k initialisation, `detach` reference numbers, shrub rule), `docs/repo_vs_paper.md` and the explainer (sections 1, 8, 9 and 10; Q2 rewritten).
+- **Reproduce:** branch `main`, commit `5ac7b5b` plus the uncommitted doc changes above; `examples/` clean. No runs.
+- **Results** (corrections, all measured; sources `Luminance-GS/results/rung0/summary_rung05/tables.md` and `Luminance-GS/results/rung0/summary/tables.md`):
+  - Corrects the 2026-10-24 Rung 0.5 entry ("paler renders") and `Rung0.5_results.md` line 141. Detaching does not make renders paler. Pooled `sat_ratio` is 0.617 for baseline and 0.709 for detach. The curve effect raises it on buu (+0.105, 12×), chair (+0.146, 22×) and sofa (+0.277, 13×). Bike's −0.136 is 1.6× noise (table 2a). Every cell is still below the ground truth (detach: chair 0.50, bike 0.50).
+  - Corrects `Rung0.5_results.md` line 147: the exposure model will not fix global brightness. With mean s_k = 0 the exposures are relative; brightness comes from the CDF fit and, for the render, `L_spa`.
+  - Qualifies Rung 0's "this is the number Rungs 1 and 2 must improve" (pseudo-target consistency). Per-view curve variation is equally small with and without detach (PC1 0.992 to 0.998; RMS 1.42 to 4.47/255 baseline, 1.46 to 4.87/255 detach; Rung 0 Q2 PCA table). A shared F with one s_k is therefore unlikely to change consistency by itself. `detach` has the least consistent targets and the best renders, so consistency becomes a diagnostic.
+- **Takeaway:** the Rung 0.5 direction stands. *Inferred:* the detached targets' extra inconsistency comes from the curve's shape, so F's dark-end slope is the lever. The attached-s_k ablation matters most for buu and the varying-exposure set.
+- **Next:** write the Rung 2 plan; build the varying-exposure set and run `baseline` and `detach` on it; re-render the bike 2×2 for seeds 1 and 2 before showing Rung 0.5 to Wei.
