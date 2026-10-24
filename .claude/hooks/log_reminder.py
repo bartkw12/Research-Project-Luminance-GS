@@ -32,7 +32,7 @@ def group(path: str) -> str:
 
 def main():
     try:
-        event = json.load(sys.stdin)
+        event = json.loads(sys.stdin.buffer.read().decode("utf-8-sig"))  # tolerate a BOM from PowerShell pipes
     except ValueError:
         event = {}
     if event.get("stop_hook_active"):
