@@ -1,6 +1,6 @@
 # Luminance-GS extension: ECE 701 research project
 
-Bart's ECE 701 project (MEng Computer Engineering, McMaster), supervised by Prof. Chen with PhD mentor Wei. **Experiments freeze on 5 Dec 2026**; the written report follows.
+Bart's ECE 701 project (MEng Computer Engineering, McMaster), supervised by Prof. Chen with PhD mentor Wei. Direction approved by Prof. Chen and Wei on 6 Nov 2026. **Experiments freeze on 5 Dec 2026. The report is due as a PDF on 18 Dec 2026**: format is flexible but should be as detailed as possible. Send Wei results as they come in.
 
 ## Goal
 
