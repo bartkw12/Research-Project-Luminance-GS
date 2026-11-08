@@ -10,6 +10,8 @@ Run from Luminance-GS/examples:
     python rescore_runs.py                    # all runs
     python rescore_runs.py --dry_run          # list what would run
     python rescore_runs.py --runs bike_baseline_seed0 bike_detach_seed0
+    python rescore_runs.py --root ../results/vexp --ref_root ../results/rung0
+                                              # M1: varying-exposure runs with the LOM reference depth
 """
 
 import argparse
@@ -41,10 +43,13 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--root", type=Path, default=EXAMPLES.parent / "results" / "rung0")
     ap.add_argument("--runs", nargs="+", default=None, help="only these run names")
+    ap.add_argument("--ref_root", type=Path, default=None,
+                    help="where <scene>_baseline_seed0 (the shared reference depth) lives (default: --root)")
     ap.add_argument("--dry_run", action="store_true")
     args = ap.parse_args()
 
     root = args.root.resolve()
+    ref_root = args.ref_root.resolve() if args.ref_root is not None else root
     (root / "logs").mkdir(parents=True, exist_ok=True)
     runs = sorted(d for d in root.iterdir() if d.is_dir() and RUN_RE.match(d.name) and is_finished(d))
     if args.runs:
@@ -55,7 +60,7 @@ def main():
     failed = []
     for k, run_dir in enumerate(todo, 1):
         scene = RUN_RE.match(run_dir.name)["scene"]
-        ref = root / f"{scene}_{REF_VARIANT}_seed{REF_SEED}"
+        ref = ref_root / f"{scene}_{REF_VARIANT}_seed{REF_SEED}"
         if not is_finished(ref):
             print(f"[rescore_runs] ({k}/{len(todo)}) {run_dir.name}: reference run {ref.name} missing, skipped")
             failed.append(run_dir.name)
