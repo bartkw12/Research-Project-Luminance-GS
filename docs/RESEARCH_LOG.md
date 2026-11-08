@@ -216,3 +216,31 @@ Entries up to 2026-10-23 were backfilled from git history, the run folders and t
   - Bart acknowledged both replies (14:38 and 14:52).
 - **Takeaway:** the direction is approved by both supervisors. The report is a **PDF due 2026-12-18**, format flexible, as detailed as possible. That leaves 13 days after the 5 Dec experiment freeze. *Inferred:* "Prof. Chen's other suggestions" means the deadline and format guidance in Prof. Chen's reply; no other suggestions appear in this thread.
 - **Next:** start the varying-exposure set and the H1/H2 runs. Send Wei results as they come in. Plan the report for a detail-heavy PDF.
+
+### 2026-11-08: M1 plan and varying-exposure builder reviewed; init switched to the geometric mean
+
+- **Rung / type:** Rung 2 (M1) · code + setup
+- **Why:** check that Bart's M1 plan (`Luminance-GS/Implementation_guides/M1_vexp_plan.md`) and the new dataset builder (`Luminance-GS/examples/build_vexp.py`) work with the repo before step 1. Recipe from the explainer's section 8.7: a gain 2^u per training view, u in [−1, 1].
+- **What was done:**
+  - Audited both against `datasets/colmap.py`, `simple_trainer_ours.py`, `diagnostics.py`, `run_rung0.py`, `rescore_runs.py`, the LOM data and the 30 Rung 0 baseline/detach run folders. No blocking bug; the layout, the step 2 runner/re-scorer diffs, re-scoring with a LOM reference depth and the time estimate all hold.
+  - Ran the builder's logic in memory on all five scenes, with no files written: gains, the JPEG round trip, the trainer's own `Parser`/`Dataset`/undistortion, the HE-CDF and `fit_exposure_form`. This exercised the `--verify` code, which had never run before.
+  - `build_vexp.py`: (1) the s_k initialisation now uses the geometric mean, as in the explainer's section 8.6. The arithmetic mean gave the init a mean of +0.11 to +0.13 stops; slope and r are unchanged. (2) Rebuilding or re-verifying some scenes merges them into `gains.*`/`oracle.*`, and refuses before writing anything if the other rows used another seed, range or sampling. (3) The `low` path guard checks every scene. Merge, guards and dry run were tested in a scratch folder (deleted).
+  - `.gitignore`: added `Luminance-GS/results/**/rescore/*.png`, and fixed the capital P in the proposal-PDF rule (it matched only through `core.ignorecase`).
+  - Plan updated in place (untracked): tolerances, all-scene numbers, the H2 caveat, guards that keep `results/rung0/` safe, T4 residual RMSE, and T5 paired against signed u.
+- **Reproduce:** branch `main`, commit `ea3f8ab` plus the uncommitted, untracked `build_vexp.py` and `M1_vexp_plan.md`, and the modified `.gitignore`. Dataset seed 701, stratified sampling. No training runs.
+- **Results** (measured in memory with the luminancegs env; full table in `M1_vexp_plan.md` step 1):
+
+| scene | clip frac at 2× | ratio error max (stops) | init slope / r | oracle slope / r | paired init RMSE (stops) |
+|---|---|---|---|---|---|
+| buu | 0 | 0.020 | −1.04 / −0.952 | −1.08 / −0.968 | 0.006 |
+| chair | 0 | 0.046 | −1.04 / −0.991 | −1.09 / −0.995 | 0.013 |
+| sofa | 0 | 0.011 | −1.02 / −0.991 | −1.07 / −0.996 | 0.004 |
+| bike | 1.8e-6 | 0.060 | −0.95 / −0.990 | −1.04 / −0.989 | 0.019 |
+| shrub | 0 | 0.028 | −0.98 / −0.983 | −1.11 / −0.980 | 0.014 |
+
+  Re-encode PSNR minimum 50.4 dB. Natural LOM spread sd 0.20 (buu) and 0.08 to 0.10 stops (the others); u_k sd 0.58 to 0.59. Paired r (minus the same view on LOM) is −0.999 to −1.000 for the init and the oracle.
+- **Takeaway:**
+  - The plan's 0.02-stop ratio check would have failed on chair, bike and shrub. 8-bit rounding of very dark views (bike mean 7 levels) is not symmetric, so the tolerance is now 0.07.
+  - *Inferred:* the initialisation already meets the explainer's H2 exposure threshold (\|r\| ≥ 0.9, slope near −1), so exposure recovery on this set is a sanity check, and the PSNR comparison against `detach` carries H2.
+  - Discrepancies recorded: the builder's arithmetic-mean init disagreed with the explainer (fixed in the code). The explainer and the protocol describe independent draws, while the plan uses stratified draws (with an `--sampling iid` switch). Slides 20, 22 and 24 were not checked, because the PC has no PDF reader.
+- **Next:** M1 step 1 (`python build_vexp.py --verify`), then the step 2 runner/re-scorer options and the smoke test. Tell Wei about the H2 threshold.
