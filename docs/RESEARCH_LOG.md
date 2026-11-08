@@ -244,3 +244,29 @@ Entries up to 2026-10-23 were backfilled from git history, the run folders and t
   - *Inferred:* the initialisation already meets the explainer's H2 exposure threshold (\|r\| ≥ 0.9, slope near −1), so exposure recovery on this set is a sanity check, and the PSNR comparison against `detach` carries H2.
   - Discrepancies recorded: the builder's arithmetic-mean init disagreed with the explainer (fixed in the code). The explainer and the protocol describe independent draws, while the plan uses stratified draws (with an `--sampling iid` switch). Slides 20, 22 and 24 were not checked, because the PC has no PDF reader.
 - **Next:** M1 step 1 (`python build_vexp.py --verify`), then the step 2 runner/re-scorer options and the smoke test. Tell Wei about the H2 threshold.
+
+### 2026-11-08: Varying-exposure LOM set built and verified; runner options added; smoke test passed
+
+- **Rung / type:** Rung 2 (M1) · setup + code
+- **Why:** M1 steps 1 to 3 of `Luminance-GS/Implementation_guides/M1_vexp_plan.md`. The set is the H2 test set; this entry records it before the 30-run baseline batch.
+- **What was done:**
+  - Built `Luminance-GS/data/LOM_vexp/` (all 5 scenes). Dataset seed 701, stratified u_k in [−1, 1], JPEG quality 100 with no chroma subsampling. Verified it with the trainer's own `Parser`/`Dataset`; manifest in `Luminance-GS/results/vexp/dataset/` (gains, oracle, previews).
+  - Checks: test views in `low/`, all of `high/` and `colmap_sparse/` are byte-identical to `LOM_full` (MD5); every training view changed. Split sizes, image order, cameras and validation images are identical (asserted). The previews brighten left to right.
+  - Code: `run_rung0.py --data_root` (default `LOM_full`; it refuses a non-default data root with the default `results/rung0` root), and `rescore_runs.py --ref_root` (default `--root`). Verified: the default dry-run command is identical to before (diffed), the varying-exposure dry run lists 30 runs, and the Rung 0 re-score still reports 60 done.
+  - Smoke test: buu, `baseline` and `detach`, seed 0, 300 steps, re-scored against `results/rung0/buu_baseline_seed0` depth.
+  - Slides 9, 13, 20, 22 and 24 checked from screenshots Bart provided. They correct the 2026-11-08 review entry, which said the slides were not checked. Slide 20's recipe matches the builder, except that it says "draw u_k uniformly" (the set uses stratified draws).
+  - Updated `CLAUDE.md` (Rung 2 in progress, repo map, `--data_root`/`--ref_root`) and the run-batch skill (data-root pre-flight, varying-exposure re-score command) before the batch.
+- **Reproduce:** branch `main`, commit `2e714d6` plus uncommitted `run_rung0.py`, `rescore_runs.py`, `CLAUDE.md`, the run-batch skill and plan edits. From `Luminance-GS/examples`: `python build_vexp.py --verify`, then `python run_rung0.py --data_root ../data/LOM_vexp --root ../results/vexp/smoke --scenes buu --variants baseline detach --seeds 0 --max_steps 300` and `python rescore_runs.py --root ../results/vexp/smoke --ref_root ../results/rung0`.
+- **Results** (source `Luminance-GS/results/vexp/dataset/oracle.csv`; ratio error after undistortion):
+
+| scene | n train | ratio error max (stops) | init slope / r | oracle slope / r | oracle explained | natural sd (stops) |
+|---|---|---|---|---|---|---|
+| buu | 22 | 0.020 | −1.04 / −0.952 | −1.08 / −0.968 | 0.957 | 0.20 |
+| chair | 43 | 0.046 | −1.04 / −0.991 | −1.09 / −0.995 | 0.978 | 0.08 |
+| sofa | 29 | 0.011 | −1.02 / −0.991 | −1.07 / −0.996 | 0.974 | 0.08 |
+| bike | 36 | 0.060 | −0.95 / −0.990 | −1.04 / −0.989 | 0.984 | 0.08 |
+| shrub | 30 | 0.028 | −0.98 / −0.983 | −1.11 / −0.980 | 0.983 | 0.10 |
+
+  Build: max clip fraction 1.8e-6 (bike), 0 elsewhere; re-encode PSNR minimum 50.4 dB (console output). Smoke (`results/vexp/smoke/`, git-ignored): both runs `ok` (0.87 and 0.63 min). The trainer's `mean_input` per view over the LOM run's matches 2^{u_k} within 0.0198 stops (r 0.99998), and both re-scores used the `results/rung0` reference depth.
+- **Takeaway:** the set matches the plan and slide 20's recipe, and the trainer reads the gained images. Numbers are identical to the in-memory check in the previous entry.
+- **Next:** Bart starts the 30-run batch with `/run-batch` (about 5 h 10 min; stop the PC sleeping first), then re-score with `--ref_root ../results/rung0` and write `vexp_analyze.py`. When M1 is done, message Wei (plan step 7.4).
