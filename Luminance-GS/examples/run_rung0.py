@@ -8,6 +8,8 @@ Run from Luminance-GS/examples:
     python run_rung0.py                       # the full Rung 0 batch (30 runs)
     python run_rung0.py --dry_run             # list what would run
     python run_rung0.py --scenes buu --seeds 0 --max_steps 50 --root ../results/rung0_test
+    python run_rung0.py --data_root ../data/LOM_vexp --root ../results/vexp --variants baseline detach
+                                              # M1: the same runs on the varying-exposure set
 """
 
 import argparse
@@ -43,15 +45,21 @@ def main():
     ap.add_argument("--seeds", nargs="+", type=int, default=[0, 1, 2])
     ap.add_argument("--max_steps", type=int, default=10_000)
     ap.add_argument("--root", type=Path, default=EXAMPLES.parent / "results" / "rung0")
+    ap.add_argument("--data_root", type=Path, default=DATA,
+                    help="folder holding <scene>/ in the LOM layout (default: data/LOM_full)")
     ap.add_argument("--dry_run", action="store_true")
     args = ap.parse_args()
 
-    scenes = [s for s in args.scenes if (DATA / s).is_dir()]
+    data = args.data_root.resolve()
+    scenes = [s for s in args.scenes if (data / s).is_dir()]
     missing = sorted(set(args.scenes) - set(scenes))
     if missing:
-        print(f"[run_rung0] scenes not found under {DATA}, skipped: {missing}")
+        print(f"[run_rung0] scenes not found under {data}, skipped: {missing}")
 
     root = args.root.resolve()
+    # never put runs on another dataset into the protected Rung 0 root
+    if data != DATA.resolve() and root == (EXAMPLES.parent / "results" / "rung0").resolve():
+        raise SystemExit(f"[run_rung0] --data_root {data} is not LOM_full: pass a --root other than results/rung0")
     (root / "logs").mkdir(parents=True, exist_ok=True)
     status_path = root / "runs.csv"
     new_status = not status_path.exists()
@@ -67,7 +75,7 @@ def main():
         run_dir = root / name
         cmd = [
             sys.executable, "simple_trainer_ours.py",
-            "--data_dir", str(DATA / scene), "--exp_name", "low", "--result_dir", str(run_dir),
+            "--data_dir", str(data / scene), "--exp_name", "low", "--result_dir", str(run_dir),
             "--seed", str(seed), "--max_steps", str(args.max_steps), "--diagnostics",
         ] + VARIANTS[variant]
         if args.max_steps != 10_000:
