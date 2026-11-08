@@ -20,7 +20,7 @@ Framing to keep in mind: in the default (detached) mode the curve is fitted from
 | 0 | Diagnostics of the official curve (30 runs) | **Done** (2026-10-21). Curves already monotone; cross-view variation is one number that tracks brightness; detach gain is confounded with a frozen colour basis. |
 | 0.5 | 2×2: colour basis learned/frozen × curve attached/detached, plus shared-depth re-scoring and colour metrics | **Done** (2026-10-23, merged into `rung0-diagnostics`). Detaching the curve explains 85 to 100% of the detach gain where it is real; with a detached curve a fixed RGB basis costs nothing. What it means for Rung 2: `Rung0.5_interpretation.md`. |
 | 1 | Compact monotone curve (K = 32 knots dense near black, F(0) = 0) | Folded into Rung 2 as the parameterisation of F. With F detached, keep F off the HE-CDF's steep dark-end jump (smoothness). |
-| 2 | Shared monotone curve + one exposure per view, plus a varying-exposure LOM test set | **Core, next.** Defaults: detached F, fixed RGB basis, free `s_k` with mean 0; the bias net, shape net and colour basis are removed. Ablations in order: attached `s_k` (new H3, on LOM and the varying-exposure set), colour-preserving luminance variant, K and knot spacing, attached F. Reference baseline is the `detach` cell; `baseline` stays in every table as "official". |
+| 2 | Shared monotone curve + one exposure per view, plus a varying-exposure LOM test set | **Core, in progress.** M1 (varying-exposure set + official/`detach` baselines, plan `M1_vexp_plan.md`): set built and verified, smoke-tested 2026-11-08; 30-run batch pending. Defaults: detached F, fixed RGB basis, free `s_k` with mean 0; the bias net, shape net and colour basis are removed. Ablations in order: attached `s_k` (new H3, on LOM and the varying-exposure set), colour-preserving luminance variant, K and knot spacing, attached F. Reference baseline is the `detach` cell; `baseline` stays in every table as "official". |
 | 3 | Local monotone curves (per-pixel mix of shared curves) | Optional, demoted after Rung 0.5: the hue flip came from curve chasing, not from global curves. Spare time goes to the Rung 2 ablations first; decided at the Nov 13 check-in with Wei. |
 
 Update this table whenever a rung changes status.
@@ -32,9 +32,10 @@ Update this table whenever a rung changes status.
   - `losses.py`: `HistogramPriorLoss`, `L_spa`, `gamma_curve`, `s_curve`. `tools.py`: `pixel_project`, `LUT_mapping`, `pixel_project_back`. `utils.py`: the two `CrossAttention` networks.
   - `datasets/colmap.py`: LOM loader (train reads `low/`, validation reads `high/`).
   - `diagnostics.py`: Rung 0/0.5 measurements. `run_rung0.py`: resumable batch runner. `rescore_runs.py`: re-score finished runs. `rung0_analyze.py`, `rung05_analyze.py`: tables and figures.
+  - `build_vexp.py`: builds and verifies the varying-exposure LOM set (M1). `vexp_analyze.py` (to write): M1 tables and figures.
 - `Luminance-GS/gsplat/`: gsplat 1.0.0 plus the authors' dual rasteriser. Do not modify.
-- `Luminance-GS/data/LOM_full/<scene>/`: dataset, local only (git-ignored).
-- `Luminance-GS/results/`: `reproduction/` (seed-42 reproduction), `rung0/` (all Rung 0 and 0.5 runs, `summary/`, `summary_rung05/`).
+- `Luminance-GS/data/LOM_full/<scene>/`: dataset, local only (git-ignored). `data/LOM_vexp/<scene>/`: the varying-exposure set, same layout, training views gained by 2^{u_k} (git-ignored; rebuild with `build_vexp.py`; u_k in `results/vexp/dataset/gains.json`).
+- `Luminance-GS/results/`: `reproduction/` (seed-42 reproduction), `rung0/` (all Rung 0 and 0.5 runs, `summary/`, `summary_rung05/`), `vexp/` (M1: `dataset/` manifest, then runs and `summary/`).
 - `Luminance-GS/Implementation_guides/`: rung plans (`Rung*_diagnostics_plan.md`), reports (`Rung*_results.md`) and `Rung0.5_interpretation.md` (the agreed Rung 2 direction).
 - `docs/`: research log and reference docs (index below).
 
@@ -43,7 +44,7 @@ Update this table whenever a rung changes status.
 - Windows, one NVIDIA GPU, conda env `luminancegs` (gsplat 1.0.0, numpy < 2). Open this folder (the repository root) in VS Code or start `claude` here: Claude Code loads `.claude/settings.json` only from the folder it starts in. Scripts Bart runs must be Python with `pathlib` and an `if __name__ == "__main__":` guard.
 - The shell tool may be PowerShell or Git Bash. Use forward slashes in paths, and `;` rather than `&&` in PowerShell. Training and analysis scripts need the `luminancegs` env's Python (path in `CLAUDE.local.md`); `run_rung0.py` starts the trainer with its own interpreter (`sys.executable`). The Stop hook and `summarize_runs.py` are stdlib-only and run with any `python`.
 - One run: `python simple_trainer_ours.py --data_dir ../data/LOM_full/buu --exp_name low --result_dir ../results/<rung>/<scene>_<variant>_seed<seed> --seed 0`. `--exp_name` is `low`, `over_exp` or `variance` (MipNeRF360-varying, needs `--data_factor 8`).
-- Batch: `python run_rung0.py --variants baseline detach --seeds 0 1 2 --dry_run`, then without `--dry_run`. It is resumable, logs to `<root>/logs/` and records each run in `<root>/runs.csv`.
+- Batch: `python run_rung0.py --variants baseline detach --seeds 0 1 2 --dry_run`, then without `--dry_run`. It is resumable, logs to `<root>/logs/` and records each run in `<root>/runs.csv`. Other data: `--data_root ../data/LOM_vexp --root ../results/vexp` (a non-default `--data_root` needs a root other than `results/rung0`). Re-score varying-exposure runs with `rescore_runs.py --root ../results/vexp --ref_root ../results/rung0` (LOM reference depth).
 - Our flags (every default reproduces the official code): `--seed`, `--detach_pseudo_target`, `--diagnostics`, `--diag_steps`, `--freeze_color_basis`, `--detach_curve_in_target`, `--grad_check`, `--rescore_run`, `--ref_depth_run`.
 - Cost: one 10k-step run takes about 8 to 14 minutes (`detach` about 8, the other cells 11 to 13), so one configuration on 5 scenes × 3 seeds takes about 2 to 3 hours.
 
