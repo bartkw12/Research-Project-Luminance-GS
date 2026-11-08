@@ -203,3 +203,16 @@ Entries up to 2026-10-23 were backfilled from git history, the run folders and t
   - Qualifies Rung 0's "this is the number Rungs 1 and 2 must improve" (pseudo-target consistency). Per-view curve variation is equally small with and without detach (PC1 0.992 to 0.998; RMS 1.42 to 4.47/255 baseline, 1.46 to 4.87/255 detach; Rung 0 Q2 PCA table). A shared F with one s_k is therefore unlikely to change consistency by itself. `detach` has the least consistent targets and the best renders, so consistency becomes a diagnostic.
 - **Takeaway:** the Rung 0.5 direction stands. *Inferred:* the detached targets' extra inconsistency comes from the curve's shape, so F's dark-end slope is the lever. The attached-s_k ablation matters most for buu and the varying-exposure set.
 - **Next:** write the Rung 2 plan; build the varying-exposure set and run `baseline` and `detach` on it; re-render the bike 2×2 for seeds 1 and 2 before showing Rung 0.5 to Wei.
+
+### 2026-11-06: Research direction approved by Prof. Chen and Wei; report due 18 Dec
+
+- **Rung / type:** Rung 2 · decision
+- **Why:** confirm that the Rung 2 direction (one shared monotone curve plus one exposure per view, H1 and H2) meets the ECE 701 requirements before the main experiments start.
+- **What was done:** Bart shared the proposal slides with Wei on 2026-10-28 (that hand-off was not logged at the time). On 2026-11-06 at 14:10 he emailed the slides (`ECE701_Research_proposal_Bart_Kowal`) to Prof. Chen, cc Wei, and asked for approval and for the report deadline and format. The email summarised the reproduction (18.47 dB pooled PSNR on LOM vs 18.34 reported), Rung 0 and 0.5 (60 runs), the proposed model and H1/H2, and pointed to slides 2, 6, 7, 8 and 24.
+- **Reproduce:** no runs and no code change. Source: the email thread "ECE701 research proposal: request for approval (Luminance-GS)", 2026-11-06, screenshots provided by Bart on 2026-11-08.
+- **Results** (replies, quoted from the thread):
+  - Wei, 14:30: "I am ok with this direction and share me any results you obtain in your experiments. Please also follow Prof. Chen's other suggestions."
+  - Prof. Chen, 14:44: "The proposal looks good to me. Please send over your report in PDF by December 18. The format is flexible, but please include as much detail as possible."
+  - Bart acknowledged both replies (14:38 and 14:52).
+- **Takeaway:** the direction is approved by both supervisors. The report is a **PDF due 2026-12-18**, format flexible, as detailed as possible. That leaves 13 days after the 5 Dec experiment freeze. *Inferred:* "Prof. Chen's other suggestions" means the deadline and format guidance in Prof. Chen's reply; no other suggestions appear in this thread.
+- **Next:** start the varying-exposure set and the H1/H2 runs. Send Wei results as they come in. Plan the report for a detail-heavy PDF.
