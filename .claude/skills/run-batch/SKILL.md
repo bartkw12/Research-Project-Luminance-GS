@@ -14,7 +14,7 @@ Batches take hours on Bart's one GPU, and a mistake costs a night. Go through ev
 ## 1. Pre-flight (read-only, a few minutes)
 
 1. **Code state:** `git branch --show-current`, `git rev-parse --short HEAD`, `git status --porcelain`. If the code the batch runs is uncommitted, tell Bart and suggest he commits it first, so the log can name a commit.
-2. **Data:** every requested scene exists under `Luminance-GS/data/LOM_full/<scene>/`, with the input folder named by `--exp_name` (`low/` or `over_exp/`), `high/`, `colmap_sparse/` and `transforms_train.json` / `transforms_test.json`.
+2. **Data:** every requested scene exists under the runner's `--data_root` (default `Luminance-GS/data/LOM_full`; the M1 varying-exposure set is `Luminance-GS/data/LOM_vexp`) as `<data_root>/<scene>/`, with the input folder named by `--exp_name` (`low/` or `over_exp/`), `high/`, `colmap_sparse/` and `transforms_train.json` / `transforms_test.json`. A non-default `--data_root` needs a `--root` other than `results/rung0` (the runner refuses otherwise).
 3. **GPU free:** `nvidia-smi --query-gpu=name,memory.used,memory.total,utilization.gpu --format=csv` and `nvidia-smi --query-compute-apps=pid,process_name,used_memory --format=csv`. If another training job is running, stop and tell Bart.
 4. **Disk:** check there is room for about 1 GB per run (checkpoints and renders are local even though they are git-ignored): `Get-PSDrive I` in PowerShell, `df -h .` in Git Bash.
 5. **Flags:** every variant's flags exist in `Config` in `simple_trainer_ours.py`, and their defaults reproduce the official code. Then run the runner with `--dry_run` (from `Luminance-GS/examples`) and check the job list: scenes × variants × seeds, root folder, and which runs it skips as already done.
@@ -45,7 +45,7 @@ Wait for an explicit go-ahead. Do not change power settings yourself.
 ## 4. When it finishes
 
 1. Check that every run has `stats/val_step9999.json` and `runs.csv` shows `ok` True. List any failures with the last lines of their logs.
-2. Run the rung's re-scoring and analysis scripts if the plan calls for them, for example `python rescore_runs.py` and then `python rung05_analyze.py`. Ask first if they take more than about 30 minutes.
+2. Run the rung's re-scoring and analysis scripts if the plan calls for them, for example `python rescore_runs.py` and then `python rung05_analyze.py`. For runs on the varying-exposure set, re-score with the LOM reference depth: `python rescore_runs.py --root ../results/vexp --ref_root ../results/rung0`. Ask first if they take more than about 30 minutes.
 3. Summarise, from the repository root, with `python .claude/skills/log-experiment/summarize_runs.py <root> --variants ...`.
 4. Write a research-log entry with `/log-experiment`.
 5. Remind Bart to restore the sleep setting.
