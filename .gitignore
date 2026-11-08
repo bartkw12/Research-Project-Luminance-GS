@@ -20,6 +20,7 @@ Luminance-GS/results/**/videos/
 Luminance-GS/results/**/tb/
 Luminance-GS/results/**/*.npz
 Luminance-GS/results/**/diagnostics/*.png
+Luminance-GS/results/**/rescore/*.png
 
 # Rung 0 runs: keep cfg.json, stats/*.json and diagnostics/*.csv per run; summary/ is committed in full
 Luminance-GS/results/rung0/smoke*/
@@ -36,3 +37,6 @@ Luminance-GS/results/rung0/*/diagnostics/*.png
 Luminance-GS/results/rung0/*/rescore/*
 !Luminance-GS/results/rung0/*/rescore/*.csv
 !Luminance-GS/results/rung0/*/rescore/*.json
+
+# Supplementary
+ECE701_Research_Proposal_Bart_Kowal.pdf
