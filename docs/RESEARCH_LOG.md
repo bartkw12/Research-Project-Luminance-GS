@@ -335,3 +335,27 @@ Entries up to 2026-10-23 were backfilled from git history, the run folders and t
   - *Measured:* the official per-view curves (and `detach`'s) do not compensate exposure. Their per-view part is a near-uniform upward shift that grows with input brightness, so it goes in the opposite direction. The pseudo-targets still half-compensate only because the shared curve is concave.
   - *Inferred:* an explicit s_k initialised at log2(m̄/m_k), which already has slope −1, removes that leak by construction. That is the mechanism H2 relies on. The shared dark branch is a large cost that Rung 2 keeps unchanged (plan 3.3: a 2^{−s_k} dark branch is an M2 design question for Bart).
 - **Next:** write `M1_vexp_results.md` (Q1 to Q4), update `experiment_protocol.md`, the explainer's H2 note and `CLAUDE.md`, then message Wei.
+
+### 2026-11-09: M1 done: results report, revised H2 criterion, and the sign of Rung 0's curve variation
+
+- **Rung / type:** Rung 2 (M1) · decision + analysis
+- **Why:** M1 step 7. Answer Q1 to Q4 in a report, and carry what M1 changes into the protocol and the H2 criterion.
+- **What was done:**
+  - Wrote `Luminance-GS/Implementation_guides/M1_vexp_results.md` from `results/vexp/summary/`. Numbers as in the previous entry; it adds the varying-set reference table for Rung 2.
+  - Added notes, without rewriting old text, to:
+    - `docs/experiment_protocol.md`: the set as built, the `results/vexp` root, the RMSE, leak and dark-branch metrics, the H2 reference table, and a correction to "beat the initialisation";
+    - explainer sections 8.7 and 8.11 (H2 note);
+    - `CLAUDE.md` (H2 line, Rung 0 and Rung 2 rows, docs index).
+  - Ticked the plan's "Done when" list.
+  - Two extra read-only checks on the local curve snapshots, below.
+- **Reproduce:** branch `main`, commit `9344652` (`examples/` clean). The two checks were inline Python on `diagnostics/curves_step*.npz`, `curve_bias` averaged over bins 0 to 29.
+- **Results** (*measured*):
+  - **Sign of Rung 0's curve variation.** On LOM, the per-view curve bias correlates +0.97 to +1.00 with the view's log2 mean input brightness in all 30 Rung 0 runs (`baseline` and `detach`, seeds 0 to 2). Rung 0 reported only |r|; the variation *follows* brightness, it does not compensate it.
+  - **The direction is set early and only grows.** On the varying set (seed 0, both variants), r(bias, u_k) is +0.94 to +0.97 in every scene from step 1000 to step 10000, and at step 1 in four scenes (shrub −0.95). The spread across views grows from about 0 at step 1 to 0.017 (buu) to 0.16 (shrub `detach`) at step 10k.
+  - **Pseudo-target consistency in units of the GT floor:** `detach` goes from 0.97–1.72 on LOM to 1.60–8.98 on the varying set; official from 0.69–1.29 to 2.27–6.23.
+- **Decision** (recorded in the protocol and the explainer):
+  - H2's \|r\| ≥ 0.9 exposure threshold is met by the initialisation alone, so it becomes a sanity check.
+  - H2 is carried by bm PSNR against `detach` on the varying set, using that set's own seed noise (`detach` bm sd up to 1.51 dB), together with Rung 2's pseudo-target leak (T4b).
+  - To tell Wei.
+- **Takeaway** (*inferred*): Rung 2's s_k starts on the compensating side (slope −1) where the official curves sit on the wrong one. A near-zero pseudo-target leak would be a qualitative difference, not only a parameter saving. Why the bias network goes the wrong way is not identified.
+- **Next:** message Wei (H2 bar, revised criterion, stratified draws, slide 20's extra check). Then M2: build Rung 2 behind flags. The open design question from plan section 3.3 is Bart's call: a per-view 2^{−s_k} on the dark branch.
