@@ -270,3 +270,31 @@ Entries up to 2026-10-23 were backfilled from git history, the run folders and t
   Build: max clip fraction 1.8e-6 (bike), 0 elsewhere; re-encode PSNR minimum 50.4 dB (console output). Smoke (`results/vexp/smoke/`, git-ignored): both runs `ok` (0.87 and 0.63 min). The trainer's `mean_input` per view over the LOM run's matches 2^{u_k} within 0.0198 stops (r 0.99998), and both re-scores used the `results/rung0` reference depth.
 - **Takeaway:** the set matches the plan and slide 20's recipe, and the trainer reads the gained images. Numbers are identical to the in-memory check in the previous entry.
 - **Next:** Bart starts the 30-run batch with `/run-batch` (about 5 h 10 min; stop the PC sleeping first), then re-score with `--ref_root ../results/rung0` and write `vexp_analyze.py`. When M1 is done, message Wei (plan step 7.4).
+
+### 2026-11-08: M1 batch: official and `detach` on the varying-exposure set (30 runs), re-scored
+
+- **Rung / type:** Rung 2 (M1) · experiment
+- **Why:** M1 steps 4 and 5 (`M1_vexp_plan.md`). Measure what varying exposure costs the official code and the `detach` reference. This sets the bar Rung 2 has to beat for H2.
+- **What was done:** 5 scenes × {`baseline`, `detach`} × seeds {0, 1, 2}, 10k steps, on `data/LOM_vexp`. All 30 runs are `ok` and each has `val_step9999.json`, `ckpt_9999.pt` and `curve_state.pt`. Re-scored all 30 against the LOM reference depth `results/rung0/<scene>_baseline_seed0` (checked in every `rescore/val_summary.json`). Flags per `cfg.json`: `--diagnostics`, plus `--detach_pseudo_target` for `detach`.
+- **Reproduce:** branch `main`, commit `31bfa65` (`examples/` clean). From `Luminance-GS/examples`: `python run_rung0.py --data_root ../data/LOM_vexp --root ../results/vexp --variants baseline detach --seeds 0 1 2`, then `python rescore_runs.py --root ../results/vexp --ref_root ../results/rung0`. Wall time: 16:10 to 21:30 (official 11.4 to 15.1 min per run, `detach` 7.4 to 9.6); re-scoring about 3 s per run.
+- **Results** on the varying-exposure set (mean of 3 seeds; ×noise = mean difference / pooled seed std; raw PSNR, SSIM and LPIPS from `stats/val_step9999.json`, bm PSNR from `rescore/`):
+
+| scene | official raw / bm PSNR | `detach` raw / bm PSNR | bm cost, vexp − LOM: official / `detach` | `detach` − official: raw / bm / LPIPS | change in `detach` bm gain vs LOM |
+|---|---|---|---|---|---|
+| buu | 22.01 / 22.33 | 22.81 / 24.26 | −3.67 (6.5×) / −2.11 (2.0×) | +0.80 (1.0×) / +1.93 (1.6×) / −0.009 (0.7×) | +1.56 (2.2×) |
+| chair | 14.76 / 17.82 | 15.49 / 19.89 | −3.12 (18.5×) / −3.20 (5.5×) | +0.72 (0.7×) / +2.07 (3.5×) / −0.041 (1.1×) | −0.08 (0.1×) |
+| sofa | 18.77 / 20.04 | 21.67 / 23.84 | −5.19 (10.8×) / −3.57 (4.3×) | +2.90 (1.5×) / +3.80 (4.4×) / −0.076 (3.5×) | +1.62 (1.7×) |
+| bike | 15.48 / 19.24 | 14.55 / 20.42 | −0.21 (1.5×) / −0.89 (3.5×) | −0.93 (0.9×) / +1.19 (4.3×) / −0.074 (6.4×) | −0.68 (2.7×) |
+| shrub | 10.74 / 17.13 | 9.83 / 16.71 | −1.24 (1.5×) / −1.35 (3.8×) | −0.90 (1.8×) / −0.42 (1.0×) / −0.027 (0.6×) | −0.11 (0.2×) |
+
+  Sources: `summarize_runs.py results/vexp` and `results/rung0 --variants baseline detach`; vexp − LOM differences computed from the same files, paired by scene, variant and seed. Other measurements:
+  - **Seed noise is larger on the varying-exposure set:** `detach` raw PSNR sd is 2.59 dB on sofa and 1.38 on chair, against 0.29 and 0.03 on LOM.
+  - **Raw PSNR on buu rises** by +1.20 (official) and +1.25 (`detach`) on the varying-exposure set, while bm PSNR falls.
+  - **Bike hue error:** `detach` has 12.3° ± 1.0 on the varying-exposure set against 31.8° ± 1.9 on LOM. `detach` − official is −4.6° (5.0×) here and +10.3° (6.4×) on LOM.
+- **Takeaway:**
+  - *Measured:* varying exposure costs both methods 2 to 5 dB of bm PSNR on buu, chair and sofa, and up to about 1.4 dB on bike and shrub. `detach` still beats the official code on bm PSNR on chair, sofa and bike (above 2× noise). Its gain over the official code does not grow consistently under varying exposure: it moves by more than 2× noise only on buu (+1.56) and bike (−0.68), in opposite directions.
+  - *Inferred:*
+    - The H2 bar is `detach` on this set, with up to about 2 to 3.6 dB of bm PSNR to recover on buu, chair and sofa. Part of that cost is 8-bit quantisation on darkened views, which no model can recover (plan section 2 caveat).
+    - The buu raw-PSNR rise is probably a brightness shift, not better quality. Check `mean_render` against `mean_gt` in T1.
+    - The bike hue result is unexplained; it belongs in T7.
+- **Next:** write and run `examples/vexp_analyze.py` (plan section 5: T1 to T7, per-view T5 against signed u, s_k tracking T4). Then write `M1_vexp_results.md` and message Wei (plan step 7.4). The H2 bar is the `detach` row above.
