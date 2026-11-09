@@ -298,3 +298,40 @@ Entries up to 2026-10-23 were backfilled from git history, the run folders and t
     - The buu raw-PSNR rise is probably a brightness shift, not better quality. Check `mean_render` against `mean_gt` in T1.
     - The bike hue result is unexplained; it belongs in T7.
 - **Next:** write and run `examples/vexp_analyze.py` (plan section 5: T1 to T7, per-view T5 against signed u, s_k tracking T4). Then write `M1_vexp_results.md` and message Wei (plan step 7.4). The H2 bar is the `detach` row above.
+
+### 2026-11-08: M1 analysis (`vexp_analyze.py`): the official per-view curves do not compensate exposure
+
+- **Rung / type:** Rung 2 (M1) · analysis + code
+- **Why:** M1 step 6 (plan section 5). Turn the 30 varying-exposure runs and their 30 LOM partners into tables T1 to T7 and figures 1 to 4 for `M1_vexp_results.md`.
+- **What was done:** wrote `examples/vexp_analyze.py`. It reuses the `rung0_analyze` helpers and `build_vexp.fit_exposure_form`/`slope_r`, and writes only to `results/vexp/summary/` (guarded).
+  - It stops unless every run has the right `data_dir`, flags and LOM reference depth.
+  - It recomputes the init and the histogram oracle on both sets, because `oracle.json` holds only the varying side.
+  - Integrity checks, all passed:
+    - re-score = training eval to 2.5e-6 dB;
+    - the recomputed init and oracle equal `oracle.json` exactly;
+    - `rel_l1_gt` is identical in all 60 runs.
+- **Reproduce:** branch `main`, commit `31bfa65` plus the new uncommitted `examples/vexp_analyze.py`. Run `python vexp_analyze.py` from `Luminance-GS/examples` (242 s).
+- **Results** (source `Luminance-GS/results/vexp/summary/tables.md`, `numbers.json`, `figures/`; bm = brightness-matched; pooled = 5 scenes):
+  - **T1/T3, the H2 bar:**
+    - On the varying set, `detach` vs official: pooled bm PSNR 21.03 ± 0.72 vs 19.31 ± 0.33 (+1.72, 3.1×); pooled LPIPS 0.306 vs 0.352 (−0.045, 3.5×).
+    - The `detach` − official gap does not change detectably from LOM, pooled (bm +0.46, 0.8×).
+  - **T2:**
+    - Pooled cost of varying exposure in bm PSNR: official −2.68 (8.2×), `detach` −2.22 (4.3×).
+    - Buu's raw-PSNR rise is a brightness shift: official validation renders went from 0.571 to 0.513 mean (GT 0.491; −0.058, 7.9×).
+  - **T4, exposure (Q3):**
+    - The s_k fitted to the final curves *rise* with u: slope +0.07 to +0.31 (official) and +0.10 to +0.44 (`detach`), r +0.80 to +0.98. Ideal is −1; the init gives −0.95 to −1.04 and the oracle −1.04 to −1.11.
+    - Paired RMSE of s + u: 0.61 to 0.84 stops, against 0.004 to 0.019 for the init and 0.038 to 0.082 for the oracle.
+    - Model-free check: curve values at fixed input levels correlate +0.94 to +0.97 with u (chair, buu, sofa, seed 0). The fit returns slope −1.000 on synthetic compensating curves.
+    - Pseudo-target brightness leak (paired, 0 = compensated, 1 = passes through): official 0.27 to 0.56, `detach` 0.36 to 0.65. Render leak 0.06 to 0.54. Input check 1.00 to 1.02.
+    - Cross-view curve spread (×255): 2.3 to 2.6 on LOM, 6.6 to 7.8 on the varying set (pooled).
+  - **T5, the dark branch (Q4):**
+    - The shared dark render's fit to the input drops 3.6 to 11.9 dB per scene (pooled −7.4 official, −7.5 `detach`).
+    - Per view it drops on both sides of u = 0, more steeply for brightened views (pooled slope −13.4 dB/stop for u > 0 vs +5.7 for u < 0, official).
+  - **T6:** pseudo-target consistency `rel_l1_pseudo` (pooled) 0.071 → 0.202 (official) and 0.084 → 0.248 (`detach`); GT floor 0.062.
+  - **T7:**
+    - Bike `detach` hue error 31.8° → 12.3° (12.9×); saturation ratio falls on chair and sofa.
+    - Wall time +0.6 min (official) and +0.2 min (`detach`) per run.
+- **Takeaway:**
+  - *Measured:* the official per-view curves (and `detach`'s) do not compensate exposure. Their per-view part is a near-uniform upward shift that grows with input brightness, so it goes in the opposite direction. The pseudo-targets still half-compensate only because the shared curve is concave.
+  - *Inferred:* an explicit s_k initialised at log2(m̄/m_k), which already has slope −1, removes that leak by construction. That is the mechanism H2 relies on. The shared dark branch is a large cost that Rung 2 keeps unchanged (plan 3.3: a 2^{−s_k} dark branch is an M2 design question for Bart).
+- **Next:** write `M1_vexp_results.md` (Q1 to Q4), update `experiment_protocol.md`, the explainer's H2 note and `CLAUDE.md`, then message Wei.
