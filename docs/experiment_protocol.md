@@ -8,12 +8,25 @@ How experiments in this project are set up, scored and compared, so results from
 - `--exp_name low` for low light (the main setting), `over_exp` for the overexposure subset (needed for H1 later).
 - The COLMAP cameras are not pinhole, so images are undistorted and cropped to 374×499. Training-view ground truth used for oracle scoring gets the same undistortion.
 - **Varying-exposure LOM** (to build for Rung 2, tests H2): for each training view k, draw u_k uniformly from [−1, 1] and use `clip(2^{u_k} · I_k, 0, 1)` re-quantised to 8 bits. Keep the test views and `high/` unchanged. Save every u_k so learned exposures can be checked: the ideal is s_k ≈ −u_k + constant. Compare the learned s_k with its initialisation log2(m̄ / m_k), which already tracks u_k through each view's mean brightness. A histogram-only s_k follows u_k almost by construction, so the real test is beating the initialisation.
+  - **As built (M1, 2026-11-08):**
+    - Location: `Luminance-GS/data/LOM_vexp/<scene>/`, built and verified by `examples/build_vexp.py` (git-ignored, rebuildable).
+    - Gain model: `clip(round(2^{u_k} · I_k), 0, 255)` on the 8-bit values.
+    - Sampling is **stratified**, not independent: N evenly spaced values −1 + (2j+1)/N in random order, so the mean of u_k is exactly 0 and the sd is 0.58 to 0.59. `--sampling iid` gives independent draws.
+    - Dataset seed 701, one stream per scene; all training seeds see the same set.
+    - Files are JPEG quality 100 with 4:4:4 chroma, under the original names.
+    - The record of the set is `Luminance-GS/results/vexp/dataset/gains.json` (u_k and the realised `log2_ratio` per view); `oracle.json` holds the initialisation and histogram-oracle exposures.
+    - **Quantisation caveat:** the dark views have means of 7 to 29 levels, so the realised ratio differs from 2^{u_k} by up to 0.06 stops (bike). Darkened views also lose tonal levels that brightened views do not gain, so part of any varying-exposure cost is unrecoverable and not symmetric in u.
+  - **Correction (M1):** "beating the initialisation" cannot be judged on this set. The init already gives slope −0.95 to −1.04 and r −0.95 to −0.99. Its paired error (s_k on the varying set minus s_k on LOM, same view) is only 0.004 to 0.019 stops of 8-bit rounding, and its unpaired error is LOM's natural spread, whose split into exposure and scene content is unknown. Report s_k against u_k as a sanity check, and let the PSNR comparison against `detach` and the pseudo-target leak (Metrics) carry H2. Results: `Luminance-GS/Implementation_guides/M1_vexp_results.md`.
 - The paper's MipNeRF360-varying set (`--exp_name variance --data_factor 8`) is an optional second test.
 
 ## Runs
 
 - **10,000 steps**, seeds **0, 1 and 2** for every configuration. The official code hard-coded seed 42, and its runs differ by up to about 1 dB from GPU nondeterminism alone.
 - **Naming:** `Luminance-GS/results/<rung root>/<scene>_<variant>_seed<seed>/`. Rung 0 and 0.5 share `results/rung0/` so one analysis can read every cell. Start a new root for Rung 2 (for example `results/rung2/`).
+- **Varying-exposure runs** live in `results/vexp/` (M1: `baseline` and `detach`, seeds 0 to 2).
+  - Run: `python run_rung0.py --data_root ../data/LOM_vexp --root ../results/vexp ...`. The runner refuses a non-default `--data_root` with the default `results/rung0` root.
+  - Re-score with the **LOM** reference depth, so consistency matches Rung 0.5: `python rescore_runs.py --root ../results/vexp --ref_root ../results/rung0`.
+  - Analysis: `python vexp_analyze.py` writes `results/vexp/summary/`.
 - **Variants** are entries in `VARIANTS` in `examples/run_rung0.py` (name → extra flags). `baseline` (no flags) is the official code and stays in every table, labelled "official".
 - **Batch runner:** `python run_rung0.py --scenes ... --variants ... --seeds 0 1 2 [--root ...] [--dry_run]`. It is resumable: a run counts as done when `stats/val_step9999.json` exists, and an incomplete run folder is deleted and restarted. Each run logs to `<root>/logs/<run>.log` and adds a row to `<root>/runs.csv` (finish time, ok, return code, minutes).
 - **Smoke test first:** about 300 steps per new flag set, for example `--max_steps 300 --eval_steps 300 --save_steps 300 --diag_steps 1 300 --diagnostics`, into a `smoke*` folder (git-ignored).
@@ -44,7 +57,9 @@ Summary folders (`results/rung0/summary/`, `summary_rung05/`) and the hand-writt
 | `chroma_err_ab` (planned for Rung 2) | mean error in CIELAB (a\*, b\*) after brightness matching, reported next to `sat_ratio`; meant to stay stable on pale images, where the hue metric does not | to be added to `rescore/` |
 | Pseudo-target quality (oracle) | pseudo-target vs the training view's normal-light image; never used in training | `diagnostics/pseudo_targets.csv`, `rescore/` |
 | Cross-view consistency | warp each view to its 2 nearest training cameras with rendered depth (alpha ≥ 0.5, 5% depth tolerance), relative L1 = L1 / mean intensity, for pseudo-targets, renders and GT. Use **one shared reference depth per scene** (`<scene>_baseline_seed0`), not each run's own depth. A diagnostic, not a quality proxy: `detach` has the least consistent pseudo-targets and the best renders | `rescore/consistency.csv` |
-| Exposure recovery (varying-exposure set) | per scene, slope and Pearson r of learned s_k against true u_k, next to the same for the initialisation log2(m̄ / m_k) | Rung 2 analysis script |
+| Exposure recovery (varying-exposure set) | per scene, slope and Pearson r of learned s_k against true u_k, next to the same for the initialisation log2(m̄ / m_k). **Slope and r saturate on this set** (the init alone reaches r −0.95 to −0.99), so always add the residual RMSE in stops of s_k + u_k after removing the mean, unpaired and paired (minus the same view's s_k on LOM), next to the init and the histogram oracle. For models without an explicit s_k, fit one shared F plus one s_k per view to the final curves (`build_vexp.fit_exposure_form`) | `vexp_analyze.py` T4a |
+| Pseudo-target leak (varying-exposure set) | slope of log2(mean pseudo-target, varying / LOM, same view and seed) against u_k: 0 = exposure fully compensated, 1 = passes straight through. Same for the enhanced render at the training view, and for the dark input as a check (≈ 1) | `vexp_analyze.py` T4b |
+| Dark-branch fit | `fit_psnr_lowrender_vs_input`: shared dark render vs the dark input at the training views. On the varying set, report the paired difference against signed u_k, split by sign (not against \|u_k\|) | `rescore/pseudo_targets.csv`, `vexp_analyze.py` T5 |
 | Curve parameters | count of learnable curve parameters (baseline about 255k + 5N; Rung 2 about 32 + N) | by hand |
 | Wall time | minutes per run from `runs.csv`; exclude `sofa_detach_seed1` (PC slept 11 h) | `runs.csv` |
 
@@ -76,6 +91,19 @@ Validation means over seeds 0 to 2 (source `Luminance-GS/results/rung0/summary_r
 | bike | 16.02 / 21.31 | 0.764 | 0.291 | 2.48 | 0.50 | 1.72 | 18.42 / 19.45 / 0.752 / 0.409 |
 | shrub | 11.76 / 18.06 | 0.597 | 0.288 | 10.77 | 0.63 | 1.19 | 12.13 / 18.37 / 0.616 / 0.263 |
 | pooled | 18.33 / 23.25 | 0.804 | 0.270 | 5.15 | 0.71 | | 18.47 / 22.00 / 0.803 / 0.294 |
+
+**Varying-exposure set (H2 bar).** Means over seeds 0 to 2, source `Luminance-GS/results/vexp/summary/tables.md` (T1, T6, T7) and `M1_vexp_results.md`.
+- Seed noise is larger here than on LOM: `detach` bm PSNR sd is 0.03 to 1.51 dB (buu 1.51, sofa 1.11), and its raw PSNR sd reaches 2.59 dB on sofa.
+- Compute H2's detectable effect from these runs, not from the LOM noise-floor table above.
+
+| Scene | `detach`: raw / brightness-matched PSNR | SSIM | LPIPS | Angle error (°) | `sat_ratio` | Pseudo-target consistency (× GT) | `baseline` (official): raw / brightness-matched / SSIM / LPIPS |
+|---|---|---|---|---|---|---|---|
+| buu | 22.81 / 24.26 | 0.881 | 0.251 | 3.64 | 0.94 | 4.73 | 22.01 / 22.33 / 0.877 / 0.261 |
+| chair | 15.49 / 19.89 | 0.815 | 0.356 | 7.12 | 0.33 | 5.41 | 14.76 / 17.82 / 0.797 / 0.397 |
+| sofa | 21.67 / 23.84 | 0.884 | 0.300 | 2.52 | 0.84 | 8.98 | 18.77 / 20.04 / 0.853 / 0.375 |
+| bike | 14.55 / 20.42 | 0.745 | 0.329 | 2.54 | 0.44 | 4.61 | 15.48 / 19.24 / 0.742 / 0.403 |
+| shrub | 9.83 / 16.71 | 0.550 | 0.296 | 13.27 | 0.40 | 1.60 | 10.74 / 17.13 / 0.573 / 0.323 |
+| pooled | 16.87 / 21.03 | 0.775 | 0.306 | 5.82 | 0.59 | | 16.35 / 19.31 / 0.768 / 0.352 |
 
 Comparison rules:
 
