@@ -7,7 +7,7 @@ Bart's ECE 701 project (MEng Computer Engineering, McMaster), supervised by Prof
 Luminance-GS (Cui, Chu, Harada, CVPR 2025, arXiv 2504.01503) builds a normally lit 3D Gaussian Splatting scene from low-light photos with no normal-light supervision. A learned per-view tone curve brightens each dark photo into a pseudo-target, and the Gaussians learn to render both. Our research question: does that curve machinery (about 255k parameters) reduce to **one shared monotone curve plus one exposure value per view**, `L_k(x) = F(min(1, 2^{s_k} x))`, and does that explicit model match the original with far fewer parameters, and beat it when exposure varies across views?
 
 - **H1:** on LOM, Rung 2 matches the `detach` reference within the detectable effect, with about 255k fewer curve parameters.
-- **H2:** on a varying-exposure LOM set, Rung 2 wins and the learned `s_k` track the true gains.
+- **H2:** on a varying-exposure LOM set, Rung 2 wins and the learned `s_k` track the true gains. After M1: "wins" means beats `detach` there, judged with that set's own seed noise. The \|r\| ≥ 0.9 tracking threshold is already met by the initialisation, so PSNR and the pseudo-target leak carry H2.
 - **H3 (new after Rung 0.5):** attaching only the per-view exposure `s_k` to the image loss (F stays detached) recovers the buu LPIPS lost by detaching, without bringing back the hue flips, and keeps the `detach` gains elsewhere.
 - Old H3 (a fixed RGB colour basis removes the hue flips and explains most of the detach gain): **not supported** (Rung 0.5). The attached curve, not the colour basis, explains the detach gain and the bike hue flip.
 
@@ -17,10 +17,10 @@ Framing to keep in mind: in the default (detached) mode the curve is fitted from
 
 | Rung | What | Status |
 |---|---|---|
-| 0 | Diagnostics of the official curve (30 runs) | **Done** (2026-10-21). Curves already monotone; cross-view variation is one number that tracks brightness; detach gain is confounded with a frozen colour basis. |
+| 0 | Diagnostics of the official curve (30 runs) | **Done** (2026-10-21). Curves already monotone; cross-view variation is one number that tracks brightness (M1: with the sign that *follows* brightness, not compensates it); detach gain is confounded with a frozen colour basis. |
 | 0.5 | 2×2: colour basis learned/frozen × curve attached/detached, plus shared-depth re-scoring and colour metrics | **Done** (2026-10-23, merged into `rung0-diagnostics`). Detaching the curve explains 85 to 100% of the detach gain where it is real; with a detached curve a fixed RGB basis costs nothing. What it means for Rung 2: `Rung0.5_interpretation.md`. |
 | 1 | Compact monotone curve (K = 32 knots dense near black, F(0) = 0) | Folded into Rung 2 as the parameterisation of F. With F detached, keep F off the HE-CDF's steep dark-end jump (smoothness). |
-| 2 | Shared monotone curve + one exposure per view, plus a varying-exposure LOM test set | **Core, in progress.** M1 (varying-exposure set + official/`detach` baselines, plan `M1_vexp_plan.md`): set built and verified, smoke-tested, 30-run batch done, re-scored and analysed (`results/vexp/summary/`, all 2026-11-08); `M1_vexp_results.md` pending. Defaults: detached F, fixed RGB basis, free `s_k` with mean 0; the bias net, shape net and colour basis are removed. Ablations in order: attached `s_k` (new H3, on LOM and the varying-exposure set), colour-preserving luminance variant, K and knot spacing, attached F. Reference baseline is the `detach` cell; `baseline` stays in every table as "official". |
+| 2 | Shared monotone curve + one exposure per view, plus a varying-exposure LOM test set | **Core, in progress.** M1 (varying-exposure set + official/`detach` baselines) **done** 2026-11-09: `M1_vexp_results.md`. The H2 bar is `detach` on the varying set; the official per-view curves do not compensate exposure (their per-view part rises with input brightness); the shared dark branch loses 4 to 12 dB of fit. Next: M2 (build Rung 2). Defaults: detached F, fixed RGB basis, free `s_k` with mean 0; the bias net, shape net and colour basis are removed. Ablations in order: attached `s_k` (new H3, on LOM and the varying-exposure set), colour-preserving luminance variant, K and knot spacing, attached F. Reference baseline is the `detach` cell; `baseline` stays in every table as "official". |
 | 3 | Local monotone curves (per-pixel mix of shared curves) | Optional, demoted after Rung 0.5: the hue flip came from curve chasing, not from global curves. Spare time goes to the Rung 2 ablations first; decided at the Nov 13 check-in with Wei. |
 
 Update this table whenever a rung changes status.
@@ -71,6 +71,7 @@ Read these only when the task needs them. Do not load them all up front.
 | `docs/experiment_protocol.md` | Planning, running or comparing experiments: scenes, seeds, metrics, noise floors, naming, what to commit. |
 | `docs/Luminance_GS_Research_Project_Explained.md` | Long explainer for humans: background, Rung 2 design and maths, likely questions from Wei. Use only when the focused docs are not enough. |
 | `Luminance-GS/Implementation_guides/Rung0_results.md`, `Rung0.5_results.md` | You need exact Rung 0 or 0.5 numbers. |
+| `Luminance-GS/Implementation_guides/M1_vexp_results.md` | You need the varying-exposure numbers (the H2 bar), or you are designing or judging Rung 2's exposure handling. |
 | `Luminance-GS/Implementation_guides/Rung0.5_interpretation.md` | Planning or building Rung 2: the agreed defaults, ablation order, revised hypotheses, and corrections to the Rung 0.5 report. |
 | `Luminance-GS/Implementation_guides/Rung*_diagnostics_plan.md` | Historical task plans. |
 
