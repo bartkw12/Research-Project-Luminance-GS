@@ -855,6 +855,11 @@ LOM's dark views are **evenly lit**: all views in a scene have similar brightnes
 
 Run the baseline and Rung 2 on it. Since the input was scaled by 2^(u_k), the ideal learned exposure is **s_k ≈ −u_k + constant**. So the key plot is learned s_k against true u_k: slope ≈ −1, correlation close to −1. For the baseline you can plot its PC1 score against u_k for comparison. Plot the initialisation log2(m̄/m_k) too. It already tracks u_k through each view's mean brightness, and a histogram-only s_k follows it almost by construction, so Rung 2 should beat it. Optional second test: the paper's varying-exposure Mip-NeRF 360 set, if available (slower and less controlled).
 
+*As built in M1 (2026-11-08):*
+- The u_k are stratified (evenly spaced, random order, mean exactly 0) rather than independent draws.
+- The baselines' results and the revised H2 criterion are in section 8.11's note and `M1_vexp_results.md`.
+- On this set, "beating the initialisation" turned out not to be a usable test (see that note).
+
 ### 8.8 Rung 3 (optional stretch): local monotone curves
 
 A global curve maps equal input values to equal outputs everywhere in the image, which limits colour and local-contrast fixes. Rung 3 would mix M = 4-8 shared monotone curves with per-pixel weights from a small conv net:
@@ -929,6 +934,15 @@ Detectable effects come from Rung 0 (3 seeds per arm, 1.6 × per-run std).
 | **H3** | Attaching s_k improves buu LPIPS over default Rung 2 by more than 2× seed noise and keeps brightness-matched PSNR within the detectable effect elsewhere. The bike pseudo-target hue error stays near the `detach` level (10.7°), with yellow wheels in seeds 0–2. Pseudo-target consistency is reported but is not part of the test. | One number per view is too little feedback to help, or it lets brightness drift. Either way it bounds how much the render can usefully tell the curve. |
 
 A negative result on H1 or H3 is still a clean, reportable finding about a CVPR 2025 method, because the diagnostics explain *why*. The original H3 (Rung 0.5) already is one: the colour basis was not the cause (section 8.5).
+
+**Note on H2 after M1 (2026-11-09; details in `Luminance-GS/Implementation_guides/M1_vexp_results.md`):**
+- **The exposure part of the criterion is too easy.** \|r\| ≥ 0.9 with slope near −1 is met by the initialisation log2(m̄/m_k) alone on the varying-exposure set (r −0.95 to −0.99, slope −0.95 to −1.04). LOM's own exposure spread (sd 0.08 to 0.20 stops) is small next to u_k's (sd 0.59). Treat it as a sanity check, and report the residual RMSE (stops) of s_k + u_k next to the init and the histogram oracle.
+- **The official model fails it, and in the wrong direction.** Its per-view curves rise with the input's brightness (fitted slope +0.07 to +0.44). Its pseudo-targets still let 27 to 65% of each view's exposure change through.
+- **H2 is therefore carried by two things:**
+  - brightness-matched PSNR against `detach` on the varying set;
+  - Rung 2's pseudo-target leak, which should be near 0.
+- **The "beats the baseline" part should mean beating `detach`.** It is the stronger reference on this set (pooled bm PSNR 21.03 vs 19.31 for official).
+- **Use this set's own seed noise.** `detach`'s bm PSNR sd reaches 1.51 dB on buu, so the detectable effect must come from these runs, not from the LOM table above.
 
 ---
 
