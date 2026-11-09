@@ -236,11 +236,11 @@ Same style as `rung05_analyze.py`: `pathlib`, `__main__` guard, import helpers f
 
 ## 6. Done when
 
-- [ ] `data/LOM_vexp/` has all five scenes and `build_vexp.py --verify` passes; `results/vexp/dataset/` holds `gains.*`, `oracle.*` and the previews.
-- [ ] Smoke test passed and the dataset is logged.
-- [ ] 30 runs `ok` in `results/vexp/runs.csv`, all re-scored with `--ref_root ../results/rung0`.
-- [ ] `results/vexp/summary/` written by `vexp_analyze.py`; `M1_vexp_results.md` answers Q1 to Q4.
-- [ ] Research log, `CLAUDE.md`, `experiment_protocol.md`, the explainer's H2 note and the run-batch skill updated; commit list and message given to Bart.
+- [x] `data/LOM_vexp/` has all five scenes and `build_vexp.py --verify` passes; `results/vexp/dataset/` holds `gains.*`, `oracle.*` and the previews.
+- [x] Smoke test passed and the dataset is logged.
+- [x] 30 runs `ok` in `results/vexp/runs.csv`, all re-scored with `--ref_root ../results/rung0`.
+- [x] `results/vexp/summary/` written by `vexp_analyze.py`; `M1_vexp_results.md` answers Q1 to Q4.
+- [x] Research log, `CLAUDE.md`, `experiment_protocol.md`, the explainer's H2 note and the run-batch skill updated; commit list and message given to Bart. (All done 2026-11-08/09.)
 
 ## 7. What M1 hands to M2 and M3
 
