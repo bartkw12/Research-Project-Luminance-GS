@@ -359,3 +359,61 @@ Entries up to 2026-10-23 were backfilled from git history, the run folders and t
   - To tell Wei.
 - **Takeaway** (*inferred*): Rung 2's s_k starts on the compensating side (slope −1) where the official curves sit on the wrong one. A near-zero pseudo-target leak would be a qualitative difference, not only a parameter saving. Why the bias network goes the wrong way is not identified.
 - **Next:** message Wei (H2 bar, revised criterion, stratified draws, slide 20's extra check). Then M2: build Rung 2 behind flags. The open design question from plan section 3.3 is Bart's call: a per-view 2^{−s_k} on the dark branch.
+
+### 2026-11-11: M2 start: exposure-aware dark branch (option A), and a review of the M2 plan
+
+- **Rung / type:** Rung 2 (M2) · decision
+- **Why:** M1 found that one shared dark branch cannot fit photos up to 2 stops apart. Its fit to the dark input drops from 46.2 to 38.8 dB (pooled, `detach`), by 3.6 to 11.9 dB per scene (source: `Luminance-GS/Implementation_guides/M1_vexp_results.md`, Q4). Rung 2 changes only the curve, so it would inherit this misfit, and a weak H2 result could not be pinned on either part.
+- **Decision** (Bart, 2026-11-09, option A; plan: `Luminance-GS/Implementation_guides/M2_rung2_plan.md`):
+  - New flag `--dark_branch {shared, measured, model, gains}`, default `shared` (the official code). Otherwise view k's dark render is multiplied by 2^{−s_k} before `loss_regress_low`. `measured` = log2(m̄/m_k), fixed; `model` = Rung 2's own s_k; `gains` = the set's true gains, for diagnosis only.
+  - Stop-gradient: `loss_regress_low` never trains s_k, so H3 stays separate.
+  - The 2×2 on the varying set: rows are the curve (`detach` or Rung 2), columns the dark branch (shared or exposure-aware): `detach`, `detachexp`, `rung2`, `rung2exp`. The row effect is H2; the column effect is the dark branch's share of the varying-exposure cost.
+  - The switch is off on LOM, so H1 is unchanged. It goes slightly beyond the approved plan: tell Wei on 13 Nov.
+- **Review** (Claude Code, 2026-11-10, against the code at `c5fa94c`, read-only plus in-memory checks): part A matches the code. Folded into the plan, each marked "review":
+  - fixes: the sign in unit test 9 (the synthetic CDFs must be G(min(1, 2^{s_k} x))); milestone numbers (the deck has M4 = the 13 Nov check-in, so the ablations are M5); the LOM-row wording (the content/exposure split is unknown, as M1 found); the guard order in step 1;
+  - added: `num_GS` per cell, because the switch also re-weights each view's `L_low` gradient by 2^{−s_k}; a ratio-based speed estimate (M1's 300-step `detach` smoke took 0.63 min, which scales to 21 min against the real 8.1; source `results/vexp/smoke/runs.csv`); same-seed repeats as the reference for the determinism checks; notes on reusing the analysis helpers; the `--ref_root` rule for every root other than `results/rung0`.
+- **Reproduce:** branch `main` (Bart chose to stay on it), commit `c5fa94c`, `examples/` clean. No runs and no code changes in this entry.
+- **Open, for Bart:**
+  - the dark-end alignment of Rung 2's curve loss, before part C. `detach`'s truncating LUT maps level ℓ to about CDF[ℓ−1]; the plan's interpolated fit maps it to about CDF[ℓ], one bin brighter. A one-bin shift of the target removes that (recommended);
+  - the H1 rule: plan 6.5 (buu, chair, sofa, bike; not below −2× noise) against the explainer's 8.11 (every scene, within the detectable effect);
+  - whether LOM overexposure is part of H1 (a question for Wei).
+- **Takeaway** (*inferred*): the measured s_k is off from the true gains by 0.08 to 0.19 stops on this set (`M1_vexp_plan.md`, step 1 table), and darkened views lost tonal levels to 8-bit rounding. So `detachexp`'s dark fit should climb toward 46.2 dB but not reach it.
+- **Next:** doc updates (explainer, `CLAUDE.md`, protocol, curve notes, settings, run-batch skill), then part A: the switch, its checks and a 300-step smoke test. Then ask Bart before the 15-run `detachexp` batch (about 2 h).
+
+### 2026-11-11: M2 part A: `--dark_branch` built; smoke test passed after two fixes
+
+- **Rung / type:** Rung 2 (M2) · code
+- **Why:** M2 plan part A (steps 1 to 3): build the exposure-aware dark branch decided in the previous entry, and check it before the 15-run `detachexp` batch.
+- **What was done:**
+  - `simple_trainer_ours.py`:
+    - `Config.dark_branch`, default `shared`;
+    - `Runner.measure_exposures`: s_k = log2(m̄/m_k) from `trainset[i]`, written to `exposure_init.json`;
+    - `Runner.load_gains` and `Runner.dark_scale`;
+    - `train()` multiplies `colors_low` by 2^{−s_k} right after the render split. The `model` guard runs before anything is written.
+  - `diagnostics.py`: `s_dark` and `fit_psnr_lowrender_exp_vs_input` are the last two columns of `pseudo_targets.csv`. `_load_run_state` asserts the run's `dark_branch` (`MODEL_DEFAULTS`).
+  - `rescore_runs.py`: variant names may contain digits, and `MODEL_FLAGS` are passed on from `cfg.json`. `run_rung0.py`: variant `detachexp` = `--detach_pseudo_target --dark_branch measured`.
+  - **Two bugs found by the smoke test, both fixed:**
+    - `torch.exp2` on CUDA fails in this env: torch 1.13.1 compiles it at run time (NVRTC), and `nvrtc-builtins64_117.dll` is missing. The factor is now exp(−ln2·s).
+    - The flag loop in `rescore_runs.py` reused the progress counter `k`. Only the printout was wrong.
+- **Reproduce:** branch `main`, commit `c5fa94c` plus uncommitted changes to the four files above. From `Luminance-GS/examples`:
+  - `python run_rung0.py --data_root ../data/LOM_vexp --root ../results/vexp/smoke_m2 --scenes buu --variants detach detachexp --seeds 0 --max_steps 300`;
+  - then `python rescore_runs.py --root ../results/vexp/smoke_m2 --ref_root ../results/rung0`;
+  - plus one direct trainer run with `--dark_branch gains` (`buu_detachgains_seed0`).
+  - The smoke folders are git-ignored.
+- **Results** (*measured*, from the smoke runs' `cfg.json`, `exposure_init.json`, `diagnostics/` and `rescore/`):
+  - **Default path unchanged:**
+    - `run_rung0.py --dry_run` prints identical commands for the old variants (0 differences);
+    - `rescore_runs.py --root ../results/vexp --dry_run` still finds the 30 M1 runs re-scored;
+    - the new `detach` run's step-0 loss row equals M1's smoke run to every printed digit, and later rows agree within 2.2e-4 relative.
+  - **Exposures:** `s_measured` equals `oracle.json` `s_init` for all 22 buu views (max difference 0.0). `gains` gives −(log2_ratio − mean) within 1.1e-7.
+  - **Built-in check:** `mean_pseudo` is identical between `detach` and `detachexp` (max difference 0.0, in `diagnostics/` and `rescore/`). `detach`'s new fit column equals its old one exactly.
+  - **Dark fit as trained,** `detachexp` − `detach` (buu, seed 0, 300 steps): +1.89 dB on average, higher on 12 of 22 views. By u:
+    - +9.40 dB for u < −0.5 (n = 5);
+    - +1.44 for −0.5 ≤ u < 0;
+    - −1.80 for 0 ≤ u < 0.5;
+    - −0.85 for u ≥ 0.5 (n = 6).
+- **Takeaway** (*inferred*):
+  - The switch works as designed and leaves the default path and the curve path untouched.
+  - At 300 steps there is no densification yet (`num_GS` 1090 in both runs), and the gain is clear only on darkened views. For brightened views the factor (up to 2×) also scales up the immature render's structural error, which absolute-error PSNR penalises.
+  - The 10k-step batch decides.
+- **Next:** ask Bart before the `detachexp` batch (15 runs, about 2 h). Part B (`rung2.py`, tests, preview) can be written meanwhile, as new files only.
