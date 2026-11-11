@@ -4,6 +4,12 @@ Plan for Claude Code on Bart's PC. Written 2026-11-09 from `M1_vexp_results.md`,
 
 In the repository this file lives at `Luminance-GS/Implementation_guides/M2_rung2_plan.md`. A copy is in the project's shared files as `docs/M2_handoff.md`.
 
+**Reviewed 2026-11-10 by Claude Code on Bart's PC** against the code at `c5fa94c` (read-only, plus in-memory checks: torch 1.13.1 has `torch.exp2` and `searchsorted`; tyro 0.9.1 parses `--dark_branch measured` and rejects bad values). Part A matches the code. Folded in below, each marked "review":
+- **Fixes:** the sign in unit test 9 (step 5); milestone numbers (the deck has M4 = the 13 Nov check-in and M5 = H3 and ablations, so the ablations here are M5); the LOM row in 2.1 (M1 found the split between content and exposure unknown); the guard order in step 1.
+- **Additions:** the gradient re-weighting caveat and `num_GS` in R6 (2.1, 6.2); a ratio-based speed estimate (8.4, 5.1); same-seed repeats as the reference for the determinism checks (8.2, 8.4, 6.1); notes on reusing the analysis helpers (6, 6.6); the prompt for the M3 command chain (5.1); the `--ref_root` rule in the run-batch skill and `rescore/exposure_init.json` in the commit list (step 9).
+- **Open, for Bart:** the dark-end alignment of the curve loss (2.2, before part C) and its pre-declared fallback (step 6); the H1 rule (6.5 against the explainer's 8.11); whether overexposure is in H1 (section 9, a question for Wei).
+- **Branch:** `main` (Bart, 2026-11-10). The doc updates that do not depend on new code were made on 2026-11-11, before part A; step 9 lists what is left.
+
 **Rules (from `CLAUDE.md`; they override anything below):**
 - Never `git commit`, `push`, merge, rebase, reset, stash or switch branches. Ask Bart before creating a branch (M1 worked on `main`; if he wants one, suggest `m2-rung2`).
 - Ask before any job longer than about 30 minutes, with a time estimate. Before anything over an hour, remind him to stop the PC sleeping.
@@ -46,7 +52,7 @@ The stop-gradient keeps H3 separate. In `rung2exp` the dark loss never trains s_
 - Every default reproduces the official code; `baseline` stays in every table as "official".
 - The option-A extension goes slightly beyond the approved plan; mention it to Wei on 13 Nov (section 9).
 
-**Milestones.** M2 = parts A to C below. M3 = the runs, re-scoring, `rung2_analyze.py` and `Rung2_results.md` (sections 5 and 6). M4 = ablations, H3 first.
+**Milestones.** M2 = parts A to C below. M3 = the runs, re-scoring, `rung2_analyze.py` and `Rung2_results.md` (sections 5 and 6). M4 = the 13 Nov check-in with Wei. M5 = ablations, H3 first (review: the deck's numbering; this plan first said M4).
 
 **Target dates** (times *inferred* from M1's run times):
 
@@ -73,7 +79,7 @@ The stop-gradient keeps H3 separate. In `rung2exp` the dark loss never trains s_
 | `gains` | s_k = −(log2_ratio_k − mean), the realised gains in `<data_dir>/exposure_gains.json` | An oracle for diagnosis only: it uses the true gains, so it is not a method. A few lines to build; run only if needed (5.3). |
 | Gauge | Every source has mean 0 over the training views | The dark render then shows the scene at the views' geometric-mean exposure, the same gauge as Rung 2's s_k. |
 | Test views | Unchanged | Metrics use only the enhanced render, and test views have no s_k. |
-| LOM | Switch off for H1 | LOM views are evenly exposed. There the measured s_k is mostly content (sd 0.08 to 0.20 stops, *measured*), so scaling could only add error (*inferred*). |
+| LOM | Switch off for H1 | LOM views are evenly exposed: their measured s_k has sd 0.08 to 0.20 stops (*measured*), and how much of that is exposure and how much is content is unknown (M1). So scaling may add error there (*inferred*; review: this row first said "mostly content"). |
 
 **What it cannot fix** (*inferred*).
 - The measured s_k mixes exposure with content. On the varying set its error against the true gains is the unpaired init RMSE: 0.08 to 0.19 stops (M1 plan, step 1 table), about 6 to 14% in brightness.
@@ -85,6 +91,7 @@ The stop-gradient keeps H3 separate. In `rung2exp` the dark loss never trains s_
 - With a detached curve, nothing in the curve path sees the dark render. The switch also draws no random numbers, so the view order is unchanged.
 - So `detach` and `detachexp` with the same seed have the same pseudo-targets, up to GPU float noise in the bias network. `rung2` and `rung2exp` have identical F, s_k and pseudo-targets.
 - The column effect therefore acts only through the shared Gaussians. Steps 3 and 8 and section 6.1 check this.
+- It acts on them in two ways (review, *follows from the code*). The dark target now matches each photo's exposure, and view k's `L_low` gradient is multiplied by 2^{−s_k}: ½× to 2×, arithmetic mean about 1.08 on this set. That also changes the screen-space gradients that drive densification. So report `num_GS` per cell (R6) before reading the column effect as "better fit" alone (*inferred*).
 
 ### 2.2 Rung 2 (explainer 8.6 and the proposal rationale, with the open details fixed)
 
@@ -95,19 +102,23 @@ The stop-gradient keeps H3 separate. In `rung2exp` the dark loss never trains s_
 | Knot spacing | quadratic, y_j = (j/K)² | `--rung2_knot_spacing {quadratic, uniform, usedrange}` (`quadratic`) | `usedrange`: y_j = y_max·(j/(K−1))² for j < K and y_K = 1, with y_max the 99.9th percentile of min(1, 2^{s_k⁰} x) over all training pixels and channels. The default may switch to `usedrange` by the preview rule in step 6. |
 | Lookup | Linear interpolation of F at y = min(1, 2^{s_k} x), applied to R, G and B | none | Replaces the truncated 255-entry LUT, so gradient reaches y and therefore s_k. |
 | F initialisation | `cdf`: each view's HE-CDF aligned by its initial s_k (CDF_k(2^{−s_k⁰} y), 1 above the photo's range), averaged over views and sampled at the knots. Increments floored at 1e-4, then renormalised. | `--rung2_F_init {cdf, identity}` (`cdf`) | Close to where the curve loss drives F anyway; the preview checks how fast `identity` gets there (risk 5 in section 7). |
-| s_k | A free scalar per view, initialised at log2(m̄/m_k), the same numbers as `measured` | `--rung2_s_init {measured, zero}` (`measured`) | `zero` is the proposal's "compare both" ablation (M4). |
+| s_k | A free scalar per view, initialised at log2(m̄/m_k), the same numbers as `measured` | `--rung2_s_init {measured, zero}` (`measured`) | `zero` is the proposal's "compare both" ablation (M5). |
 | Gauge | After every optimiser step, subtract the mean of s | none | mean s = 0, so s_k is relative exposure and F carries the overall brightening. |
 | Curve loss | L_curve = w(t)·mean_b (L_k[b] − CDF_k[b])² + λ·mean_b (L_k[b+1] − L_k[b])², with L_k[b] = F(min(1, 2^{s_k} x_b)) and x_b = b/254. CDF_k from `HistogramPriorLoss.compute_histogram_equalization`. w = 1, then 0.5 from step 3000 (0.1 for `over_exp`). The total loss uses 10·L_curve where the official uses 10·L_hist. | `--rung2_smooth_lambda` (0.1) | The official L_hist minus the shape-prior term. With F detached, Rung 2 then differs from `detach` only in the curve model. The rationale's slope-change smoother needs a new weight to tune, so it stays an ablation. |
 | Optimisers | Adam for θ and Adam for s, lr 1e-3 each, weight decay 0, ExponentialLR to 1% over the run (as the official curve) | `--rung2_lr_F`, `--rung2_lr_s` (1e-3) | No weight decay: on s it would pull every view toward "no exposure correction". The preview checks convergence before M3. |
 | Image loss into F and s | None (detached) | `--rung2_attach {none, s, all}` (`none`) | `s` is the H3 ablation: F's knot heights detached, y differentiable, so ∂F(2^{s_k}x)/∂s_k = F′(y)·y·ln 2. `all` is the attached-F ablation. |
 | Colour | Fixed RGB basis: F is applied to each channel | none | As in `detach`, whose basis never moves. |
-| Not built in M2 | Colour-preserving luminance variant (reserve `--rung2_color luminance`), slope-change smoother, one global gamma prior | | M4 |
+| Not built in M2 | Colour-preserving luminance variant (reserve `--rung2_color luminance`), slope-change smoother, one global gamma prior | | M5 |
 
 - **Parameter count:** K + N = 32 + N, which is 54 to 75 for the LOM scenes (22 to 43 training views). The official curve machinery has 255 + 143,743 + 111,235 + 5N. Print the count at start-up and store it.
 - **Flag guard:** with `--curve_model rung2`, assert that `--detach_pseudo_target`, `--detach_curve_in_target` and `--freeze_color_basis` are False. Rung 2 controls its own gradient flow through `--rung2_attach`.
 - **Known systematic difference** (*follows from the code*). The official LUT truncates: level 0 and level 1 both read `curve[0]`, and level ℓ ≥ 1 reads `curve[ℓ−1]` ≈ CDF[ℓ−1]. Rung 2 maps level 0 to black (F(0) = 0) and level ℓ to about CDF[ℓ].
   - So Rung 2's pseudo-targets are black at level 0 and about one CDF bin brighter elsewhere than `detach`'s.
   - That shifts raw brightness, which brightness-matched PSNR corrects, and the darkest shadows. See risk 1 in section 7.
+  - **Open, for Bart before part C (review).** A one-bin shift of the target removes most of this difference: fit F(min(1, 2^{s_k} x_b)) to [0, CDF_k[0], …, CDF_k[253]], and use the same target in the `cdf` init.
+    - Rung 2 then reads the same CDF bin as `detach` for every level ≥ 1. Level 0 stays black, and F(0) = 0 now matches the target at b = 0, so there is no fixed residual there.
+    - The snapshot grid stays x_b = b/254, so the M1 analysis code is unaffected.
+    - Recommended, because the one-bin lift is largest where risk 1 sits: bike and shrub, whose dark-end CDFs rise steeply. The preview reports P2, P4 and P5 for both alignments (step 6).
 
 ### 2.3 Runs and names
 
@@ -116,7 +127,7 @@ The stop-gradient keeps H3 separate. In `rung2exp` the dark loss never trains s_
 | `detachexp` | `--detach_pseudo_target --dark_branch measured` | `results/vexp` |
 | `rung2` | `--curve_model rung2` | `results/rung2` (LOM), `results/vexp` |
 | `rung2exp` | `--curve_model rung2 --dark_branch model` | `results/vexp` |
-| `rung2att` | `--curve_model rung2 --rung2_attach s` | defined in M2, run in M4 |
+| `rung2att` | `--curve_model rung2 --rung2_attach s` | defined in M2, run in M5 |
 
 - "exp" in a variant name always means the exposure-aware dark branch.
 - LOM Rung 2 runs go to a new root, `results/rung2/`, because rule 6 keeps `results/rung0/` for Rungs 0 and 0.5. Varying-set runs join M1's in `results/vexp/`, so all four 2×2 cells sit in one root.
@@ -164,7 +175,7 @@ The stop-gradient keeps H3 separate. In `rung2exp` the dark loss never trains s_
 ### Step 0. Start (10 minutes)
 
 1. Run `git status` and `git log -1`. Confirm the working copy is at `c5fa94c` (or later) and clean; tell Bart if not.
-2. Ask Bart about a branch.
+2. Ask Bart about a branch. (Answered 2026-11-10: stay on `main`.)
 3. Write a decision entry with `/log-experiment`:
    - option A and the 2×2;
    - the stop-gradient rule;
@@ -188,13 +199,13 @@ from typing import Literal
 
 # Runner.__init__, after self.valset
         # M2: per-view exposures for the dark branch (part C: also for Rung 2's s_k init). Nothing runs in the default.
+        if cfg.dark_branch == "model":  # review: checked first, so nothing is written before the exit
+            raise SystemExit("--dark_branch model needs --curve_model rung2")   # part C relaxes this
         self.s_measured = self.s_gains = None
         if cfg.dark_branch != "shared":
             self.s_measured = self.measure_exposures()
         if cfg.dark_branch == "gains":
             self.s_gains = self.load_gains()
-        if cfg.dark_branch == "model":
-            raise SystemExit("--dark_branch model needs --curve_model rung2")   # part C relaxes this
 
 # new Runner methods
     def train_view_names(self):
@@ -225,7 +236,7 @@ from typing import Literal
         if src == "shared":
             return None
         s = self.rung2.s.detach() if src == "model" else (self.s_measured if src == "measured" else self.s_gains)
-        return torch.exp2(-s[image_ids]).view(-1, 1, 1, 1)
+        return torch.exp(-math.log(2.0) * s[image_ids]).view(-1, 1, 1, 1)  # not torch.exp2: see the note below
 
 # train(), right after colors_low / colors_enh are split from the renders
             scale = self.dark_scale(image_ids)
@@ -234,6 +245,11 @@ from typing import Literal
 ```
 
 `measure_exposures` does the same float32 mean and float64 log2 as `build_vexp.verify_scene`, so the values should equal `oracle.json["s_init"]` exactly.
+
+**Implementation note (2026-11-11, found by the smoke test).** The first `detachexp` smoke run failed in `torch.exp2` on CUDA: torch 1.13.1 compiles that kernel at run time (NVRTC), and this env lacks `nvrtc-builtins64_117.dll`. The official code never uses such ops.
+- `dark_scale` therefore computes exp(−ln2·s), and `s_dark` is computed with numpy on the CPU.
+- Checked on CUDA the same day: softplus, expm1, log1p, log2, searchsorted, cumsum, pow and the backward of an indexed gather all work. So does exp2's replacement.
+- Probe any other new op on CUDA before relying on it (part B and part C).
 
 #### Step 2. Diagnostics, re-scorer, runner
 
@@ -248,9 +264,9 @@ RUN_RE = re.compile(r"^(?P<scene>[a-z]+)_(?P<variant>[a-z0-9]+)_seed(?P<seed>\d+
 # flags that change the model or the dark branch: passed through from the run's cfg.json so the re-score rebuilds it
 MODEL_FLAGS = ["dark_branch"]  # part C adds curve_model and the rung2_* flags
 ...
-        for k in MODEL_FLAGS:
-            if k in cfg:
-                cmd += [f"--{k}", str(cfg[k])]
+        for flag in MODEL_FLAGS:  # not `k`: main() uses k as its progress counter (the smoke test caught this)
+            if flag in cfg:
+                cmd += [f"--{flag}", str(cfg[flag])]
 ```
 
 - `run_rung0.py`:
@@ -348,7 +364,7 @@ def interp(yq, y, h):
 6. `composed_curve(k)[b]` equals `map_pixels` on an image whose pixels are x_b, so the loss and the target use the same function.
 7. `project_gauge` gives mean 0 and leaves differences between views unchanged.
 8. `n_params() == K + N`.
-9. Synthetic recovery: CDFs built as G(2^{−s_k} x) from a known monotone G and known mean-zero s.
+9. Synthetic recovery: CDFs built as G(min(1, 2^{s_k} x)), the model's own form, from a known monotone G and known mean-zero s. (Review: this first said G(2^{−s_k} x), with which the init gives G(2^{−2s_k} y) and Adam recovers −s.) Choose a G that reaches 1 below 2^{min_k s_k}, as real HE-CDFs of dark photos do. Otherwise the synthetic CDFs are not 1 at x = 1, and the init cannot reproduce G.
    - `init_heights("cdf", …)` with the true s recovers G at the knots within 0.02.
    - 3,000 steps of Adam on `curve_loss` from s = 0 recover s within 0.03 stops.
 10. `curve_loss` matches a hand computation on a toy input, and w switches at step 3000.
@@ -371,7 +387,7 @@ Default `--device cpu` with `torch.set_num_threads(2)`, so it can run during a b
 | P1 fit | Weighted residual ×255 of the final composed curves against the CDFs, weighted by the grey histogram as in `fit_exposure_form`, next to the histogram oracle's residual on the same CDFs. Also the final loss against the full-batch optimum, and the step at which the loss is within 5% of its final value. |
 | P2 exposure (varying set) | s_k against u_k: slope, r, unpaired RMSE of s + u, paired RMSE (minus the same view's s on LOM, same configuration), and movement from the init, rmse_c(s − s_init). Next to the init and the oracle; reuse `vexp_analyze.recovery_stats`. |
 | P3 leak preview | Pseudo-targets F(min(1, 2^{s_k} x)) of every training view on both sets: paired leak (slope of log2(mean, varying / LOM) against u_k). Next to M1's `detach` (0.36 to 0.65) and official (0.27 to 0.56) from `results/vexp/summary/T4_exposure.csv`. |
-| P4 dark end | F(ℓ/255) for ℓ ∈ {1, 2, 4, 8, 16} at s = 0, next to `detach`'s mean curve at the same input levels through the official LUT rule (level ℓ reads `curve[max(ℓ−1, 0)]`), from the LOM `detach` seed-0 `curves_step10000.npz` (local). Also the fraction of training pixels at levels 0 to 2 per scene. |
+| P4 dark end | F(ℓ/255) for ℓ ∈ {1, 2, 4, 8, 16} at s = 0, next to `detach`'s mean curve at the same input levels through the official LUT rule (level ℓ reads `curve[max(ℓ−1, 0)]`), from the LOM `detach` seed-0 `curves_step10000.npz` (local). Also the fraction of training pixels at levels 0 to 2 per scene, and (review) the dark-end slope F′(y)·2^{s} at levels 1 to 8, i.e. how much the curve amplifies each photo's noise, next to `detach`'s. |
 | P5 pseudo-target quality (diagnostic only) | Brightness-matched PSNR of the preview pseudo-targets against the training views' normal-light images, next to `detach`'s final `pseudo_psnr_gtmean` from `results/rung0/<scene>_detach_seed*/rescore/pseudo_targets.csv` (LOM) and `results/vexp/` (varying). **Never used to choose a setting**: that would tune an unsupervised method on normal-light images. |
 
 Figures: F and each view's composed curve against the views' CDFs, per scene (default configuration); s_k against u_k (varying set).
@@ -381,6 +397,8 @@ Figures: F and each view's composed curve against the views' CDFs, per scene (de
 - **Learning rates:** keep 1e-3 unless P1's final loss is more than 5% above the full-batch optimum. Then try 3e-3 and recheck.
 - **F init:** keep `cdf`. Report how many steps `identity` needs to come within 0.01 of the same F.
 - **Stop and ask Bart** if P4 or P5 show Rung 2's pseudo-targets clearly worse than `detach`'s on LOM, for example a P5 gap larger than LOM's brightness-matched seed noise in two or more scenes. That puts H1 at risk; see risk 1 in section 7.
+- **Pre-declared remedy (review).** If P5, which uses the normal-light images, triggered a change of default, the default would be informed by the ground truth. So the remedy is fixed now and judged on training photos only (P1, P4): first the target alignment of 2.2, if not already adopted; then the smoothness ablation in M5. λ stays at 0.1 by default.
+- If Bart has not decided the alignment of 2.2 by then, report P2, P4 and P5 for both alignments.
 
 Write a log entry with the P1 to P5 headline numbers. P3 is the first read on H2's mechanism.
 
@@ -415,7 +433,7 @@ Write a log entry with the P1 to P5 headline numbers. P3 is the first read on H2
    - Schedulers from one list of curve-side optimisers.
    - `self.rung2.project_gauge()` after the optimiser steps.
    - At the end, assert |mean s| < 1e-5 and that F is strictly increasing.
-5. **`grad_check`:** in Rung 2 mode, report the gradient norm on θ and on s from `loss_regress_enh` **and** from `loss_regress_low`.
+5. **`grad_check`:** in Rung 2 mode, report the gradient norm on θ and on s from `loss_regress_enh` **and** from `loss_regress_low`. (Review: `train()` passes only `loss_regress_enh` today, so pass `loss_regress_low` as well.)
 6. **Diagnostics:**
    - `_curve_modules` returns `(runner.rung2,)`.
    - `snapshot_curves` fills the official-only keys with zeros or NaN, adds `s`, `F_knots` and `F_heights`, and sets `curve_global` = F on the 255-bin grid. It appends `step, view, s` rows to `diagnostics/exposures_by_step.csv`.
@@ -429,7 +447,7 @@ Write a log entry with the P1 to P5 headline numbers. P3 is the first read on H2
 2. **Default path unchanged:**
    - Repeat step 3.1 (dry-run diff).
    - Re-score `results/vexp/buu_detach_seed0` and `results/rung0/buu_baseline_seed0` with the new code into `results/rung2/smoke_regress/<run>/`. Call the trainer directly with `--rescore_run` and `--ref_depth_run`, and never write into the runs' own `rescore/`.
-   - Every shared column of `pseudo_targets.csv`, `consistency.csv` and `val_metrics.csv`, and every key of `val_summary.json` except paths and `seconds`, must equal the existing `rescore/` outputs within 1e-6. Forward rendering is deterministic; M1 measured re-score = training eval within 2.5e-6 dB.
+   - Every shared column of `pseudo_targets.csv`, `consistency.csv` and `val_metrics.csv`, and every key of `val_summary.json` except paths and `seconds`, must equal the existing `rescore/` outputs within 1e-6. Forward rendering is deterministic; M1 measured re-score = training eval within 2.5e-6 dB. (Review: if an LPIPS or SSIM column misses 1e-6 but stays below 1e-4, re-score the same run twice with the new code. A gap no larger than between those two repeats is GPU float noise, not a regression.)
    - Repeat the step 3.3 loss-log comparison for a 300-step `detach` run.
 3. **Rung 2 smoke runs** (300 steps), re-scored with `--ref_root ../results/rung0`:
 
@@ -446,10 +464,10 @@ python run_rung0.py --root ../results/rung2/smoke_m2 --scenes buu bike --variant
      - `rung2att`: s gets a non-zero gradient from `loss_regress_enh`; θ gets none.
      - `rung2exp`: s gets no gradient from `loss_regress_low`.
    - All runs `ok`. At the end |mean s| < 1e-5 and F is strictly increasing. `rung2_state.json` exists and its `s_init` equals `oracle.json["s_init"]` (varying set).
-   - `rung2` and `rung2exp` (same seed): s and F agree within 1e-6, and `mean_pseudo` per view within 1e-5.
+   - `rung2` and `rung2exp` (same seed): s and F agree within 1e-6, and `mean_pseudo` per view within 1e-5. (Review: the backward of the knot gather `h[j]` uses CUDA atomics, so float noise alone may exceed 1e-6. If it does, run `rung2` twice with the same seed; only a gap larger than that repeat's is a leak.)
    - `build_vexp.fit_exposure_form` on the snapshot's `curve_adj` and `bin_hist` returns the run's own s_k within about 0.01 stops. This checks that the M1 analysis code reads Rung 2 correctly.
    - Re-scoring works, and the re-scored `mean_pseudo` equals the run's own `diagnostics/pseudo_targets.csv`.
-   - Speed: minutes per 300 steps, scaled to 10k steps, compared with `detach`'s smoke. This sets M3's estimate.
+   - Speed: the ratio of minutes per 300-step smoke to `detach`'s smoke, times `detach`'s 8.1 min per 10k-step run. This sets M3's estimate; replace it with the first full run's time. (Review: do not scale a 300-step run by 10000/300. M1's `detach` smoke took 0.63 min, which scales to 21 min against the real 8.1, because start-up, eval and the trajectory video dominate a short run.)
    - Look at the bike example PNG (`diagnostics/example_*_in_pseudo_render_gt.png`) next to `detach`'s from `results/rung0/bike_detach_seed0`. Check the dark end and the noise.
 5. Write a log entry with `/log-experiment`.
 
@@ -468,8 +486,10 @@ python run_rung0.py --root ../results/rung2/smoke_m2 --scenes buu bike --variant
 3. **`docs/curve_estimation.md`:** it says "Flag names are decided in the Rung 2 plan". Add them, and a paragraph on the dark branch.
 4. **Explainer 8.6:** a dated note on the dark-branch extension.
 5. **`.claude/settings.json`:** the ask-list entries from section 3.2, item 9.
-6. **Do not commit.** Propose two commits:
-   - **Part A:** `simple_trainer_ours.py`, `diagnostics.py`, `rescore_runs.py`, `run_rung0.py`, `Implementation_guides/M2_rung2_plan.md`, `docs/RESEARCH_LOG.md`. After the batch, add the 15 `detachexp` run folders (`cfg.json`, `exposure_init.json`, `stats/`, `diagnostics/*.csv`, `diagnostics/timing.json`, `rescore/*.csv`, `rescore/*.json`) and `results/vexp/runs.csv`.
+6. **`.claude/skills/run-batch/SKILL.md`** (review): re-score every root other than `results/rung0` with `--ref_root ../results/rung0`. `results/rung2/` has no `<scene>_baseline_seed0`, so a plain re-score there skips every run.
+   - Done on 2026-11-11, before part A: the parts of items 1 to 6 that do not depend on new code (the decisions, the dark-branch description, stale status, settings and skill). Left for this step: flag lists, repo-map entries and numbers that need the code or the runs (for example Rung 2's minutes per run).
+7. **Do not commit.** Propose two commits:
+   - **Part A:** `simple_trainer_ours.py`, `diagnostics.py`, `rescore_runs.py`, `run_rung0.py`, `Implementation_guides/M2_rung2_plan.md`, `docs/RESEARCH_LOG.md`, and the docs updated before part A (`CLAUDE.md`, `docs/Luminance_GS_Research_Project_Explained.md`, `docs/experiment_protocol.md`, `docs/curve_estimation.md`, `docs/repo_vs_paper.md`, `.claude/settings.json`, `.claude/skills/run-batch/SKILL.md`). After the batch, add the 15 `detachexp` run folders (`cfg.json`, `exposure_init.json`, `stats/`, `diagnostics/*.csv`, `diagnostics/timing.json`, `rescore/*.csv`, `rescore/*.json`; the re-score writes its own `rescore/exposure_init.json` too) and `results/vexp/runs.csv`.
      Message: `M2 part A: exposure-aware dark branch (--dark_branch) and detachexp on the varying-exposure set`.
    - **Parts B and C:** `rung2.py`, `test_rung2.py`, `rung2_preview.py`, the trainer, `diagnostics.py`, `run_rung0.py`, `rescore_runs.py`, `results/rung2/preview/`, the docs, `.claude/settings.json`, `docs/RESEARCH_LOG.md`.
      Message: `M2: Rung 2 behind --curve_model rung2 (shared monotone F + per-view exposure), preview and tests`.
@@ -480,7 +500,7 @@ python run_rung0.py --root ../results/rung2/smoke_m2 --scenes buu bike --variant
 
 ### 5.1 Main batch: ASK Bart (about 6 h; seed 0 of everything after about 2 h)
 
-Seed-major across both roots: seed 0 of all three new configurations first, then seeds 1 and 2. Chain the commands with `;` in PowerShell, each with its output redirected to its root's `batch_console_m3*.log`:
+Seed-major across both roots: seed 0 of all three new configurations first, then seeds 1 and 2. Chain the commands with `;` in PowerShell (the Anaconda PowerShell Prompt; in the plain Anaconda Prompt, which is cmd, use `&` instead: review), each with its output redirected to its root's `batch_console_m3*.log`:
 
 ```
 python run_rung0.py --data_root ../data/LOM_vexp --root ../results/vexp --variants rung2 rung2exp --seeds 0
@@ -489,7 +509,7 @@ python run_rung0.py --data_root ../data/LOM_vexp --root ../results/vexp --varian
 python run_rung0.py --root ../results/rung2 --variants rung2 --seeds 1 2
 ```
 
-- 45 runs × about 8 min ≈ 6 h (*inferred*: `detach` takes 8.1 min on this set, and Rung 2 drops two networks). Replace the estimate with the step 8 smoke speed.
+- 45 runs × about 8 min ≈ 6 h (*inferred*: `detach` takes 8.1 min on this set, and Rung 2 drops two networks). Replace the estimate with the step 8 speed estimate (the ratio to `detach`'s smoke, not 300 steps scaled up).
 - `--root ../results/rung2` with the default LOM data root is allowed by the runner's guard.
 
 ### 5.2 Re-score
@@ -509,13 +529,13 @@ python rescore_runs.py --root ../results/rung2 --ref_root ../results/rung0
 | Bart wants the switch in the final method | `detachexp` and `rung2exp` on LOM: the switch must not hurt evenly exposed scenes | 30 runs, about 4 h |
 | Rung 2's LOM result is borderline for H1 | `rung2` with `--rung2_F_init identity`, seed 0, LOM: head-start check (risk 5) | 5 runs, about 40 min |
 
-H3 (`rung2att` on LOM and the varying set) is M4.
+H3 (`rung2att` on LOM and the varying set) is M5.
 
 ---
 
 ## 6. Reporting: `rung2_analyze.py` and `Rung2_results.md`
 
-Same style as `vexp_analyze.py`: `pathlib`, `__main__` guard, helpers imported rather than copied. Use `vexp_analyze`'s `paired`, `rmse_c`, `recovery_stats`, `exposure_run`, `histogram_oracle`, `seeds_of` and `group_scenes`, and the factorial pattern of `rung05_analyze.effects`. Write only to `results/rung2/summary/` (guarded). Read every other folder without writing to it.
+Same style as `vexp_analyze.py`: `pathlib`, `__main__` guard, helpers imported rather than copied. Use `vexp_analyze`'s `paired`, `rmse_c`, `recovery_stats`, `exposure_run`, `histogram_oracle`, `seeds_of` and `group_scenes`, and the factorial pattern of `rung05_analyze.effects`. (Review: that function is hard-coded to the Rung 0.5 cell names, so write an `effects(vals, cells)` in `rung2_analyze.py` that copies its pattern. Do not edit `rung05_analyze.py`: its outputs are finished.) Write only to `results/rung2/summary/` (guarded). Read every other folder without writing to it.
 
 ### 6.1 Inputs and checks
 
@@ -532,7 +552,7 @@ Same style as `vexp_analyze.py`: `pathlib`, `__main__` guard, helpers imported r
   - its re-score did not use `results/rung0/<scene>_baseline_seed0` as reference depth;
   - it has no `ok` row in its root's `runs.csv`.
 - **Built-in checks** (section 2.1):
-  - `rung2` against `rung2exp`, same seed: s, F and `mean_pseudo` identical within 1e-5. Stop and report if not.
+  - `rung2` against `rung2exp`, same seed: s, F and `mean_pseudo` identical within 1e-5. Stop and report if not, after comparing with a same-seed repeat as in step 8.4 (review).
   - `detach` against `detachexp`, same seed: report the largest |Δ log2 `mean_pseudo`|; expected at the float-noise level.
   - The trainer's final s_k against the preview's: report only, expected within a few hundredths of a stop because the view order differs.
 
@@ -545,7 +565,7 @@ Same style as `vexp_analyze.py`: `pathlib`, `__main__` guard, helpers imported r
 | R3 2×2 cells (varying set) | The four cells plus official, per scene and pooled: raw and brightness-matched PSNR, SSIM, LPIPS. |
 | R4 factorial (varying set) | Curve-model main effect, dark-branch main effect, interaction, and the four simple effects, for brightness-matched PSNR, raw PSNR, LPIPS and SSIM, with ×noise and "real". |
 | R5 mechanism | Leak, dark fit and exposure (section 6.3). |
-| R6 side effects (varying set) | Colour, consistency and wall time per cell. |
+| R6 side effects (varying set) | Colour, consistency, wall time and final `num_GS` per cell (review: the dark branch re-weights gradients, section 2.1). |
 
 ### 6.3 How the three mechanism diagnostics are reported
 
@@ -586,6 +606,7 @@ Keep the colours: official `SERIES[0]` and `detach` `SERIES[1]` as in M1, `rung2
 
 - **Noise and "real":** as in M1. Pair by seed; noise = sqrt(mean of the arms' seed variances); real above 2×. For the factorial, noise over the four cells, as in `rung05_analyze.effects`. Shrub is reported but not used to decide (protocol rule 7). Check pooled verdicts against pooled-without-shrub and say so if they differ.
 - **H1 (LOM):** supported if, in each of buu, chair, sofa and bike, `rung2` − `detach` in brightness-matched PSNR is not below −2× noise, and SSIM and LPIPS are not worse by more than 2× noise (explainer 8.11).
+  - **Open, for Bart before M3 (review).** This rule differs from the explainer's 8.11, which uses every scene and "within the detectable effect" (about 1.6× the per-run std). Pick one before it is pre-registered with Wei. The recommendation is this one, which follows protocol rules 5 and 7; the explainer is then updated to match.
 - **H2 (varying set), read from the 2×2:**
   - **Supported:** the pooled curve-model main effect on brightness-matched PSNR is real and positive, LPIPS is not worse beyond noise, and the effect is positive in most informative scenes.
   - **Supported only with the dark-branch fix:** only the simple effect in the exposure-aware column (`rung2exp` − `detachexp`) is real.
@@ -598,7 +619,7 @@ Keep the colours: official `SERIES[0]` and `detach` `SERIES[1]` as in M1, `rung2
 ### 6.6 Seed-0 mode (for the 13 Nov check-in)
 
 `python rung2_analyze.py --seeds 0` writes the same tables to `results/rung2/summary_seed0/`:
-- n = 1, so no sd, no ×noise and no "real";
+- n = 1, so no sd, no ×noise and no "real" (review: `vexp_analyze.paired` returns NaN noise for n = 1, with numpy warnings, so do not call it here);
 - each difference is shown next to M1's seed sd for that scene and metric (`results/vexp/summary/T1_val_varying.csv`; `results/rung0/summary_rung05/` for LOM);
 - every table is headed "preliminary, one seed".
 
@@ -612,7 +633,7 @@ Same rules as M1's report: direct answers first, every claim *measured* or *infe
 - **Q3 (H2):** does Rung 2 beat `detach` on the varying set, with and without the dark-branch fix?
 - **Q4 (mechanism):** is Rung 2's pseudo-target leak near 0, and do its s_k stay on the compensating side?
 - **Q5 (side effects):** colour, consistency, and dark-end behaviour on bike and shrub.
-- **Closing:** what this means for M4 (H3, colour-preserving variant, knots).
+- **Closing:** what this means for M5 (H3, colour-preserving variant, knots).
 
 ---
 
@@ -635,7 +656,7 @@ Same rules as M1's report: direct answers first, every claim *measured* or *infe
 ## 8. Done when
 
 **M2**
-- [ ] Step 0: decision logged, branch question asked.
+- [x] Step 0: decision logged, branch question asked (2026-11-11; branch: `main`).
 - [ ] Part A: switch built; step 3 checks passed; `detachexp` batch `ok` (15 runs), re-scored, quick look logged.
 - [ ] Part B: `rung2.py` and `test_rung2.py` pass; preview tables P1 to P5 written and logged; knot-spacing and learning-rate choices confirmed by Bart.
 - [ ] Part C: Rung 2 wired in; step 8 regression and smoke checks passed; docs updated; commit lists and messages given to Bart.
