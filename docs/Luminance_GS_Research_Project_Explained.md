@@ -11,7 +11,7 @@ A from-the-ground-up guide to the paper, this repository, and Bart's ECE 701 res
 
 **Conventions**
 
-- Code references such as `simple_trainer_ours.py:473` point to `Luminance-GS/examples/` on the `rung0-diagnostics` branch. Line numbers can shift slightly on later branches.
+- Code references such as `simple_trainer_ours.py:499` point to `Luminance-GS/examples/` on `main` (commit `c5fa94c` plus the M2 part A changes, 2026-11-11). Line numbers shift as code is added, so search by function name if one does not match.
 - **"Paper"** means Cui, Chu and Harada, *Luminance-GS*, CVPR 2025 ([arXiv 2504.01503](https://arxiv.org/abs/2504.01503)). **"Repo"** means the official code in `Luminance-GS/`. They differ in several places (section 6.8). When they disagree, this guide follows the repo, because that is what your experiments run.
 - *Inferred* marks an interpretation that has not been tested directly. Everything else was read from the code or measured in Rung 0.
 - Diagrams use Mermaid, which renders on GitHub. In VS Code, install the "Markdown Preview Mermaid Support" extension. Equations use `$...$` LaTeX, which GitHub and VS Code both render.
@@ -51,8 +51,13 @@ A from-the-ground-up guide to the paper, this repository, and Bart's ECE 701 res
   It has about 32 + N parameters for N training views. It matches the structure Rung 0 found and the physics of a camera, and it should handle photos with different exposures much better.
 - **Success** means three things:
   - H1: match the `detach` reference on the LOM dataset within seed noise, with far fewer parameters.
-  - H2: beat it on a new varying-exposure version of LOM, with learned exposures that track the true ones.
+  - H2: beat it on a new varying-exposure version of LOM, with learned exposures that track the true ones. *(After M1: judged by brightness-matched PSNR against `detach` on that set and by how much exposure leaks into the pseudo-targets. Exposure tracking became a sanity check, because the initialisation already passes it; section 8.11.)*
   - H3 (revised after Rung 0.5): feeding the image loss back through only the per-view exposures recovers buu's LPIPS without bringing back the hue flips. The original H3 (the colour basis caused the hue flips) was not supported.
+- **M1 (done, Nov 9)** built the varying-exposure LOM set: every training photo is brightened or darkened by a known gain 2^(u_k), with u_k in [−1, 1] stops. The official code and `detach` were run on it:
+  - `detach` stays the stronger reference there (pooled brightness-matched PSNR 21.03 dB against 19.31). That is the bar for H2.
+  - The official per-view curves do not compensate exposure: their per-view part *rises* with the photo's brightness.
+  - The shared dark branch (one dark render for every view) loses 3.6–11.9 dB of fit to the dark photos.
+- **M2 (in progress)** adds an exposure-aware dark branch (`--dark_branch`: view k's dark render is scaled by 2^(−s_k)) and builds Rung 2 behind flags. On the varying set, a 2×2 (curve: `detach` or Rung 2; dark branch: shared or exposure-aware) separates the two changes (section 8.6, "The dark branch").
 
 ---
 
@@ -87,7 +92,7 @@ The **LOM** dataset (from Aleth-NeRF) has five real scenes: **buu, chair, sofa, 
 - `transforms_train.json` / `transforms_test.json`: which views are for training and which for testing, plus camera poses.
 - There is also an **overexposure** subset (`over_exp`), with too-bright photos instead of dark ones.
 
-In the repo, the training split reads `low/` and the validation split reads `high/` (`datasets/colmap.py`). Evaluation renders the *enhanced* image for each test view and compares it with the `high/` photo using PSNR, SSIM and LPIPS (`simple_trainer_ours.py:~993-1044`).
+In the repo, the training split reads `low/` and the validation split reads `high/` (`datasets/colmap.py`). Evaluation renders the *enhanced* image for each test view and compares it with the `high/` photo using PSNR, SSIM and LPIPS (`simple_trainer_ours.py:~1094-1180`).
 
 ### 2.3 Your project in one paragraph
 
@@ -98,8 +103,9 @@ This is direction 1 from the meeting with Wei: a new low-light-to-normal-light t
 ```mermaid
 flowchart LR
     R0["Rung 0<br/>Measure the curves<br/>DONE"] --> R05["Rung 0.5<br/>Untangle the detach result<br/>DONE"]
-    R05 --> R2["Rung 2 (core, NEXT)<br/>Shared monotone curve<br/>+ one exposure per view"]
-    VE["New varying-exposure<br/>LOM test set"] --> R2
+    R05 --> R2["Rung 2 (core, IN PROGRESS: M2)<br/>Shared monotone curve<br/>+ one exposure per view"]
+    VE["Varying-exposure LOM test set<br/>+ official and detach on it<br/>DONE (M1)"] --> R2
+    DB["Exposure-aware dark branch<br/>(M2, --dark_branch)"] --> R2
     R2 --> R3["Rung 3 (optional)<br/>Local monotone curves"]
 ```
 
@@ -248,6 +254,8 @@ Here α_i(x) is the Gaussian's opacity times its 2D footprint at pixel x. In wor
 
 **Detectable effect.** With 3 seeds per method, a difference counts as real if it exceeds about 2 standard errors of the difference: 2·σ·√(2/3) ≈ **1.6 × the per-run std**.
 
+*Since Rung 0.5 the project uses a simpler and slightly stricter rule (`CLAUDE.md` rule 5, `docs/experiment_protocol.md`): pair runs by seed, take noise = √(mean of the two arms' seed variances), and call an effect real only if it exceeds **2× noise**. The 1.6× figure above is the planned-comparison threshold it came from.*
+
 ### 3.12 Experimental design words
 
 - **Ablation:** remove or change one component and measure the effect.
@@ -348,7 +356,7 @@ flowchart TD
     RAST --> REN["bright render C_enh"]
     RAST --> REL["dark render C_low"]
 
-    subgraph CURVE["Curve machinery: curve_forward (line 473)"]
+    subgraph CURVE["Curve machinery: curve_forward (line 499)"]
         CF["colour basis + view curve L_k<br/>+ prior curve P_k"]
     end
     P --> CF
@@ -371,7 +379,7 @@ flowchart TD
     TOT --> BP["backward, then Adam step<br/>on every optimiser"]
 ```
 
-The code for this step is at `simple_trainer_ours.py:~600-660`.
+The code for this step is at `simple_trainer_ours.py:~617-704`.
 
 **At test time** only the top half is used:
 
@@ -386,7 +394,7 @@ This matters. **The curve's only job is to make good training targets.** Whateve
 
 ### 6.2 The two colour sets (and a reversal from the paper)
 
-In `rasterize_splats` (`simple_trainer_ours.py:~419`):
+In `rasterize_splats` (`simple_trainer_ours.py:~445`):
 
 ```python
 colors     = torch.cat([self.splats["sh0"], self.splats["shN"]], 1)   # [N, 16, 3]
@@ -402,7 +410,13 @@ render_colors_enh, render_colors_low, ... = rasterization_dual(..., colors=color
 
 Practical consequence: **the test-time image is rendered by colours trained mainly by L_enh (pseudo-targets) and L_spa.** If the pseudo-targets are washed out or have a hue flip, so are the test renders. The bike example in section 7 shows this.
 
-### 6.3 The curve machinery, step by step (`curve_forward`, line 473)
+**The dark branch is shared across views.** `adjust_k` and `adjust_b` belong to each Gaussian, not to each view, so every view's dark render comes from the same dark colours; only the SH terms change with direction. L_low therefore asks one dark scene to match every dark photo.
+
+- On LOM the photos are evenly exposed, and this works: the dark render fits them at 46.2 dB (pooled, `detach`).
+- On the varying-exposure set the photos differ by up to 2 stops, and the fit drops to 38.8 dB (M1).
+- M2 adds an option that scales each view's dark render by its exposure (section 8.6, "The dark branch").
+
+### 6.3 The curve machinery, step by step (`curve_forward`, line 499)
 
 This function runs once per step for the current view k. Here is the whole picture first.
 
@@ -560,7 +574,7 @@ The global curve L_g receives these gradients directly. The bias network receive
 
 ### 6.5 The losses, with exact formulas and weights
 
-All are computed each step for the current view k (`simple_trainer_ours.py:642-658`).
+All are computed each step for the current view k (`simple_trainer_ours.py:686-699`).
 
 **1. Reconstruct the dark photo (L_low).** This trains geometry, SH colours and adjust_k/b.
 
@@ -599,6 +613,8 @@ Because of the ×10, **the curve terms dominate**. On buu, the weighted CDF term
 | Bias network (CrossAttention) | — | ✓ attached only | — | ✓ |
 | Shape network (γ, α, β) | — | — | — | ✓ (prior terms) |
 | **Colour basis (axis1, axis2)** | — | **✓ attached only: its only source** | — | — |
+
+*M2 option (`--dark_branch` other than `shared`):* L_low compares 2^(−s_k)·C_low with the photo instead of C_low. The factor never carries gradient, so s_k learns nothing from L_low, and the table above is unchanged.
 
 ```mermaid
 flowchart LR
@@ -724,6 +740,10 @@ Luminance-GS spends about 255k parameters and two neural networks on a per-view 
 
 The original H3, "a fixed colour basis removes the hue flips and accounts for most of the detach gain", was tested by Rung 0.5 and **not supported** (section 8.5). The new H3 replaces it.
 
+*Notes (2026-11-11):*
+- *H1:* whether overexposure is in scope is pending Wei (13 Nov check-in). Until then, H1 is tested on LOM low-light only.
+- *H2:* after M1, "beats the baseline" means beats `detach` on the varying-exposure set. It is judged by brightness-matched PSNR, with that set's own seed noise, and by the pseudo-target leak; s_k tracking is a sanity check (section 8.11). M2 reads H2 from a 2×2 that also varies the dark branch (section 8.6, "The dark branch").
+
 ### 8.4 The rung ladder
 
 ```mermaid
@@ -731,12 +751,14 @@ flowchart TD
     R0["Rung 0: diagnostics (done)<br/>30 runs, measured curves, priors, detach, seed noise"]
     R05["Rung 0.5: untangle detach (done)<br/>2x2: curve attached or detached x basis learned or frozen<br/>answer: the curve, not the basis"]
     R1["Rung 1: compact monotone curve<br/>folded into Rung 2 as F's parameterisation"]
-    R2["Rung 2: shared curve + exposure (core, next)<br/>L_k(x) = F(min(1, 2^s_k x))<br/>detached F, fixed RGB basis"]
-    VE["Varying-exposure LOM set<br/>random gain 2^u per view, u in -1..1"]
+    R2["Rung 2: shared curve + exposure (core, in progress: M2)<br/>L_k(x) = F(min(1, 2^s_k x))<br/>detached F, fixed RGB basis"]
+    VE["Varying-exposure LOM set (built in M1)<br/>known gain 2^u per view, u in -1..1"]
+    DB["Exposure-aware dark branch (M2)<br/>dark render x 2^-s_k, --dark_branch"]
     R3["Rung 3: local monotone curves (optional, demoted)<br/>decided at the Nov 13 check-in"]
     R0 --> R05 --> R2
     R1 --> R2
     VE --> R2
+    DB --> R2
     R2 --> R3
 ```
 
@@ -802,6 +824,10 @@ $$\frac{\partial F(2^{s_k}x)}{\partial s_k} = F'(y)\cdot y\,\ln 2,\qquad y = 2^{
 
 Initialise θ so that F starts close to the average HE-CDF, or the identity. That is a design choice to test.
 
+*As planned for M2 (`M2_rung2_plan.md`, 2026-11-09):*
+- F starts from the views' HE-CDFs, each aligned by its initial s_k and then averaged (`--rung2_F_init cdf`). The identity start is a check on how much of a head start that gives.
+- The knots stay quadratic unless a preview, which fits F and s_k from the training photos alone, finds that knots spread over the range the pixels actually use lower the fit residual by 30% or more.
+
 #### The exposures s_k
 
 - **Initialisation:** s_k = log2(m̄ / m_k), where m_k is view k's mean brightness and m̄ the geometric mean over views. Darker views start with larger gains.
@@ -809,7 +835,7 @@ Initialise θ so that F starts close to the average HE-CDF, or the identity. Tha
 
 #### The losses in Rung 2
 
-- Keep L_low, L_enh and L_spa unchanged.
+- Keep L_low, L_enh and L_spa unchanged. (On the varying-exposure set, L_low can also be made exposure-aware: see "The dark branch" below.)
 - Replace L_hist with a curve loss on the composed per-view curve, evaluated on the same 255-bin grid x_b = b/254:
 
 $$\mathcal{L}_{curve} = \frac{1}{255}\sum_{b}\Big(F\big(\min(1,2^{s_k}x_b)\big) - \mathrm{CDF}_k[b]\Big)^2 + \lambda\,\mathcal{R}_{smooth}(F)$$
@@ -817,6 +843,18 @@ $$\mathcal{L}_{curve} = \frac{1}{255}\sum_{b}\Big(F\big(\min(1,2^{s_k}x_b)\big) 
   R_smooth is, for example, squared differences of neighbouring slopes. Optionally weight the bins by how many pixels use them.
 - **Drop** the bias network and the gamma/S-curve shape network. An optional ablation keeps a single global gamma prior (1 parameter, no 1e-3 clamp) as a regulariser.
 - Because F is shared, the CDF term now acts like **histogram matching across views**. Each view's s_k is pushed to line its histogram up with the shared curve.
+
+*As planned for M2 (`M2_rung2_plan.md`, 2026-11-09):*
+- **The loss:**
+
+$$\mathcal{L}_{curve} = w(t)\,\overline{\Big(F\big(\min(1,2^{s_k}x_b)\big) - \mathrm{CDF}_k[b]\Big)^2} + 0.1\,\overline{\big(L_k[b{+}1]-L_k[b]\big)^2}$$
+
+  with w = 1, then 0.5 from step 3000, and ×10 in the total loss. That is the official L_hist minus its shape-prior term, so with F detached, Rung 2 differs from `detach` only in the curve model.
+- No bin weighting. The slope-change smoother would need a new weight to tune, so it is an ablation.
+- **Optimisers:** Adam with lr 1e-3 for F and for s, no weight decay, decaying to 1% over the run, as the official curve does. After every step the mean of s is subtracted.
+- **Open (Bart decides before the Rung 2 code is wired in):**
+  - Today, `detach`'s truncating lookup maps level ℓ to about CDF[ℓ−1], while an interpolated fit on this grid maps it to about CDF[ℓ], one bin brighter. That lifts the shadows most on bike and shrub.
+  - Shifting the CDF target by one bin, [0, CDF[0], …, CDF[253]], would make Rung 2 read the same bin as `detach`. Black would stay black.
 
 #### Training mode: detached by default
 
@@ -828,6 +866,42 @@ Rung 0.5 chose the detached mode, so L_enh does not train F. F and s_k then lear
 - **What it will not fix: global brightness.** With mean s_k = 0 the exposures are relative, and overall brightness still comes from the CDF fit (and from L_spa for the render). Brightness-matched PSNR stays the primary metric.
 - **What structure alone will not fix: pseudo-target consistency.** Per-view curve variation is already one-dimensional and small in both modes (Rung 0), so the detached targets' extra inconsistency comes from the curve's shape. *Inferred:* F's dark-end slope, set by the smoothness weight, is the lever.
 
+#### The dark branch: exposure-aware (added in M2; decided 2026-11-09)
+
+Every view is rendered twice from the same Gaussians, and the dark render must match the dark photo through L_low. Each Gaussian has one dark colour for every view (only its SH terms vary with direction), so L_low asks one dark scene to match every photo (section 6.2).
+
+- On LOM that works: 46.2 dB (pooled, `detach`).
+- On the varying-exposure set the photos differ by up to 2 stops, and the fit drops to 38.8 dB, by 3.6–11.9 dB per scene (M1 Q4, *measured*).
+- Rung 2 changes only the curve, so it would inherit this misfit. A weak H2 result could then not be pinned on either the curve or the dark branch.
+
+The fix reuses the one-number-per-photo idea: view k's dark render is multiplied by 2^(−s_k) before L_low.
+
+$$\mathcal{L}_{low} = 0.8\,\overline{|2^{-s_k}\hat C_{low} - I_k|} + 0.2\,\big(1-\mathrm{SSIM}(2^{-s_k}\hat C_{low},\ I_k)\big)$$
+
+Alpha compositing is linear in the colours and the background is black, so this equals scaling every Gaussian's dark colour for view k. It adds no parameters. The flag is `--dark_branch`:
+
+| Value | s_k | Used by |
+|---|---|---|
+| `shared` (default) | none: the official code | `detach`, `rung2` |
+| `measured` | log2(m̄/m_k), fixed (the same numbers as Rung 2's initialisation) | `detachexp` |
+| `model` | Rung 2's own s_k, with stop-gradient | `rung2exp` |
+| `gains` | the set's true gains | diagnosis only, not a method |
+
+- **Stop-gradient:** L_low never trains s_k. So s_k learns only from the curve loss by default and, in the H3 ablation, from L_enh. H3 stays clean.
+- **Off on LOM**, so H1 is unchanged. LOM's per-view brightness differences are small (sd 0.08–0.20 stops) and mix exposure with content in unknown proportions, so scaling may add error there (*inferred*).
+
+The 2×2 on the varying-exposure set separates the two changes:
+
+| | Shared dark branch | Exposure-aware dark branch |
+|---|---|---|
+| **`detach` curve** | `detach` (M1) | `detachexp` (s_k measured, fixed) |
+| **Rung 2 curve** | `rung2` | `rung2exp` (Rung 2's own s_k) |
+
+- **Rows vs columns:** the row effect (curve model) is H2. The column effect is how much of the varying-exposure cost the dark branch causes. The interaction says whether Rung 2's gain depends on the fix.
+- **Limits** (*inferred*):
+  - The measured s_k is off from the true gains by 0.08–0.19 stops on this set, and darkened views lost tonal levels to 8-bit rounding. So the fit should climb toward 46.2 dB but not reach it.
+  - Scaling also multiplies each view's L_low gradient by 2^(−s_k) (½× to 2×), which can change densification. So the Gaussian counts are compared across columns.
+
 #### Side by side
 
 | Component | Baseline (repo) | Rung 2 |
@@ -838,6 +912,7 @@ Rung 0.5 chose the detached mode, so L_enh does not train F. F and s_k then lear
 | Colour basis | 5 numbers per view | fixed RGB |
 | Lookup | truncated LUT, no gradient to pixel values | interpolated, gradient flows to s_k |
 | Image loss into the curve | attached (official); cut in the `detach` reference | F detached; s_k attached only in the H3 ablation |
+| Dark branch (L_low) | one dark render for every view | the same by default; on the varying-exposure set, also scaled per view by 2^(−s_k) (`--dark_branch`, M2) |
 | **Total curve parameters** | **≈ 255,000 + 5N** | **≈ 32 + N** |
 | Test-time rendering | unchanged (curve not used) | unchanged (curve not used) |
 
@@ -859,6 +934,7 @@ Run the baseline and Rung 2 on it. Since the input was scaled by 2^(u_k), the id
 - The u_k are stratified (evenly spaced, random order, mean exactly 0) rather than independent draws.
 - The baselines' results and the revised H2 criterion are in section 8.11's note and `M1_vexp_results.md`.
 - On this set, "beating the initialisation" turned out not to be a usable test (see that note).
+- The baselines' shared dark branch could not fit the gained photos: its fit to the dark input dropped by 3.6–11.9 dB per scene. This led to M2's exposure-aware dark branch (section 8.6, "The dark branch").
 
 ### 8.8 Rung 3 (optional stretch): local monotone curves
 
@@ -878,14 +954,15 @@ gantt
     dateFormat YYYY-MM-DD
     axisFormat %b %d
     section Diagnostics
-    Rung 0 (done)                    :done, r0, 2026-10-19, 2026-10-21
-    Rung 0.5 2x2 and re-scoring      :done, r05, 2026-10-22, 2026-10-24
-    Varying-exposure set + baseline  :ve, 2026-10-22, 2026-10-28
+    Rung 0 (done)                          :done, r0, 2026-10-19, 2026-10-21
+    Rung 0.5 2x2 and re-scoring (done)     :done, r05, 2026-10-22, 2026-10-24
+    M1 varying-exposure set + baselines    :done, ve, 2026-11-08, 2026-11-09
     section Method
-    Build Rung 2                     :r2, 2026-10-27, 2026-11-07
-    Full runs on all three test sets :runs, 2026-11-08, 2026-11-22
-    Check-in with Wei                :milestone, ci, 2026-11-13, 0d
-    Ablations (Rung 3 only if time)  :abl, 2026-11-23, 2026-11-29
+    M2 dark-branch switch + build Rung 2   :active, r2, 2026-11-10, 2026-11-12
+    M3 first H1 and H2 runs                :runs, 2026-11-11, 2026-11-13
+    M4 check-in with Wei                   :milestone, ci, 2026-11-13, 0d
+    M5 H3 and ablations                    :abl, 2026-11-14, 2026-11-20
+    M6 stretch and extra seeds             :st, 2026-11-21, 2026-11-29
     section Write-up
     Figures and tables               :fig, 2026-11-30, 2026-12-05
     Experiments freeze               :milestone, frz, 2026-12-05, 0d
@@ -894,19 +971,20 @@ gantt
 Checklist:
 
 1. **Rung 0.5 (done, Oct 24):** decided a detached curve, a fixed RGB basis and `detach` as the reference. Before showing it to Wei, re-render the bike 2×2 for seeds 1 and 2 (a re-score takes about 9 s).
-2. **Varying-exposure set:** write the gain script, record each view's u_k, and run the official baseline and the `detach` reference on it (5 scenes × 3 seeds). These are the numbers Rung 2 must beat.
-3. **Build Rung 2 behind flags** (defaults reproduce the original): the monotone F module (with a unit test that F is increasing, F(0) = 0 and gradients reach s_k), per-view s_k with the gauge fix, the new curve loss, the removal of the two networks and the colour basis, and a switch that attaches s_k (but not F) to L_enh. Run a smoke test on one scene.
-4. **Full runs:** LOM low-light, LOM overexposure and the varying-exposure set, 3 seeds each, in the detached default, plus the attached-s_k ablation on low-light and the varying-exposure set.
-5. **Check-in with Wei (Nov 13):** show the main tables. Decide on Rung 3 or extra ablations.
-6. **Ablations, in priority order:** attached s_k (H3); colour-preserving luminance variant; K (16/32/64) and knot spacing (uniform/quadratic); fully attached F; gamma prior on/off.
+2. **Varying-exposure set (done, Nov 9; M1):** write the gain script, record each view's u_k, and run the official baseline and the `detach` reference on it (5 scenes × 3 seeds). These are the numbers Rung 2 must beat.
+3. **Build Rung 2 behind flags (M2, in progress)** (defaults reproduce the original): the monotone F module (with a unit test that F is increasing, F(0) = 0 and gradients reach s_k), per-view s_k with the gauge fix, the new curve loss, the removal of the two networks and the colour basis, and a switch that attaches s_k (but not F) to L_enh. Run a smoke test on one scene. M2 also adds the exposure-aware dark branch (`--dark_branch`, section 8.6) and a preview that fits F and s_k from the training photos alone, before any GPU time.
+4. **Full runs (M3):** the 2×2 on the varying-exposure set (`detach`, `detachexp`, `rung2`, `rung2exp`) and `rung2` on LOM low-light, 3 seeds each, in the detached default. LOM overexposure is pending Wei. The attached-s_k ablation (H3) follows in M5, on low-light and the varying-exposure set.
+5. **Check-in with Wei (M4, Nov 13):** show the main tables. Decide on Rung 3 or extra ablations.
+6. **Ablations (M5), in priority order:** attached s_k (H3); colour-preserving luminance variant; K (16/32/64) and knot spacing (uniform/quadratic); fully attached F; gamma prior on/off.
 7. **Figures and write-up.**
 
 Compute budget: one run takes about 8-13 minutes (`detach` about 8), so one configuration on 5 scenes × 3 seeds takes about 2-3 hours.
 
 ### 8.10 What you will show
 
-1. **Main table:** raw PSNR, brightness-matched PSNR, SSIM and LPIPS, as mean ± std over 3 seeds, per scene. Official baseline, `detach` reference and Rung 2, on LOM low-light and overexposure.
-2. **Varying-exposure table:** the same metrics on the new set.
+1. **Main table:** raw PSNR, brightness-matched PSNR, SSIM and LPIPS, as mean ± std over 3 seeds, per scene. Official baseline, `detach` reference and Rung 2, on LOM low-light and overexposure (overexposure pending Wei).
+2. **Varying-exposure table:** the same metrics on the new set, for official and the four 2×2 cells, with the factorial effects (curve model, dark branch, interaction) and an interaction figure.
+   - Two mechanism figures go with it. The first is the pseudo-target brightness leak against u_k (0 = exposure fully compensated). The second is the dark-branch fit against u_k, per cell.
 3. **Exposure scatter:** learned s_k vs true u_k per scene, with the correlation and slope, next to the initialisation and the baseline's PC1 score vs u_k.
 4. **Curve figure:** Rung 2's F (and F(2^(s_k)x) per view) against the baseline's per-view curves and the HE-CDF.
 5. **Efficiency table:** curve parameters (≈ 255k vs ≈ 32 + N), wall time per run.
@@ -944,6 +1022,14 @@ A negative result on H1 or H3 is still a clean, reportable finding about a CVPR 
 - **The "beats the baseline" part should mean beating `detach`.** It is the stronger reference on this set (pooled bm PSNR 21.03 vs 19.31 for official).
 - **Use this set's own seed noise.** `detach`'s bm PSNR sd reaches 1.51 dB on buu, so the detectable effect must come from these runs, not from the LOM table above.
 
+**Note on the decision rules after the M2 plan** (2026-11-11). The rules are pre-registered in `Luminance-GS/Implementation_guides/M2_rung2_plan.md` section 6.5, to confirm with Wei on 13 Nov.
+- **H2 is read from the 2×2 on the varying-exposure set** (section 8.6, "The dark branch"). Effects are paired by seed and real above 2× noise.
+  - **Supported:** the pooled curve-model main effect on brightness-matched PSNR is real and positive, LPIPS is not worse beyond noise, and the effect is positive in most informative scenes.
+  - **Supported only with the dark-branch fix:** only `rung2exp` − `detachexp` is real.
+  - **Between 1× and 2× noise pooled:** run seeds 3 and 4 before concluding.
+- **Mechanism:** Rung 2's pooled pseudo-target leak is near 0, and below `detach`'s by more than 2× noise. It supports H2 but does not replace it.
+- **H1 rule, open for Bart before the M3 runs.** The M2 plan's rule uses buu, chair, sofa and bike: brightness-matched PSNR not below −2× noise, and SSIM and LPIPS not worse by more than 2× noise. The H1 row above uses every scene and "within the detectable effect". One of the two will be kept.
+
 ---
 
 ## 9. Questions Wei / Dr Chen will most likely ask
@@ -980,7 +1066,7 @@ Showing that a simpler model is as good, and better where it should be, is a sta
 In the repo, detaching also cuts the only gradient to the per-view colour basis, so it stays at RGB, and the Rung 0 result mixed two effects. Rung 0.5's 2×2 separated them. Stopping the image loss from training the curve explains 85–100% of the gain where it is real; freezing the basis explains 10–42% pooled, depending on the order. *Inferred:* when attached, the curve chases the render, which degrades the targets (the bike wheel flips red). Rung 2 is compared against the `detach` cell, and the official configuration stays in every table.
 
 **Q8. How do you know improvements aren't noise?**
-Three seeds per configuration, paired comparisons, and per-scene detectable effects measured in Rung 0. Raw PSNR seed std ranges from 0.21 dB (buu) to 1.13 dB (shrub). A difference counts only if it exceeds about 1.6 × the per-run std.
+Three seeds per configuration, paired comparisons, and per-scene detectable effects measured in Rung 0. Raw PSNR seed std ranges from 0.21 dB (buu) to 1.13 dB (shrub). A difference counts only if it exceeds about 1.6 × the per-run std. *(Since Rung 0.5 the rule is 2× the seed noise, the square root of the mean of the two arms' seed variances. On the varying-exposure set the noise is larger: `detach`'s brightness-matched sd reaches 1.51 dB on buu.)*
 
 **Q9. Why report brightness-matched PSNR?**
 An unsupervised method cannot know the "correct" overall brightness. Here it is set by the histogram prior, at about 0.55-0.6 for every scene, while the ground truth ranges from 0.36 to 0.54. Raw PSNR mostly measures that global offset. Brightness-matched (GT-mean) PSNR is standard in low-light enhancement. Both are reported. Rung 2's exposures do not change this: they are relative (mean 0), so global brightness still comes from the CDF fit.
@@ -1003,7 +1089,7 @@ Every Rung 0.5 cell is less saturated than the ground truth; the `detach` cell's
 The repo implements it as a 5-number rotation (3 real degrees of freedom), not a free 3×3 matrix. The paper's own ablation credits it with +0.04 dB on buu. Rung 0.5 measured it directly. It rotates only 0.02–0.49° on average, freezing it explains 10–42% of the detach gain, and it does not cause the bike hue flip. Resetting a trained basis to RGB even improves the pseudo-targets in every scene. Rung 2 uses a fixed RGB basis.
 
 **Q15. How does this handle overexposure?**
-With the same form. s_k becomes a darkening gain, and F maps bright values down. Only the CDF weight changes, as in the original. It is tested on the LOM overexposure subset.
+With the same form. s_k becomes a darkening gain, and F maps bright values down. Only the CDF weight changes, as in the original. It is tested on the LOM overexposure subset. *(Pending: whether overexposure is in scope is a question for the 13 Nov check-in. It would need official and `detach` baselines on `over_exp` as well.)*
 
 **Q16. What if Rung 2 is worse?**
 Then the per-view network carries something beyond exposure. The residual curve variation after PC1 (0.2-0.8% of the variance) shows what. A small low-rank per-view correction is the fallback. Either way, the analysis is a result.
@@ -1016,6 +1102,12 @@ The curve amplifies noise in each pseudo-target, but multi-view fusion averages 
 
 **Q19. How were the paper-vs-repo differences found, and do they affect the comparison?**
 By reading the code (section 6.8). All experiments run the repo's code, with new behaviour behind flags whose defaults reproduce the original, so the baseline is the authors' actual implementation.
+
+**Q20. You also changed the dark branch. Doesn't that confound H2?**
+No, because the dark branch is a separate factor in a 2×2 on the varying-exposure set.
+- **The design:** the curve is `detach`'s or Rung 2's, and the dark branch is shared or exposure-aware. The curve-model effect (H2) is measured in both columns, and the dark-branch effect in both rows.
+- **The safeguards:** the scale factor never carries gradient, so the dark loss cannot train s_k and H3 stays clean. The switch is off on LOM, so H1 is unaffected.
+- **Why it was needed:** M1 measured that a shared dark branch loses 3.6–11.9 dB of fit when photos differ by up to 2 stops. Rung 2 alone would inherit that, and a weak result could not be pinned on either part.
 
 ---
 
@@ -1033,15 +1125,19 @@ By reading the code (section 6.8). All experiments run the repo's code, with new
   - The S-curve prior never moves, the black level is lifted, and the priors outweigh the image terms 5:1.
   - Detach helps by up to 2.2 dB, but that result is confounded with the frozen colour basis.
 - **Rung 0.5 found:** the detach gain, and the fix for the bike hue flip, come from stopping the image loss from training the curve (85–100% of the gain where it is real), not from the colour basis.
+- **M1 found** (varying-exposure LOM set, done Nov 9):
+  - `detach` is the bar for H2 there (pooled brightness-matched PSNR 21.03 dB against 19.31 for official).
+  - The official per-view curves follow brightness instead of compensating it.
+  - The shared dark branch loses 3.6–11.9 dB of fit.
+- **M2 (in progress):** an exposure-aware dark branch (`--dark_branch`, dark render × 2^(−s_k), no new parameters) and Rung 2 behind flags. A 2×2 on the varying set separates the curve-model effect (H2) from the dark-branch effect.
 - **Rung 2 (core):** L_k(x) = F(min(1, 2^(s_k)·x)). F is shared, monotone, anchored at black and has K = 32 knots dense near black, with interpolation. s_k is one exposure per view, with mean 0. The colour basis is fixed RGB. By default F and s_k are detached, so they are fitted from the photos' histograms only; attaching s_k is the main ablation. Parameters drop from about 255k to about 32 + N, and the model is physically grounded.
 - **Hypotheses:**
   - H1: matches the `detach` reference on LOM.
-  - H2: wins on a varying-exposure LOM set, with s_k tracking the true gains.
+  - H2: wins on a varying-exposure LOM set, with s_k tracking the true gains. *(After M1: wins against `detach` in brightness-matched PSNR, with a pseudo-target leak near 0; s_k tracking is a sanity check.)*
   - H3 (revised): attaching only s_k recovers buu's LPIPS without bringing back the hue flips. (Original H3, about the colour basis: not supported.)
-- **Proof:** 5 scenes × 3 seeds, brightness-matched and raw PSNR, SSIM, LPIPS, consistency and colour metrics, an exposure scatter plot, a parameter count, and ablations. Differences count only beyond the detectable effects from Rung 0.
-- **Timeline:**
-  - Rung 0.5: done Oct 24. Varying-exposure set: by Oct 28.
-  - Rung 2 build: by Nov 7.
-  - Full runs: Nov 8-22 (check-in with Wei on Nov 13).
-  - Ablations: Nov 23-29.
-  - Figures: to Dec 5, when experiments freeze.
+- **Proof:** 5 scenes × 3 seeds, brightness-matched and raw PSNR, SSIM, LPIPS, consistency and colour metrics, an exposure scatter plot, a parameter count, and ablations. Differences count only beyond 2× seed noise, using each test set's own noise.
+- **Timeline** (updated Nov 11):
+  - Rung 0.5: done Oct 24. M1 (varying-exposure set and baselines): done Nov 9.
+  - M2 (dark-branch switch, Rung 2 build): Nov 10-12. M3 first H1 and H2 runs: Nov 11-13.
+  - M4 check-in with Wei: Nov 13. M5 H3 and ablations: by Nov 20. M6 stretch and extra seeds: by Nov 29.
+  - Figures: to Dec 5, when experiments freeze. The report is due Dec 18.
