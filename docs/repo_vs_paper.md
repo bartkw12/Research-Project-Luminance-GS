@@ -26,6 +26,8 @@ Read this when the paper and the code seem to disagree, or when writing the meth
 ## Why each one matters for this project
 
 - **1:** the test-time image comes from the colours trained by L_enh and L_spa. Washed-out or hue-flipped pseudo-targets therefore show up directly in the test renders.
+  - The paper and the repo agree on one point: each Gaussian has one dark colour for every view, so L_low asks one dark render to match every dark photo.
+  - Our `--dark_branch` (M2) can scale each view's dark render by 2^{−s_k} instead, for photos taken at different exposures. The default, `shared`, is the authors' behaviour.
 - **2 and 13:** the colour basis is trained **only** through the attached pseudo-target. Detaching the target also freezes the basis at RGB. That is the Rung 0 "detach" confound and the reason for Rung 0.5. The paper's own ablation credits M_k with only +0.04 dB on buu. Rung 0.5 settled it: freezing the basis explains 10 to 42% of the pooled detach gain (depending on the order) and does not remove the bike hue flip, so Rung 2 uses a fixed RGB basis.
 - **13, for the method description:** in the `detach` cell, which is Rung 2's reference and default mode, the curve learns only from L_hist, which never sees a render. The pseudo-targets are then a function of the dark photos alone, unlike the paper's joint optimisation. Say this explicitly when describing the baseline and Rung 2.
 - **4 and 5:** with truncation and no monotonicity, flat or decreasing steps are possible and the basis gets no signal from the lookup. Rung 0 found the curves monotone in practice (except shrub baseline, at most 5/255), so the case for Rung 2 rests on structure and interpolation, not on monotonicity.
@@ -40,4 +42,4 @@ The paper reports a LOM low-light mean of 18.34 dB PSNR, 0.799 SSIM and 0.294 LP
 
 ## Additions on our branches (not in the official code)
 
-All default to off or to the official value. `--seed`, `--detach_pseudo_target`, `--diagnostics`, `--diag_steps` (Rung 0); `--freeze_color_basis`, `--detach_curve_in_target`, `--grad_check`, `--rescore_run`, `--ref_depth_run` (Rung 0.5). Rung 0 checked that a run with no new flags is bit-identical in the curve helper and keeps the same training order.
+All default to off or to the official value. `--seed`, `--detach_pseudo_target`, `--diagnostics`, `--diag_steps` (Rung 0); `--freeze_color_basis`, `--detach_curve_in_target`, `--grad_check`, `--rescore_run`, `--ref_depth_run` (Rung 0.5); `--dark_branch` (M2, default `shared`). Rung 0 checked that a run with no new flags is bit-identical in the curve helper and keeps the same training order.
