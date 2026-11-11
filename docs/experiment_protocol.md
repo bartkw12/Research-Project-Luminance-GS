@@ -6,6 +6,7 @@ How experiments in this project are set up, scored and compared, so results from
 
 - **LOM** (from Aleth-NeRF), `Luminance-GS/data/LOM_full/<scene>/`, five scenes: **buu, chair, sofa, bike, shrub**. Training reads `low/` (dark photos); validation reads `high/` (normal-light photos of held-out views) and is used only for scoring.
 - `--exp_name low` for low light (the main setting), `over_exp` for the overexposure subset (needed for H1 later).
+  - *Note (2026-11-11):* whether overexposure is part of H1 is pending Wei (13 Nov check-in). It would need official and `detach` baselines on `over_exp` too. Until then, M2 and M3 test H1 on low light only.
 - The COLMAP cameras are not pinhole, so images are undistorted and cropped to 374×499. Training-view ground truth used for oracle scoring gets the same undistortion.
 - **Varying-exposure LOM** (to build for Rung 2, tests H2): for each training view k, draw u_k uniformly from [−1, 1] and use `clip(2^{u_k} · I_k, 0, 1)` re-quantised to 8 bits. Keep the test views and `high/` unchanged. Save every u_k so learned exposures can be checked: the ideal is s_k ≈ −u_k + constant. Compare the learned s_k with its initialisation log2(m̄ / m_k), which already tracks u_k through each view's mean brightness. A histogram-only s_k follows u_k almost by construction, so the real test is beating the initialisation.
   - **As built (M1, 2026-11-08):**
@@ -27,6 +28,10 @@ How experiments in this project are set up, scored and compared, so results from
   - Run: `python run_rung0.py --data_root ../data/LOM_vexp --root ../results/vexp ...`. The runner refuses a non-default `--data_root` with the default `results/rung0` root.
   - Re-score with the **LOM** reference depth, so consistency matches Rung 0.5: `python rescore_runs.py --root ../results/vexp --ref_root ../results/rung0`.
   - Analysis: `python vexp_analyze.py` writes `results/vexp/summary/`.
+- **M2 and M3** (planned 2026-11-11; details in `Luminance-GS/Implementation_guides/M2_rung2_plan.md`, section 2.3):
+  - Rung 2 runs on LOM go to a new root, `results/rung2/`. Varying-set runs join M1's in `results/vexp/`, so all four cells of the 2×2 share one root.
+  - The 2×2 on the varying set: curve (`detach` or Rung 2) × dark branch (shared or exposure-aware), i.e. `detach`, `detachexp`, `rung2`, `rung2exp`. "exp" in a variant name means the exposure-aware dark branch.
+  - Re-score every root other than `results/rung0` with `--ref_root ../results/rung0`. Only `rung0` holds the `<scene>_baseline_seed0` reference runs; without the flag, `rescore_runs.py` skips every run in `results/rung2/`.
 - **Variants** are entries in `VARIANTS` in `examples/run_rung0.py` (name → extra flags). `baseline` (no flags) is the official code and stays in every table, labelled "official".
 - **Batch runner:** `python run_rung0.py --scenes ... --variants ... --seeds 0 1 2 [--root ...] [--dry_run]`. It is resumable: a run counts as done when `stats/val_step9999.json` exists, and an incomplete run folder is deleted and restarted. Each run logs to `<root>/logs/<run>.log` and adds a row to `<root>/runs.csv` (finish time, ok, return code, minutes).
 - **Smoke test first:** about 300 steps per new flag set, for example `--max_steps 300 --eval_steps 300 --save_steps 300 --diag_steps 1 300 --diagnostics`, into a `smoke*` folder (git-ignored).
@@ -41,6 +46,7 @@ How experiments in this project are set up, scored and compared, so results from
 | `stats/train_*.json`, other `stats/val_*.json` | intermediate stats | yes |
 | `diagnostics/*.csv`, `diagnostics/timing.json` | loss log, pseudo-target scores, consistency | yes |
 | `rescore/*.csv`, `rescore/*.json` | Rung 0.5 re-scoring (val metrics, colour metrics, shared-depth consistency) | yes |
+| `exposure_init.json` (and a copy in `rescore/`) | M2: per training view, the mean input and s_measured = log2(m̄/m_k). Written whenever `--dark_branch` is not `shared` | yes |
 | `ckpts/`, `*.pt`, `*.npz`, `renders/`, `renders_depth/`, `videos/`, `tb/`, per-view PNGs | bulky outputs | **no** (git-ignored) |
 
 Summary folders (`results/rung0/summary/`, `summary_rung05/`) and the hand-written reports in `Luminance-GS/Implementation_guides/` are committed in full. Once a rung's report is written, its summary folder is not edited again; a re-analysis goes into a new folder.
@@ -60,6 +66,7 @@ Summary folders (`results/rung0/summary/`, `summary_rung05/`) and the hand-writt
 | Exposure recovery (varying-exposure set) | per scene, slope and Pearson r of learned s_k against true u_k, next to the same for the initialisation log2(m̄ / m_k). **Slope and r saturate on this set** (the init alone reaches r −0.95 to −0.99), so always add the residual RMSE in stops of s_k + u_k after removing the mean, unpaired and paired (minus the same view's s_k on LOM), next to the init and the histogram oracle. For models without an explicit s_k, fit one shared F plus one s_k per view to the final curves (`build_vexp.fit_exposure_form`) | `vexp_analyze.py` T4a |
 | Pseudo-target leak (varying-exposure set) | slope of log2(mean pseudo-target, varying / LOM, same view and seed) against u_k: 0 = exposure fully compensated, 1 = passes straight through. Same for the enhanced render at the training view, and for the dark input as a check (≈ 1) | `vexp_analyze.py` T4b |
 | Dark-branch fit | `fit_psnr_lowrender_vs_input`: shared dark render vs the dark input at the training views. On the varying set, report the paired difference against signed u_k, split by sign (not against \|u_k\|) | `rescore/pseudo_targets.csv`, `vexp_analyze.py` T5 |
+| Dark-branch fit as trained (M2) | `fit_psnr_lowrender_exp_vs_input`: the dark render as its loss sees it, i.e. ×2^(−s_k) with an exposure-aware `--dark_branch`, and equal to the column above with `shared`. `s_dark` is the s_k used (0 for `shared`). Compare cells with this column | `rescore/pseudo_targets.csv` (last two columns) |
 | Curve parameters | count of learnable curve parameters (baseline about 255k + 5N; Rung 2 about 32 + N) | by hand |
 | Wall time | minutes per run from `runs.csv`; exclude `sofa_detach_seed1` (PC slept 11 h) | `runs.csv` |
 
@@ -78,6 +85,8 @@ Seed std of validation PSNR (baseline, seeds 0 to 2):
 | shrub | 1.13 | 0.98 | 1.8 dB | about 1.6 dB |
 
 "Detectable" means the difference exceeds 2 standard errors with 3 seeds per arm, about 1.6× the per-run std.
+
+*Note (2026-11-11):* H1's rule is open, to settle before the M3 runs. The candidates are the M2 plan's rule (section 6.5: buu, chair, sofa and bike; brightness-matched PSNR not below −2× noise, noise as in comparison rule 2) and the explainer's (section 8.11: every scene, within the detectable effect above).
 
 ## Reference numbers for Rung 2
 
@@ -114,6 +123,12 @@ Comparison rules:
 5. Keep the official configuration in every table as "official", next to the `detach` cell, which Rung 0.5 chose as the reference baseline for Rung 2.
 6. A negative or null result is still a result. Log it with the same care.
 7. Shrub is uninformative so far. Its seed noise is the largest (0.75 to 1 dB brightness-matched), and no factor has had a real effect on it. Report it, say so, and do not let it drive a conclusion.
+8. **M2 and M3** (pre-registered in `M2_rung2_plan.md` section 6.5, 2026-11-11; to confirm with Wei on 13 Nov): H2 is read from the 2×2 on the varying set, with the factorial effects of rule 4.
+   - **Supported:** the pooled curve-model main effect on brightness-matched PSNR is real and positive, LPIPS is not worse beyond noise, and the effect is positive in most informative scenes.
+   - **Supported only with the dark-branch fix:** only `rung2exp` − `detachexp` is real.
+   - **Pooled effect between 1× and 2× noise:** run seeds 3 and 4 before concluding.
+   - **Mechanism, which supports H2 but does not replace it:** Rung 2's pooled pseudo-target leak is near 0 and below `detach`'s by more than 2× noise.
+   - **Report `num_GS` per cell:** the exposure-aware dark branch also re-weights each view's `L_low` gradient, which can change densification.
 
 ## Analysis and reporting
 
