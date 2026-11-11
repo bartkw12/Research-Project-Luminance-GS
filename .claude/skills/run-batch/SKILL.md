@@ -45,7 +45,7 @@ Wait for an explicit go-ahead. Do not change power settings yourself.
 ## 4. When it finishes
 
 1. Check that every run has `stats/val_step9999.json` and `runs.csv` shows `ok` True. List any failures with the last lines of their logs.
-2. Run the rung's re-scoring and analysis scripts if the plan calls for them, for example `python rescore_runs.py` and then `python rung05_analyze.py`. For runs on the varying-exposure set, re-score with the LOM reference depth: `python rescore_runs.py --root ../results/vexp --ref_root ../results/rung0`. Ask first if they take more than about 30 minutes.
+2. Run the rung's re-scoring and analysis scripts if the plan calls for them, for example `python rescore_runs.py` and then `python rung05_analyze.py`. For runs in any root other than `results/rung0` (for example `results/vexp` or `results/rung2`), re-score with the LOM reference depth: `python rescore_runs.py --root ../results/<root> --ref_root ../results/rung0`. Only `rung0` holds the `<scene>_baseline_seed0` reference runs; without `--ref_root`, every run in `results/rung2` is skipped as "reference run missing". Ask first if they take more than about 30 minutes.
 3. Summarise, from the repository root, with `python .claude/skills/log-experiment/summarize_runs.py <root> --variants ...`.
 4. Write a research-log entry with `/log-experiment`.
 5. Remind Bart to restore the sleep setting.
