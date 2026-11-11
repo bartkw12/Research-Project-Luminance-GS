@@ -3,8 +3,9 @@ import math
 import os
 import time
 from dataclasses import dataclass, field
+from pathlib import Path
 from turtle import color
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Literal, Optional, Tuple
 
 import imageio
 import numpy as np
@@ -180,6 +181,10 @@ class Config:
     rescore_run: Optional[str] = None
     # Run folder whose splats give the depth and alpha for the consistency warp (default: the run itself)
     ref_depth_run: Optional[str] = None
+    # M2: dark branch. "shared" is the official code: one dark render serves every view. Otherwise view k's dark
+    # render is scaled by 2^{-s_k} before loss_regress_low, with s_k from "measured" (log2(m_bar/m_k), geometric
+    # mean, fixed), "model" (Rung 2's own s_k, stop-gradient) or "gains" (the set's true gains; diagnosis only)
+    dark_branch: Literal["shared", "measured", "model", "gains"] = "shared"
 
     def adjust_steps(self, factor: float):
         self.eval_steps = [int(i * factor) for i in self.eval_steps]
@@ -310,6 +315,17 @@ class Runner:
             load_depths=cfg.depth_loss,
         )
         self.valset = Dataset(self.parser, split="val") # Validation Set
+
+        # M2: per-view exposures for the dark branch (part C: also for Rung 2's s_k init). Nothing runs in the
+        # default. The guard comes first, so nothing is written before the exit.
+        if cfg.dark_branch == "model":
+            raise SystemExit("--dark_branch model needs --curve_model rung2")  # part C relaxes this
+        self.s_measured = self.s_gains = None
+        if cfg.dark_branch != "shared":
+            self.s_measured = self.measure_exposures()
+        if cfg.dark_branch == "gains":
+            self.s_gains = self.load_gains()
+
         self.scene_scale = self.parser.scene_scale * 1.1 * cfg.global_scale
         
         # Model
@@ -649,6 +665,10 @@ class Runner:
                 colors_low, depths_low = renders_low, None
                 colors_enh, depths_enh = renders_enh, None
 
+            scale = self.dark_scale(image_ids)
+            if scale is not None:
+                colors_low = colors_low * scale  # M2: view k's dark render at its photo's exposure, 2^{-s_k}
+
             if cfg.random_bkgd: # False
                 bkgd = torch.rand(1, 3, device=device)
                 colors_low = colors_low + bkgd * (1.0 - alphas_low)
@@ -879,6 +899,45 @@ class Runner:
                 print(f"[grad_check]   {name:32s} grad norm {norm:.3e} ({len(gs)}/{len(ps)} tensors)")
             else:
                 print(f"[grad_check]   {name:32s} None")
+
+    # ------------------------------------------------------------------ M2: exposure-aware dark branch
+    def train_view_names(self) -> List[str]:
+        """Training view names in trainset order (trainset[i] and image_id i)."""
+        return [self.parser.image_names[int(self.trainset.indices[i])] for i in range(len(self.trainset))]
+
+    @torch.no_grad()
+    def measure_exposures(self) -> Tensor:
+        """s_k = log2(m_bar / m_k) per training view: m_k = mean of the view as training loads it (undistorted, all
+        pixels and channels, /255), m_bar = geometric mean, so mean_k s_k = 0. Same numbers as build_vexp's s_init.
+        Reads trainset[i] (no DataLoader), so no random numbers are drawn. Writes <result_dir>/exposure_init.json."""
+        n = len(self.trainset)
+        m = np.array([float((self.trainset[i]["image"] / 255.0).mean()) for i in range(n)])
+        s = np.log2(m).mean() - np.log2(m)
+        with open(f"{self.cfg.result_dir}/exposure_init.json", "w") as f:
+            json.dump({"view": self.train_view_names(), "mean_input": m.tolist(), "s_measured": s.tolist()}, f, indent=1)
+        return torch.tensor(s, dtype=torch.float32, device=self.device)
+
+    def load_gains(self) -> Tensor:
+        """Oracle for diagnosis only: s_k = -(realised log2 gain - mean) from <data_dir>/exposure_gains.json
+        (written by build_vexp.py), i.e. the true relative gain of each view. Not a method."""
+        path = Path(self.cfg.data_dir) / "exposure_gains.json"
+        if not path.exists():
+            raise SystemExit(f"--dark_branch gains needs {path} (a varying-exposure set built by build_vexp.py)")
+        rows = json.loads(path.read_text())["views"]
+        g = {r["view"]: r["log2_ratio"] for r in rows}
+        g = np.array([g[name] for name in self.train_view_names()])
+        return torch.tensor(-(g - g.mean()), dtype=torch.float32, device=self.device)
+
+    def dark_scale(self, image_ids: Tensor) -> Optional[Tensor]:
+        """Factor 2^{-s_k} that puts view k's dark render at that photo's exposure; None for the official shared
+        dark branch. Used by train() and the diagnostics, so the two cannot drift apart. Never carries gradient."""
+        src = self.cfg.dark_branch
+        if src == "shared":
+            return None
+        s = self.rung2.s.detach() if src == "model" else (self.s_measured if src == "measured" else self.s_gains)
+        # exp(-ln2 * s), not torch.exp2: torch 1.13 compiles exp2's CUDA kernel at run time (NVRTC), which fails in
+        # this env (nvrtc-builtins64_117.dll missing)
+        return torch.exp(-math.log(2.0) * s[image_ids]).view(-1, 1, 1, 1)
 
     @torch.no_grad()
     def update_running_stats(self, info: Dict):
