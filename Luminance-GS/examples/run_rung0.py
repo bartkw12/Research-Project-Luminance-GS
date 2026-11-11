@@ -10,6 +10,8 @@ Run from Luminance-GS/examples:
     python run_rung0.py --scenes buu --seeds 0 --max_steps 50 --root ../results/rung0_test
     python run_rung0.py --data_root ../data/LOM_vexp --root ../results/vexp --variants baseline detach
                                               # M1: the same runs on the varying-exposure set
+    python run_rung0.py --data_root ../data/LOM_vexp --root ../results/vexp --variants detachexp
+                                              # M2: detach with the exposure-aware dark branch
 """
 
 import argparse
@@ -31,6 +33,8 @@ VARIANTS = {
     # Rung 0.5 factorial: each new cell cuts one of the two gradient paths that "detach" cuts
     "frozenbasis": ["--freeze_color_basis"],
     "detachcurve": ["--detach_curve_in_target"],
+    # M2: "exp" = exposure-aware dark branch (view k's dark render scaled by 2^{-s_k} before loss_regress_low)
+    "detachexp": ["--detach_pseudo_target", "--dark_branch", "measured"],
 }
 
 
