@@ -12,6 +12,9 @@ Run from Luminance-GS/examples:
     python rescore_runs.py --runs bike_baseline_seed0 bike_detach_seed0
     python rescore_runs.py --root ../results/vexp --ref_root ../results/rung0
                                               # M1: varying-exposure runs with the LOM reference depth
+Every root other than results/rung0 needs --ref_root ../results/rung0: only rung0 holds the reference runs.
+Flags that change the model or the dark branch (MODEL_FLAGS) are passed on from each run's cfg.json, so the
+re-score rebuilds the run as it was trained (M2).
 """
 
 import argparse
@@ -25,8 +28,11 @@ from datetime import datetime
 from pathlib import Path
 
 EXAMPLES = Path(__file__).resolve().parent
-RUN_RE = re.compile(r"^(?P<scene>[a-z]+)_(?P<variant>[a-z]+)_seed(?P<seed>\d+)$")
+RUN_RE = re.compile(r"^(?P<scene>[a-z]+)_(?P<variant>[a-z0-9]+)_seed(?P<seed>\d+)$")  # M2: digits too (rung2)
 REF_VARIANT, REF_SEED = "baseline", 0
+# M2: flags that change the model or the dark branch, passed on from the run's cfg.json so the re-score rebuilds
+# it (diagnostics.MODEL_DEFAULTS asserts they match). Part C adds curve_model and the rung2_* flags.
+MODEL_FLAGS = ["dark_branch"]
 
 
 def final_ckpt(run_dir: Path) -> Path:
@@ -73,6 +79,9 @@ def main():
             "--data_factor", str(cfg["data_factor"]), "--test_every", str(cfg["test_every"]),
             "--result_dir", str(out), "--rescore_run", str(run_dir), "--ref_depth_run", str(ref),
         ]
+        for flag in MODEL_FLAGS:  # older cfg.json files have none of these keys: the default is then used
+            if flag in cfg:
+                cmd += [f"--{flag}", str(cfg[flag])]
         print(f"[rescore_runs] ({k}/{len(todo)}) {datetime.now():%H:%M:%S} {run_dir.name} (ref {ref.name})", flush=True)
         if args.dry_run:
             print("    " + " ".join(cmd))
