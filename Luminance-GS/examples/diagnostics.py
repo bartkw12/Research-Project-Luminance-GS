@@ -47,6 +47,10 @@ HUE_PRED_SAT_MIN = 0.05             # ... and the prediction has a defined hue
 HUE_MIN_PIXELS = 500                # fewer masked pixels in a view -> NaN
 # fixed views for re-score example images (the Rung 0 qualitative figures)
 RESCORE_EXAMPLES = {"bike": "29", "shrub": "26"}
+# M2: Config flags that change the model or the dark branch, with their defaults (the official code). A re-score
+# must rebuild the run with the same values (rescore_runs.MODEL_FLAGS passes them on). Kept here because this
+# module must not import the trainer.
+MODEL_DEFAULTS = {"dark_branch": "shared"}
 
 
 @contextlib.contextmanager
@@ -328,6 +332,8 @@ class Diagnostics:
             renders_enh, renders_low, alphas_enh, _, _ = self._render(c2w, K, width, height)
             render = torch.clamp(renders_enh[..., :3], 0.0, 1.0)
             render_low = renders_low[..., :3]
+            scale = runner.dark_scale(ids)  # M2: None for the official shared dark branch
+            render_low_exp = render_low if scale is None else render_low * scale  # the dark render as its loss sees it
             depth = renders_enh[..., 3]                                     # [1, H, W], camera-space z
             if ref_splats is not None:
                 with swapped_splats(runner, ref_splats):
@@ -369,6 +375,10 @@ class Diagnostics:
                     **color_metrics(pseudo0[0], gt[0], "pseudo0_"),
                     **color_metrics(render[0], gt[0], "render_"),
                 })
+            # M2, appended last so the existing columns keep their order. With the shared dark branch s_dark = 0
+            # and the new fit column equals fit_psnr_lowrender_vs_input.
+            row["s_dark"] = 0.0 if scale is None else float(-np.log2(scale.item()))  # on the CPU: no NVRTC kernel
+            row["fit_psnr_lowrender_exp_vs_input"] = psnr(nchw(render_low_exp.clamp(0, 1)), nchw(pixels))
             rows.append(row)
             if i in examples:
                 stem = Path(self.view_names[i]).stem
@@ -470,6 +480,9 @@ class Diagnostics:
         run_cfg = json.loads((run_dir / "cfg.json").read_text())
         for k in ("data_dir", "exp_name", "data_factor", "test_every"):
             assert run_cfg[k] == getattr(cfg, k), f"{k}: run has {run_cfg[k]!r}, re-score got {getattr(cfg, k)!r}"
+        for k, default in MODEL_DEFAULTS.items():  # M2: older runs have no such key, i.e. the default
+            assert run_cfg.get(k, default) == getattr(cfg, k), \
+                f"{k}: run has {run_cfg.get(k, default)!r}, re-score got {getattr(cfg, k)!r} (pass --{k} to the re-score)"
         ckpt_path = final_ckpt_path(run_dir)
         ckpt = torch.load(ckpt_path, map_location=self.device)
         for k in runner.splats.keys():
