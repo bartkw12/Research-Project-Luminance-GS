@@ -29,7 +29,9 @@
       "Edit(/Luminance-GS/results/rung0/summary/**)",
       "Edit(/Luminance-GS/results/rung0/summary_rung05/**)",
       "Edit(/Luminance-GS/Implementation_guides/Rung0_results.md)",
-      "Edit(/Luminance-GS/Implementation_guides/Rung0.5_results.md)"
+      "Edit(/Luminance-GS/Implementation_guides/Rung0.5_results.md)",
+      "Edit(/Luminance-GS/results/vexp/summary/**)",
+      "Edit(/Luminance-GS/Implementation_guides/M1_vexp_results.md)"
     ]
   },
   "hooks": {
