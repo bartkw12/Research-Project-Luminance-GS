@@ -417,3 +417,68 @@ Entries up to 2026-10-23 were backfilled from git history, the run folders and t
   - At 300 steps there is no densification yet (`num_GS` 1090 in both runs), and the gain is clear only on darkened views. For brightened views the factor (up to 2×) also scales up the immature render's structural error, which absolute-error PSNR penalises.
   - The 10k-step batch decides.
 - **Next:** ask Bart before the `detachexp` batch (15 runs, about 2 h). Part B (`rung2.py`, tests, preview) can be written meanwhile, as new files only.
+
+### 2026-11-11: M2 open items decided; `detachexp` batch launched
+
+- **Rung / type:** Rung 2 (M2) · decision + setup
+- **Why:** the three open items of the 2026-11-11 review entry, and plan step 4 (the `detachexp` batch).
+- **Decisions** (Bart, 2026-11-11):
+  1. **Dark-end alignment: the one-bin shift.** Rung 2's curve loss and `cdf` init use T_k = [0, CDF_k[0], …, CDF_k[253]], so every level ≥ 1 reads the same CDF bin as `detach`'s truncating LUT and level 0 stays black. The step 6 fallback is then the smoothness ablation in M5.
+  2. **H1 rule: plan 6.5.** In each of buu, chair, sofa and bike, Rung 2 − `detach` in brightness-matched PSNR is not below −2× noise, and SSIM and LPIPS are not worse by more than 2× noise. Shrub is reported but does not decide. This replaces the explainer's 8.11 wording (every scene, "within the detectable effect").
+  3. **Overexposure in H1:** pending Wei (13 Nov). Until then H1 is tested on low light only.
+  - Recorded in `M2_rung2_plan.md` (header, 2.2, step 6, 6.5, risk 1, section 9), the explainer (8.6, 8.11, Q8, Q15), `docs/experiment_protocol.md`, `docs/curve_estimation.md` and `CLAUDE.md` (H1 line).
+- **Setup:** Bart committed part A as `b8b811a`. With Bart's go-ahead, Claude started the batch in the background at 14:17 (pre-flight: GPU free, 3.9 TB free, dry run 15 runs and 0 done, sleep on AC already 0).
+- **Reproduce:** branch `main`, commit `b8b811a`. From `Luminance-GS/examples`: `python -u run_rung0.py --data_root ../data/LOM_vexp --root ../results/vexp --variants detachexp --seeds 0 1 2`, console in `results/vexp/batch_console_detachexp.log` (git-ignored).
+- **Results:** pending (batch running).
+- **Next:**
+  - After the batch: re-score with `--ref_root ../results/rung0`, quick look (`summarize_runs.py`, `detach` vs `detachexp`), and a results entry.
+  - Part B is written but not yet logged (`rung2.py`, `test_rung2.py`, `rung2_preview.py`; uncommitted). It gets its own entry once the full preview has finished, together with the shape-prior finding from its first run.
+
+### 2026-11-11: M2 part B: Rung 2 module, tests and preview; the dropped shape prior breaks H1's premise
+
+- **Rung / type:** Rung 2 (M2) · code + experiment (CPU only, no 3DGS)
+- **Why:** plan steps 5 and 6: build Rung 2 as new files and preview its curve before any GPU run.
+- **What was done:** `rung2.py` (`ExposureCurve`, knots, `cdf` init, `curve_loss`, one-bin `hist_target`); `test_rung2.py` (13 tests: the plan's 10 plus target/round trip, `used_range_max`, alignment against `tools.LUT_mapping`); `rung2_preview.py` (replays 10k steps of 10·L_curve per view with the trainer's optimisers, plus a full-batch optimum). After the first run, two EXPLORATORY configs (not in the plan): the official shape-prior term 0.5[mse(p, X) + 0.01 mse(p, T_k)] with one learned global gamma, on the shared F (`priorF`) or on each composed curve (`priorL`).
+- **Reproduce:** branch `main`, commit `b8b811a` plus the three new (untracked) files. From `examples/`: `python test_rung2.py`; `python rung2_preview.py` (lr 1e-3, `results/rung2/preview/`, 920 s); `python rung2_preview.py --lr_F 1e-2 --out ../results/rung2/preview_lrF1e-2` (918 s). Seed 0, CPU, 2 threads, during the batch.
+- **Results** (*measured*; sources: the two `tables.md`):
+  - Tests 13/13. Synthetic recovery of s within 0.0001 stops; shifted target vs official LUT at levels 1-16 max 0.0015 (unshifted 0.098).
+  - **Shape prior:** `detach`'s seed-0 curves sit at (HE-CDF + pseudo curve)/2: mean |diff| 0.009-0.020, against 0.034-0.119 from either alone (buu, bike, sofa on LOM; buu varying). The plan's L_curve ("L_hist minus the shape-prior term") therefore fits pure HE, a different target.
+  - P5 machinery check: `detach`'s own curves through the preview's code reproduce its re-scored `pseudo_psnr_gtmean` within 3.8e-6 dB (buu LOM, 22 views).
+  - Plan default (`quadratic-cdf`), LOM, pseudo-target bm PSNR − `detach`'s (P5, diagnostic only): buu −10.85, chair −7.00, sofa −12.81, bike −8.45, shrub +1.50 dB; P5 rule fires. Same at lr 1e-2. Applied-curve distance to `detach` (P4, training photos only) 32-46 levels.
+  - `priorF` at lr 1e-2: γ 0.164/0.108/0.136/0.075/0.077 vs `detach` mean γ 0.195/0.095/0.149/0.065/0.068; distance to `detach` on LOM 5.4-14.3 levels; P5 bm gap LOM −0.07/+0.06/−0.19/+0.00/+0.22, varying −0.50/+2.07/+1.10/+0.60/+1.61. At lr 1e-3 it cannot reach that (gap −5.8 to −11.3 on four scenes).
+  - Pseudo-target leak (P3): default +0.007 to +0.098, `priorF` −0.003 to +0.029, `priorL` +0.086 to +0.122; M1 `detach` +0.36 to +0.65.
+  - Plan rules: knots stay quadratic (usedrange −8.4%/−9.1%, < 30%); lr gap ≤ 2.64% (1e-3), ≤ 0.33% (1e-2). The identity init never comes within 0.01 of the `cdf` F at either lr.
+- **Takeaway:**
+  - *Measured:* the H2 mechanism holds in the replay (leak near 0, s_k tracking the gains with slope −0.89 to −1.04).
+  - *Inferred:* H1 as planned would compare different targets. One global gamma on F (K + N + 1 parameters) reproduces `detach`'s targets on LOM. F needs lr ≈ 1e-2, because steps on softplus increments move it far less than the official curve's direct steps.
+  - The one-bin shift was premised on `detach` ≈ CDF[ℓ−1]. That premise fails at the dark end, where the prior dominates. Level 0 still differs: `detach` maps it to 68-86 levels on chair, bike and shrub, and F(0) = 0 maps it to 0.
+- **Next:** Bart decides the curve-loss default (prior on F with one gamma, lr 1e-2; or as planned), and whether to revisit the one-bin shift. Then part C, and a final preview run with the decided default. P5 never chose anything here; it agrees with the training-photo distance.
+
+### 2026-11-11: M2 step 4: `detachexp` on the varying-exposure set (first dark-branch column effect)
+
+- **Rung / type:** Rung 2 (M2) · experiment
+- **Why:** plan step 4. Measures the exposure-aware dark branch's effect for the `detach` curve before any Rung 2 run. This is the batch launched in the decisions entry above.
+- **What was done:** 15 runs (5 scenes × seeds 0-2), all `ok`, 7.5-9.8 min (mean 8.3; M1 `detach` 8.1), batch 14:17-16:22. Re-scored against `results/rung0/<scene>_baseline_seed0` depth, about 9 s per run. Quick look only: `summarize_runs.py --variants detach detachexp --reference detach`, plus two read-only scratch scripts for dark fit, `num_GS` and pooled means. `cfg.json` and re-score flags were checked for all 15 runs.
+- **Reproduce:** branch `main`, commit `b8b811a` (the untracked part B files are not imported). From `Luminance-GS/examples`: `python -u run_rung0.py --data_root ../data/LOM_vexp --root ../results/vexp --variants detachexp --seeds 0 1 2`, then `python rescore_runs.py --root ../results/vexp --ref_root ../results/rung0`. Consoles in `results/vexp/batch_console_detachexp*.log` (git-ignored).
+- **Results** (*measured*). Each cell is `detachexp` − `detach`, paired by seed, with ×noise = mean Δ / pooled seed sd. Dark fit = mean PSNR of the dark render, as L_low sees it, against the input. Sources: each run's `rescore/val_summary.json`, `rescore/pseudo_targets.csv` and `stats/val_step9999.json`.
+
+  | Scene | bm PSNR | raw PSNR | SSIM | LPIPS | dark fit: shared → exp (LOM `detach`) | num_GS |
+  |---|---|---|---|---|---|---|
+  | buu | −0.24 (−0.2×) | −1.13 (−2.0×) | +0.0222 (+2.2×) | −0.0351 (−2.1×) | 41.18 → 42.41 (46.25), +1.2× | −31.5% (−4.7×) |
+  | chair | +0.47 (+0.8×) | +0.67 (+0.6×) | +0.0213 (+1.2×) | −0.0437 (−1.2×) | 38.02 → 46.74 (49.02), +8.5× | −26.7% (−2.5×) |
+  | sofa | +0.53 (+0.5×) | +1.88 (+0.9×) | +0.0130 (+1.2×) | −0.0024 (−0.1×) | 35.57 → 45.44 (47.42), +6.6× | −23.3% (−3.7×) |
+  | bike | +0.42 (+1.4×) | +0.69 (+0.8×) | +0.0263 (+1.7×) | −0.0052 (−0.5×) | 41.86 → 47.30 (47.72), +12.4× | −16.5% (−7.5×) |
+  | shrub | +0.11 (+3.4×) | −0.07 (−0.5×) | +0.0049 (+3.6×) | −0.0052 (−3.9×) | 37.11 → 40.68 (40.81), +15.3× | −5.0% (−2.4×) |
+  | pooled | 21.03 → 21.28, +0.26 (+0.5×) | +0.41 (+0.5×) | +0.0176 (+1.9×) | −0.0183 (−1.4×) | 38.75 → 44.52 (46.24), +17.9× | |
+
+  - Built-in check (plan 2.1, 6.1): same-seed pseudo-targets are identical; the largest |Δ log2 `mean_pseudo`| is 0.0000 in all 15 pairs.
+  - Pooled seed sd shrinks: bm PSNR 0.72 → 0.31, raw 1.15 → 0.25, SSIM 0.0126 → 0.0019, LPIPS 0.0167 → 0.0069.
+  - Per-view dark-fit gain vs |u_k|: r = 0.18 on buu, 0.53-0.74 on the others.
+  - Colour, same table: bike hue error −3.35° (−2.5×). The saturation ratio moves away from 1 on bike (−0.024, −4.4×) and buu (0.940 → 0.847, −2.2×).
+- **Takeaway:**
+  - *Measured:* the switch does its job. Dark fit is +5.8 dB pooled, real in chair, sofa, bike and shrub. On buu, `detach`'s own dark fit varies 1.5 dB across seeds, so buu's +1.2 dB is not detectable. Pooled, the fit ends 1.7 dB below LOM: buu −3.8, chair −2.3, sofa −2.0, bike −0.4, shrub −0.1.
+  - *Measured:* SSIM and LPIPS improve in all five scenes, but only shrub (all three metrics) and buu (SSIM, LPIPS) pass 2×. Pooled, nothing passes 2× (SSIM +1.9×). Brightness-matched PSNR does not move beyond noise except on shrub, +0.11 dB.
+  - *Measured:* `detachexp` grows 5-32% fewer Gaussians, real in all five scenes. *Inferred:* with the shared dark branch, extra Gaussians absorb the exposure mismatch between views. The column effect is therefore not only "better fit", as review item 7 predicted.
+  - *Inferred:* the smaller seed noise in the exposure-aware column lowers the detectable effect for `rung2exp` − `detachexp`. The bar in that column is 21.28 dB bm pooled.
+  - Plan 5.3 `detachgains` ("dark fit more than 2 dB below LOM"): not met pooled (1.7 dB), met on buu and chair individually. It runs only with Bart's OK.
+- **Next:** send Wei this column effect (plan step 4). Bart decides the Rung 2 curve-loss default (part B entry above), then part C and M3.
