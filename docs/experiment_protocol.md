@@ -86,7 +86,7 @@ Seed std of validation PSNR (baseline, seeds 0 to 2):
 
 "Detectable" means the difference exceeds 2 standard errors with 3 seeds per arm, about 1.6× the per-run std.
 
-*Note (2026-11-11):* H1's rule is open, to settle before the M3 runs. The candidates are the M2 plan's rule (section 6.5: buu, chair, sofa and bike; brightness-matched PSNR not below −2× noise, noise as in comparison rule 2) and the explainer's (section 8.11: every scene, within the detectable effect above).
+*Note (2026-11-11):* H1 uses the M2 plan's rule (section 6.5: buu, chair, sofa and bike; brightness-matched PSNR not below −2× noise, SSIM and LPIPS not worse by more than 2× noise, noise as in comparison rule 2). Bart chose it over the explainer's earlier wording (every scene, within the detectable effect above). Overexposure in H1 is pending Wei.
 
 ## Reference numbers for Rung 2
 
