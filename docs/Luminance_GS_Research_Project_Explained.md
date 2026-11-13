@@ -852,9 +852,9 @@ $$\mathcal{L}_{curve} = w(t)\,\overline{\Big(F\big(\min(1,2^{s_k}x_b)\big) - \ma
   with w = 1, then 0.5 from step 3000, and ×10 in the total loss. That is the official L_hist minus its shape-prior term, so with F detached, Rung 2 differs from `detach` only in the curve model.
 - No bin weighting. The slope-change smoother would need a new weight to tune, so it is an ablation.
 - **Optimisers:** Adam with lr 1e-3 for F and for s, no weight decay, decaying to 1% over the run, as the official curve does. After every step the mean of s is subtracted.
-- **Open (Bart decides before the Rung 2 code is wired in):**
-  - Today, `detach`'s truncating lookup maps level ℓ to about CDF[ℓ−1], while an interpolated fit on this grid maps it to about CDF[ℓ], one bin brighter. That lifts the shadows most on bike and shrub.
-  - Shifting the CDF target by one bin, [0, CDF[0], …, CDF[253]], would make Rung 2 read the same bin as `detach`. Black would stay black.
+- **Target alignment (decided by Bart, 2026-11-11): the one-bin shift.**
+  - `detach`'s truncating lookup maps level ℓ to about CDF[ℓ−1], while an interpolated fit on this grid maps it to about CDF[ℓ], one bin brighter. That would lift the shadows most on bike and shrub.
+  - So the target in the loss above (and in the `cdf` initialisation) is the CDF shifted by one bin, T_k = [0, CDF_k[0], …, CDF_k[253]]. Rung 2 then reads the same bin as `detach` for every level ≥ 1, and black stays black.
 
 #### Training mode: detached by default
 
@@ -1028,7 +1028,7 @@ A negative result on H1 or H3 is still a clean, reportable finding about a CVPR 
   - **Supported only with the dark-branch fix:** only `rung2exp` − `detachexp` is real.
   - **Between 1× and 2× noise pooled:** run seeds 3 and 4 before concluding.
 - **Mechanism:** Rung 2's pooled pseudo-target leak is near 0, and below `detach`'s by more than 2× noise. It supports H2 but does not replace it.
-- **H1 rule, open for Bart before the M3 runs.** The M2 plan's rule uses buu, chair, sofa and bike: brightness-matched PSNR not below −2× noise, and SSIM and LPIPS not worse by more than 2× noise. The H1 row above uses every scene and "within the detectable effect". One of the two will be kept.
+- **H1 rule (decided by Bart, 2026-11-11): the M2 plan's section 6.5.** H1 is supported if, in each of buu, chair, sofa and bike, Rung 2 − `detach` in brightness-matched PSNR is not below −2× noise, and SSIM and LPIPS are not worse by more than 2× noise. Shrub is reported but not used to decide (protocol rule 7). This replaces the H1 row above ("every LOM scene", "within the detectable effect"). Whether overexposure is part of H1 is pending Wei.
 
 ---
 
@@ -1066,7 +1066,7 @@ Showing that a simpler model is as good, and better where it should be, is a sta
 In the repo, detaching also cuts the only gradient to the per-view colour basis, so it stays at RGB, and the Rung 0 result mixed two effects. Rung 0.5's 2×2 separated them. Stopping the image loss from training the curve explains 85–100% of the gain where it is real; freezing the basis explains 10–42% pooled, depending on the order. *Inferred:* when attached, the curve chases the render, which degrades the targets (the bike wheel flips red). Rung 2 is compared against the `detach` cell, and the official configuration stays in every table.
 
 **Q8. How do you know improvements aren't noise?**
-Three seeds per configuration, paired comparisons, and per-scene detectable effects measured in Rung 0. Raw PSNR seed std ranges from 0.21 dB (buu) to 1.13 dB (shrub). A difference counts only if it exceeds about 1.6 × the per-run std. *(Since Rung 0.5 the rule is 2× the seed noise, the square root of the mean of the two arms' seed variances. On the varying-exposure set the noise is larger: `detach`'s brightness-matched sd reaches 1.51 dB on buu.)*
+Three seeds per configuration, paired comparisons, and per-scene detectable effects measured in Rung 0. Raw PSNR seed std ranges from 0.21 dB (buu) to 1.13 dB (shrub). A difference counts only if it exceeds about 1.6 × the per-run std. *(Since Rung 0.5 the rule is 2× the seed noise, the square root of the mean of the two arms' seed variances. On the varying-exposure set the noise is larger: `detach`'s brightness-matched sd reaches 1.51 dB on buu. H1 is judged by the M2 plan's rule 6.5, decided on 2026-11-11: section 8.11.)*
 
 **Q9. Why report brightness-matched PSNR?**
 An unsupervised method cannot know the "correct" overall brightness. Here it is set by the histogram prior, at about 0.55-0.6 for every scene, while the ground truth ranges from 0.36 to 0.54. Raw PSNR mostly measures that global offset. Brightness-matched (GT-mean) PSNR is standard in low-light enhancement. Both are reported. Rung 2's exposures do not change this: they are relative (mean 0), so global brightness still comes from the CDF fit.
@@ -1089,7 +1089,7 @@ Every Rung 0.5 cell is less saturated than the ground truth; the `detach` cell's
 The repo implements it as a 5-number rotation (3 real degrees of freedom), not a free 3×3 matrix. The paper's own ablation credits it with +0.04 dB on buu. Rung 0.5 measured it directly. It rotates only 0.02–0.49° on average, freezing it explains 10–42% of the detach gain, and it does not cause the bike hue flip. Resetting a trained basis to RGB even improves the pseudo-targets in every scene. Rung 2 uses a fixed RGB basis.
 
 **Q15. How does this handle overexposure?**
-With the same form. s_k becomes a darkening gain, and F maps bright values down. Only the CDF weight changes, as in the original. It is tested on the LOM overexposure subset. *(Pending: whether overexposure is in scope is a question for the 13 Nov check-in. It would need official and `detach` baselines on `over_exp` as well.)*
+With the same form. s_k becomes a darkening gain, and F maps bright values down. Only the CDF weight changes, as in the original. It is tested on the LOM overexposure subset. *(Pending Wei: whether overexposure is in scope is a question for the 13 Nov check-in. It would need official and `detach` baselines on `over_exp` as well.)*
 
 **Q16. What if Rung 2 is worse?**
 Then the per-view network carries something beyond exposure. The residual curve variation after PC1 (0.2-0.8% of the variance) shows what. A small low-rank per-view correction is the fallback. Either way, the analysis is a result.
