@@ -7,7 +7,10 @@ In the repository this file lives at `Luminance-GS/Implementation_guides/M2_rung
 **Reviewed 2026-11-10 by Claude Code on Bart's PC** against the code at `c5fa94c` (read-only, plus in-memory checks: torch 1.13.1 has `torch.exp2` and `searchsorted`; tyro 0.9.1 parses `--dark_branch measured` and rejects bad values). Part A matches the code. Folded in below, each marked "review":
 - **Fixes:** the sign in unit test 9 (step 5); milestone numbers (the deck has M4 = the 13 Nov check-in and M5 = H3 and ablations, so the ablations here are M5); the LOM row in 2.1 (M1 found the split between content and exposure unknown); the guard order in step 1.
 - **Additions:** the gradient re-weighting caveat and `num_GS` in R6 (2.1, 6.2); a ratio-based speed estimate (8.4, 5.1); same-seed repeats as the reference for the determinism checks (8.2, 8.4, 6.1); notes on reusing the analysis helpers (6, 6.6); the prompt for the M3 command chain (5.1); the `--ref_root` rule in the run-batch skill and `rescore/exposure_init.json` in the commit list (step 9).
-- **Open, for Bart:** the dark-end alignment of the curve loss (2.2, before part C) and its pre-declared fallback (step 6); the H1 rule (6.5 against the explainer's 8.11); whether overexposure is in H1 (section 9, a question for Wei).
+- **Decided by Bart (2026-11-11):**
+  - the one-bin shift of the curve-loss target (2.2), so the step 6 fallback is the smoothness ablation in M5;
+  - the H1 rule of 6.5 (the explainer's 8.11 now points to it);
+  - overexposure in H1: pending Wei (section 9, 13 Nov). Until then H1 is tested on low light only.
 - **Branch:** `main` (Bart, 2026-11-10). The doc updates that do not depend on new code were made on 2026-11-11, before part A; step 9 lists what is left.
 
 **Rules (from `CLAUDE.md`; they override anything below):**
@@ -101,10 +104,10 @@ The stop-gradient keeps H3 separate. In `rung2exp` the dark loss never trains s_
 | F | Monotone piecewise-linear with K segments. Knots y_0 = 0 < … < y_K = 1. Heights h = [0, c / c_K] with c = cumsum(softplus(θ)), so h_0 = 0 and h_K = 1 exactly. | `--rung2_knots` (32) | Strictly increasing, F(0) = 0 and F(1) = 1 by construction. |
 | Knot spacing | quadratic, y_j = (j/K)² | `--rung2_knot_spacing {quadratic, uniform, usedrange}` (`quadratic`) | `usedrange`: y_j = y_max·(j/(K−1))² for j < K and y_K = 1, with y_max the 99.9th percentile of min(1, 2^{s_k⁰} x) over all training pixels and channels. The default may switch to `usedrange` by the preview rule in step 6. |
 | Lookup | Linear interpolation of F at y = min(1, 2^{s_k} x), applied to R, G and B | none | Replaces the truncated 255-entry LUT, so gradient reaches y and therefore s_k. |
-| F initialisation | `cdf`: each view's HE-CDF aligned by its initial s_k (CDF_k(2^{−s_k⁰} y), 1 above the photo's range), averaged over views and sampled at the knots. Increments floored at 1e-4, then renormalised. | `--rung2_F_init {cdf, identity}` (`cdf`) | Close to where the curve loss drives F anyway; the preview checks how fast `identity` gets there (risk 5 in section 7). |
+| F initialisation | `cdf`: each view's HE-CDF aligned by its initial s_k (CDF_k(2^{−s_k⁰} y), 1 above the photo's range), averaged over views and sampled at the knots. Increments floored at 1e-4, then renormalised. | `--rung2_F_init {cdf, identity}` (`cdf`) | Close to where the curve loss drives F anyway; the preview checks how fast `identity` gets there (risk 5 in section 7). Built from the shifted target T_k (below; decided 2026-11-11). |
 | s_k | A free scalar per view, initialised at log2(m̄/m_k), the same numbers as `measured` | `--rung2_s_init {measured, zero}` (`measured`) | `zero` is the proposal's "compare both" ablation (M5). |
 | Gauge | After every optimiser step, subtract the mean of s | none | mean s = 0, so s_k is relative exposure and F carries the overall brightening. |
-| Curve loss | L_curve = w(t)·mean_b (L_k[b] − CDF_k[b])² + λ·mean_b (L_k[b+1] − L_k[b])², with L_k[b] = F(min(1, 2^{s_k} x_b)) and x_b = b/254. CDF_k from `HistogramPriorLoss.compute_histogram_equalization`. w = 1, then 0.5 from step 3000 (0.1 for `over_exp`). The total loss uses 10·L_curve where the official uses 10·L_hist. | `--rung2_smooth_lambda` (0.1) | The official L_hist minus the shape-prior term. With F detached, Rung 2 then differs from `detach` only in the curve model. The rationale's slope-change smoother needs a new weight to tune, so it stays an ablation. |
+| Curve loss | L_curve = w(t)·mean_b (L_k[b] − CDF_k[b])² + λ·mean_b (L_k[b+1] − L_k[b])², with L_k[b] = F(min(1, 2^{s_k} x_b)) and x_b = b/254. CDF_k from `HistogramPriorLoss.compute_histogram_equalization`. w = 1, then 0.5 from step 3000 (0.1 for `over_exp`). The total loss uses 10·L_curve where the official uses 10·L_hist. | `--rung2_smooth_lambda` (0.1) | The official L_hist minus the shape-prior term. With F detached, Rung 2 then differs from `detach` only in the curve model. The rationale's slope-change smoother needs a new weight to tune, so it stays an ablation. **Target (decided 2026-11-11):** the one-bin-shifted T_k = [0, CDF_k[0], …, CDF_k[253]] in place of CDF_k (below). |
 | Optimisers | Adam for θ and Adam for s, lr 1e-3 each, weight decay 0, ExponentialLR to 1% over the run (as the official curve) | `--rung2_lr_F`, `--rung2_lr_s` (1e-3) | No weight decay: on s it would pull every view toward "no exposure correction". The preview checks convergence before M3. |
 | Image loss into F and s | None (detached) | `--rung2_attach {none, s, all}` (`none`) | `s` is the H3 ablation: F's knot heights detached, y differentiable, so ∂F(2^{s_k}x)/∂s_k = F′(y)·y·ln 2. `all` is the attached-F ablation. |
 | Colour | Fixed RGB basis: F is applied to each channel | none | As in `detach`, whose basis never moves. |
@@ -115,10 +118,10 @@ The stop-gradient keeps H3 separate. In `rung2exp` the dark loss never trains s_
 - **Known systematic difference** (*follows from the code*). The official LUT truncates: level 0 and level 1 both read `curve[0]`, and level ℓ ≥ 1 reads `curve[ℓ−1]` ≈ CDF[ℓ−1]. Rung 2 maps level 0 to black (F(0) = 0) and level ℓ to about CDF[ℓ].
   - So Rung 2's pseudo-targets are black at level 0 and about one CDF bin brighter elsewhere than `detach`'s.
   - That shifts raw brightness, which brightness-matched PSNR corrects, and the darkest shadows. See risk 1 in section 7.
-  - **Open, for Bart before part C (review).** A one-bin shift of the target removes most of this difference: fit F(min(1, 2^{s_k} x_b)) to [0, CDF_k[0], …, CDF_k[253]], and use the same target in the `cdf` init.
+  - **Adopted (Bart, 2026-11-11; proposed in the review).** A one-bin shift of the target removes most of this difference: fit F(min(1, 2^{s_k} x_b)) to T_k = [0, CDF_k[0], …, CDF_k[253]], and use the same target in the `cdf` init.
     - Rung 2 then reads the same CDF bin as `detach` for every level ≥ 1. Level 0 stays black, and F(0) = 0 now matches the target at b = 0, so there is no fixed residual there.
     - The snapshot grid stays x_b = b/254, so the M1 analysis code is unaffected.
-    - Recommended, because the one-bin lift is largest where risk 1 sits: bike and shrub, whose dark-end CDFs rise steeply. The preview reports P2, P4 and P5 for both alignments (step 6).
+    - Reason: the one-bin lift is largest where risk 1 sits: bike and shrub, whose dark-end CDFs rise steeply. The preview still reports P4 and P5 for the unshifted target, as an alignment check (step 6).
 
 ### 2.3 Runs and names
 
@@ -398,7 +401,7 @@ Figures: F and each view's composed curve against the views' CDFs, per scene (de
 - **F init:** keep `cdf`. Report how many steps `identity` needs to come within 0.01 of the same F.
 - **Stop and ask Bart** if P4 or P5 show Rung 2's pseudo-targets clearly worse than `detach`'s on LOM, for example a P5 gap larger than LOM's brightness-matched seed noise in two or more scenes. That puts H1 at risk; see risk 1 in section 7.
 - **Pre-declared remedy (review).** If P5, which uses the normal-light images, triggered a change of default, the default would be informed by the ground truth. So the remedy is fixed now and judged on training photos only (P1, P4): first the target alignment of 2.2, if not already adopted; then the smoothness ablation in M5. λ stays at 0.1 by default.
-- If Bart has not decided the alignment of 2.2 by then, report P2, P4 and P5 for both alignments.
+- The alignment was adopted on 2026-11-11, so the remaining remedy is the smoothness ablation in M5. The preview uses the shifted target and reports P4 and P5 for the unshifted one too, labelled "alignment check".
 
 Write a log entry with the P1 to P5 headline numbers. P3 is the first read on H2's mechanism.
 
@@ -606,7 +609,7 @@ Keep the colours: official `SERIES[0]` and `detach` `SERIES[1]` as in M1, `rung2
 
 - **Noise and "real":** as in M1. Pair by seed; noise = sqrt(mean of the arms' seed variances); real above 2×. For the factorial, noise over the four cells, as in `rung05_analyze.effects`. Shrub is reported but not used to decide (protocol rule 7). Check pooled verdicts against pooled-without-shrub and say so if they differ.
 - **H1 (LOM):** supported if, in each of buu, chair, sofa and bike, `rung2` − `detach` in brightness-matched PSNR is not below −2× noise, and SSIM and LPIPS are not worse by more than 2× noise (explainer 8.11).
-  - **Open, for Bart before M3 (review).** This rule differs from the explainer's 8.11, which uses every scene and "within the detectable effect" (about 1.6× the per-run std). Pick one before it is pre-registered with Wei. The recommendation is this one, which follows protocol rules 5 and 7; the explainer is then updated to match.
+  - **Decided (Bart, 2026-11-11): this rule.** It replaces the explainer's 8.11 wording (every scene, "within the detectable effect", about 1.6× the per-run std), because it follows protocol rules 5 and 7. The explainer's 8.11 and Q8 now point here.
 - **H2 (varying set), read from the 2×2:**
   - **Supported:** the pooled curve-model main effect on brightness-matched PSNR is real and positive, LPIPS is not worse beyond noise, and the effect is positive in most informative scenes.
   - **Supported only with the dark-branch fix:** only the simple effect in the exposure-aware column (`rung2exp` − `detachexp`) is real.
@@ -643,6 +646,7 @@ Same rules as M1's report: direct answers first, every claim *measured* or *infe
    - On the darkest scenes (bike mean 7 to 8 levels, shrub 7 to 10, *measured* in M1), Rung 2's pseudo-targets could be noisier or darker in the shadows.
    - Preview tables P4 and P5 show this before any GPU time is spent.
    - If it is clearly worse, bring it to Bart. Do not quietly tune λ on normal-light images.
+   - With the one-bin target shift (adopted 2026-11-11), levels ≥ 1 read the same CDF bin as `detach`; only level 0 differs (black against `curve[0]`).
 2. **Knot spacing.** Quadratic knots may underfit where the pixels are (the proposal's sofa check). The preview rule in step 6 decides from training photos only.
 3. **Exposure-estimation error** (section 2.1). Neither `measured` nor Rung 2's s_k is exact, so no exp cell returns fully to LOM's dark fit. `gains` separates estimation error from misfit if needed.
 4. **Power.** Seed noise on the varying set is large (6.5). Hence the pre-declared extra seeds.
@@ -657,7 +661,7 @@ Same rules as M1's report: direct answers first, every claim *measured* or *infe
 
 **M2**
 - [x] Step 0: decision logged, branch question asked (2026-11-11; branch: `main`).
-- [ ] Part A: switch built; step 3 checks passed; `detachexp` batch `ok` (15 runs), re-scored, quick look logged.
+- [x] Part A: switch built; step 3 checks passed; `detachexp` batch `ok` (15 runs), re-scored, quick look logged (2026-11-11).
 - [ ] Part B: `rung2.py` and `test_rung2.py` pass; preview tables P1 to P5 written and logged; knot-spacing and learning-rate choices confirmed by Bart.
 - [ ] Part C: Rung 2 wired in; step 8 regression and smoke checks passed; docs updated; commit lists and messages given to Bart.
 
@@ -680,4 +684,4 @@ Same rules as M1's report: direct answers first, every claim *measured* or *infe
 1. Is Wei happy with the 2×2 and the dark-branch switch? They go slightly beyond the approved plan.
 2. Is the factorial reading of H2 in section 6.5 acceptable?
 3. Rung 3: the recommendation is to drop it and spend the time on H3 and the colour-preserving variant.
-4. Is LOM overexposure in scope for H1? It needs official and `detach` baselines on `over_exp` (30 runs, about 5 h) plus Rung 2 (15 runs).
+4. Is LOM overexposure in scope for H1? It needs official and `detach` baselines on `over_exp` (30 runs, about 5 h) plus Rung 2 (15 runs). (Pending Wei; until then H1 is tested on low light only.)
