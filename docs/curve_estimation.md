@@ -130,7 +130,7 @@ L_hist becomes L_curve: the MSE between F(min(1, 2^{s_k} x_b)) and CDF_k on the 
 - **Flag names:** the Rung 2 flag names are now set in `Luminance-GS/Implementation_guides/M2_rung2_plan.md` section 2.2, and go here once the code exists.
 - **L_curve** keeps the official smoothness term, 0.1·mean of the squared first differences of the composed curve. It is L_hist minus its shape-prior term.
 - **L_low is no longer fixed.** On the varying-exposure set it can be exposure-aware ("The dark branch" above; `rung2exp` uses Rung 2's own s_k with stop-gradient).
-- **Open, before part C:** a one-bin shift of the CDF target. It would make Rung 2 read the same bin as the official truncating lookup (plan section 2.2).
+- **Target alignment (decided by Bart, 2026-11-11):** the CDF target is shifted by one bin, T_k = [0, CDF_k[0], …, CDF_k[253]], in the loss and the `cdf` initialisation. Rung 2 then reads the same bin as the official truncating lookup for every level ≥ 1, and level 0 stays black (plan section 2.2).
 
 **Default mode: detached** (chosen by Rung 0.5, where cutting L_enh from the curve explained 85 to 100% of the detach gain).
 
