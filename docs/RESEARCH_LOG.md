@@ -482,3 +482,82 @@ Entries up to 2026-10-23 were backfilled from git history, the run folders and t
   - *Inferred:* the smaller seed noise in the exposure-aware column lowers the detectable effect for `rung2exp` − `detachexp`. The bar in that column is 21.28 dB bm pooled.
   - Plan 5.3 `detachgains` ("dark fit more than 2 dB below LOM"): not met pooled (1.7 dB), met on buu and chair individually. It runs only with Bart's OK.
 - **Next:** send Wei this column effect (plan step 4). Bart decides the Rung 2 curve-loss default (part B entry above), then part C and M3.
+
+### 2026-11-13: Rung 2 curve loss keeps the shape prior (one global gamma on F); part B choices confirmed
+
+- **Rung / type:** Rung 2 (M2) · decision
+- **Why:** the open items of the 2026-11-11 part B entry. Plan step 6's stop rule had fired, and part C waited on these choices.
+- **Decisions** (Bart, 2026-11-13):
+  1. **Shape prior kept, as one learned global γ on the shared F** (`--rung2_prior F`, the default). L_curve gains the official term 0.5·[mse(p, F) + 0.01·mse(p, T_k)], with p = clamp(x, 1e-3, 1)^γ and γ = exp(ρ) starting at 1. Parameters: K + N + 1.
+     - *Reason:* in the official loss the HE weight drops to 0.5 at step 3000, and from then on the best curve sits halfway between the HE-CDF and the gamma curve. `detach`'s curves sit there. Dropping the prior (the plan's 2.2 "L_hist minus the shape-prior term") changed what Rung 2 is trained toward, so H1 would have failed for that reason alone. Bart: a mistake in the plan, and a fix to it rather than tuning on the normal-light images.
+     - *Transparency:* the P5 flag, which uses the normal-light images, is what prompted the investigation. The decision rests on the official loss and on training-photo evidence: the decomposition of `detach`'s curves and the P4 applied-curve distance.
+     - *Not the official form* (`priorL`, the prior on each view's curve): it leaks (+0.09 to +0.12) and pulls s_k toward 0.
+     - Tell Wei: the prior puts back a piece the agreed design had removed.
+  2. **Learning rate of F and γ:** by plan step 6's own rule, applied with the prior on: final objective within 5% of the full-batch optimum, trying 1e-3, then 3e-3, then 1e-2. Bart asked that closeness to `detach` stay out of the justification, because it leans toward the answer H1 tests. s stays at 1e-3. Result: next entry.
+  3. **Knots: quadratic**, the pre-registered rule (`usedrange` −8.4% / −9.1%, below 30%). The `cdf` init stays (the identity init never converged).
+  4. **One-bin shift: kept.** A learnable black level is an M5 ablation only, as a fallback if M3 shows a problem at level 0.
+  5. **`detachgains`: not now.**
+- **Recorded in:** `M2_rung2_plan.md` (2.2 note, 7.1, 8.4), `CLAUDE.md`, `docs/curve_estimation.md` ("Rung 2 as built"), explainer 8.6 and the 10. TL;DR, `docs/experiment_protocol.md`.
+- **Next:** part C and the final preview with the learning-rate ladder (entries below), then ask Bart before M3.
+
+### 2026-11-13: M2 step 6, final preview: the learning-rate rule with the prior on picks 1e-2
+
+- **Rung / type:** Rung 2 (M2) · experiment (CPU only, no 3DGS)
+- **Why:** Bart's condition on the learning rate (entry above), and the preview of the decided default.
+- **What was done:**
+  - `rung2_preview.py` reworked. The default is `quadratic-cdf-priorF`, using the prior inside `ExposureCurve`, the trainer's own code. It is replayed at lr_F 1e-3, 3e-3 and 1e-2 (F and γ; s at 1e-3). Around it: `usedrange`, the identity init, the unshifted target, no prior, and `priorL`.
+  - First, a scratch check: the plan's full-batch optimum (3k steps at 1e-2) is not converged with the prior. Bike LOM gives 5.012e-3 against 4.4295e-3 at 30k steps, 13% above. So the optimum is now 10k steps at 3e-2 (within 0.013% of 30k), or a polish of the best replay if that ends lower.
+- **Reproduce:** branch `main`, commit `9b9e070` plus uncommitted `rung2.py` and `rung2_preview.py`. From `examples/`: `python rung2_preview.py --threads 4` (1,286 s, seed 0), writing `results/rung2/preview_final/`.
+- **Results** (*measured* on the replay; source `results/rung2/preview_final/tables.md`):
+  - **Ladder** (largest gap above the optimum over 5 scenes × 2 sets): 1e-3 +201.5%; 3e-3 +7.0% (bike +6.2% LOM, +7.0% varying; the others +0.9 to +3.8%); 1e-2 +0.82%. The rule picks **1e-2**.
+  - **Knots:** `usedrange` −0.3%, so quadratic stays. **Init:** the identity init never comes within 0.01, so `cdf` stays.
+  - **Default at 1e-2:**
+    - γ 0.164/0.108/0.136/0.075/0.077, the same on both sets within 0.001.
+    - Leak (P3) −0.003 to +0.029. s_k against u_k: slope −0.91 to −1.04, paired RMSE 0.010–0.037.
+    - Applied-curve distance to `detach` on LOM (P4): 5.4–14.3 levels. Unshifted with the prior: 6.9–15.3. No prior: 32–46.
+  - **P5 (diagnostic only), bm gap to `detach`:**
+    - LOM −0.07/+0.06/−0.19/+0.00/+0.22 dB; varying set −0.50/+2.07/+1.10/+0.60/+1.61 dB.
+    - The flag fires on buu and sofa when measured against `detach`'s pseudo-target seed sd (0.02 and 0.00 dB). Against H1's noise (`detach`'s validation bm sd, 0.25 and 0.40 dB) the gaps are 0.3× and 0.5×.
+  - **Visual (scratch):** bike view 29 through the final replayed F looks the same as `detach`'s pseudo-target, noise included. Input levels 0/1/2/8/16 map to 0/80/89/193/227.
+- **Takeaway:**
+  - *Measured:* the plan's own learning-rate rule, applied with the prior on, picks 1e-2. At 1e-3, F and γ cannot reach their optimum in 10k steps; at 3e-3 they fall short on bike.
+  - With the prior, the shifted target is still closer to `detach` than the unshifted one in every LOM scene (training photos only).
+  - P5 changed nothing.
+- **Next:** part C (next entry), then Bart's go for M3.
+
+### 2026-11-13: M2 part C: Rung 2 in the trainer (`--curve_model rung2`); regression and smoke checks passed
+
+- **Rung / type:** Rung 2 (M2) · code + setup
+- **Why:** plan steps 7 to 9.
+- **What was done:**
+  - `rung2.py`: the prior inside `ExposureCurve` (`prior`, `rho`, `gamma`, `prior_curve`, `loss`, `f_params`), and `curve_loss(prior=...)`. New test 14: the prior term equals the official algebra, and with the prior on F, s gets no gradient from it. 14/14 tests pass.
+  - Trainer:
+    - `Config` gains `curve_model` and the `rung2_*` flags; every default reproduces the official code, and `rung2_lr_F` defaults to 1e-2. The trainer asserts that `MODEL_DEFAULTS` equals the `Config` defaults.
+    - New: the guards, `build_rung2`, `rung2_forward`, Rung 2's loss in `train()`, schedulers built over every curve-side optimiser, the gauge projection, end-of-run asserts, and `grad_check_rung2`.
+  - `diagnostics.py`: Rung 2 branches (snapshot keys, `rung2_state.json`, `exposures_by_step.csv`, curve-state save and load). `rescore_runs.py`: `MODEL_FLAGS`. `run_rung0.py`: variants `rung2`, `rung2exp` and `rung2att`, refused in `results/rung0`.
+- **Reproduce:** branch `main`, commit `9b9e070` plus uncommitted changes to these files. From `examples/`, all into git-ignored smoke folders:
+  - `run_rung0.py --data_root ../data/LOM_vexp --root ../results/vexp/smoke_m2 --scenes buu --variants rung2 rung2exp rung2att --seeds 0 --max_steps 300`;
+  - `run_rung0.py --root ../results/rung2/smoke_m2 --scenes buu bike --variants rung2 --seeds 0 --max_steps 300`;
+  - a `detach` smoke into `results/vexp/smoke_m2c`;
+  - re-scores with `--ref_root ../results/rung0`;
+  - 20-step `--grad_check` runs.
+- **Results** (*measured*):
+  - **Default path unchanged:**
+    - The runner's dry-run commands are identical to HEAD's.
+    - Re-scores of `results/vexp/buu_detach_seed0` and `results/rung0/buu_baseline_seed0` with the new code are bit-identical to their `rescore/` outputs (max |diff| 0 in every shared column and key).
+    - The 300-step `detach` loss log is identical at step 0 (`loss_regress_low` 0.2573000490665436). Steps 100–200 are within 1e-5, the same gap as between the two older smokes.
+  - **Rung 2 smokes (all `ok`):**
+    - 55 parameters for buu (32 + 22 + 1) and 69 for bike. |mean s| ≤ 2.2e-8, F strictly increasing, `s_init` equal to `oracle.json` within 2.7e-8.
+    - `rung2` and `rung2exp` with the same seed: s, F, γ and `mean_pseudo` are bit-identical.
+    - `fit_exposure_form` on `curve_adj` recovers the run's own s_k within 0.0008–0.0034 stops. The re-scored `mean_pseudo` is identical to the run's.
+  - **grad_check:**
+    - `rung2`: L_enh and L_low send nothing to θ, s or ρ.
+    - `rung2att`: s gets 0.239 from L_enh; θ and ρ get nothing.
+    - `rung2exp`: s gets nothing from L_low.
+    - Official `detach`: the output is unchanged.
+  - **Speed:** 300-step smokes take 0.51–0.59 min for `rung2`, against 0.62 for `detach`.
+- **Takeaway:**
+  - Part C is done, so M2 is complete apart from Bart's commit.
+  - *Inferred:* about 6.6–7.7 min per 10k-step Rung 2 run, so M3 (45 runs) takes about 5–6 h.
+  - The 300-step bike pseudo-target is mid-trajectory (γ 0.54), so the dark end is judged from the preview, not from the smoke image.
+- **Next:** Bart's go for the M3 batch (plan 5.1, with the sleep check). Tell Wei that the prior is back.
