@@ -113,7 +113,7 @@ The stop-gradient keeps H3 separate. In `rung2exp` the dark loss never trains s_
 | Colour | Fixed RGB basis: F is applied to each channel | none | As in `detach`, whose basis never moves. |
 | Not built in M2 | Colour-preserving luminance variant (reserve `--rung2_color luminance`), slope-change smoother, one global gamma prior | | M5 |
 
-- **Parameter count:** K + N = 32 + N, which is 54 to 75 for the LOM scenes (22 to 43 training views). The official curve machinery has 255 + 143,743 + 111,235 + 5N. Print the count at start-up and store it.
+- **Parameter count:** K + N = 32 + N, which is 54 to 75 for the LOM scenes (22 to 43 training views). The official curve machinery has 255 + 143,743 + 111,235 + 5N. Print the count at start-up and store it. *(2026-11-13: K + N + 1 with the shape prior, 55 to 76.)*
 - **Flag guard:** with `--curve_model rung2`, assert that `--detach_pseudo_target`, `--detach_curve_in_target` and `--freeze_color_basis` are False. Rung 2 controls its own gradient flow through `--rung2_attach`.
 - **Known systematic difference** (*follows from the code*). The official LUT truncates: level 0 and level 1 both read `curve[0]`, and level ℓ ≥ 1 reads `curve[ℓ−1]` ≈ CDF[ℓ−1]. Rung 2 maps level 0 to black (F(0) = 0) and level ℓ to about CDF[ℓ].
   - So Rung 2's pseudo-targets are black at level 0 and about one CDF bin brighter elsewhere than `detach`'s.
@@ -122,6 +122,13 @@ The stop-gradient keeps H3 separate. In `rung2exp` the dark loss never trains s_
     - Rung 2 then reads the same CDF bin as `detach` for every level ≥ 1. Level 0 stays black, and F(0) = 0 now matches the target at b = 0, so there is no fixed residual there.
     - The snapshot grid stays x_b = b/254, so the M1 analysis code is unaffected.
     - Reason: the one-bin lift is largest where risk 1 sits: bike and shrub, whose dark-end CDFs rise steeply. The preview still reports P4 and P5 for the unshifted target, as an alignment check (step 6).
+    - *Note (2026-11-13):* the shift's premise ("`detach` reads CDF[ℓ−1]") fails at the dark end, where the shape prior dominates (next item). With the prior restored the shift does no harm and stays (Bart). Level 0 still differs on chair, bike and shrub (`detach` lifts black to 68–86 levels; F(0) = 0). Fallback, only if M3 shows a problem there: a learnable black level as an M5 ablation.
+- **Shape prior restored (Bart, 2026-11-13; this changes the "Curve loss" and "Optimisers" rows above).**
+  - *Why:* the curve-loss row dropped the official shape-prior term on the premise that Rung 2 would then differ from `detach` only in the curve model. That premise was wrong. From step 3000 (w = 0.5) the official loss is minimised halfway between the HE-CDF and the gamma prior, and `detach`'s curves sit there (mean |diff| 0.009–0.020, against 0.034–0.119 from either alone; part B entry of 2026-11-11). Without the term, Rung 2 would fit a different target (pure HE), and H1 would fail for that reason alone. The case comes from the official loss itself, not from the normal-light images.
+  - *Default now:* L_curve + 0.5·[mse(p, F) + 0.01·mse(p, T_k)], with p = clamp(x_b, 1e-3, 1)^γ (`losses.gamma_curve`, whose clamp only touches b = 0) and one learned global γ = exp(ρ), ρ = 0 at the start, as the official shape network starts at γ = 1. Flag `--rung2_prior {F, composed, none}` (`F`).
+  - The prior acts on F, so it never trains s_k: exposure compensation is left to the HE term (preview leak −0.003 to +0.029). `composed` (the prior on each L_k, the official form) pulls every view toward one curve, so s_k toward 0 (leak +0.09 to +0.12; rejected). `none` is this section's first draft, now an M5 ablation.
+  - Parameters: K + N + 1 (55 for buu). γ shares F's Adam and learning rate: 1e-2 by step 6's rule applied with the prior on (outcome under step 6); s stays at 1e-3. This replaces the "Optimisers" row's 1e-3 for F.
+  - The "one global gamma prior" listed under "Not built in M2" is therefore built and is the default. The M5 ablations gain "no prior" (`--rung2_prior none`) and, as a fallback only, a learnable black level.
 
 ### 2.3 Runs and names
 
@@ -402,6 +409,11 @@ Figures: F and each view's composed curve against the views' CDFs, per scene (de
 - **Stop and ask Bart** if P4 or P5 show Rung 2's pseudo-targets clearly worse than `detach`'s on LOM, for example a P5 gap larger than LOM's brightness-matched seed noise in two or more scenes. That puts H1 at risk; see risk 1 in section 7.
 - **Pre-declared remedy (review).** If P5, which uses the normal-light images, triggered a change of default, the default would be informed by the ground truth. So the remedy is fixed now and judged on training photos only (P1, P4): first the target alignment of 2.2, if not already adopted; then the smoothness ablation in M5. λ stays at 0.1 by default.
 - The alignment was adopted on 2026-11-11, so the remaining remedy is the smoothness ablation in M5. The preview uses the shifted target and reports P4 and P5 for the unshifted one too, labelled "alignment check".
+- **Outcome (2026-11-13, after the shape prior was restored; `results/rung2/preview_final/`, research log).**
+  - **Learning rate, by this step's rule with the prior on** (Bart: the rule, not closeness to `detach`, justifies it). The default was replayed at lr_F 1e-3, then 3e-3, then 1e-2 (F and γ; s at 1e-3). Largest gap of the final objective above the full-batch optimum: +201.5%, +7.0% (bike: +6.2% LOM, +7.0% varying) and +0.82%. **1e-2 is the first rate within 5%.**
+  - **The optimum was strengthened.** This step's 3,000 full-batch steps at 1e-2 suffice without the prior, but with it they stop up to 13% above the optimum, because F travels far from its init. The optimum is now the lower of 10,000 cold-start steps at 3e-2 (within 0.013% of 30,000 steps) and a polish of the best replay.
+  - **Knots:** quadratic (`usedrange` −0.3%). **F init:** `cdf` (the identity init never came within 0.01).
+  - **P5 flag (diagnostic only):** it fires on buu and sofa (bm gap −0.07 and −0.19 dB). The code reads "seed noise" as `detach`'s *pseudo-target* sd, 0.02 and 0.00 dB. Against H1's own noise (`detach`'s validation bm PSNR sd, 0.25 and 0.40 dB) the gaps are 0.3× and 0.5×. No setting was changed; raised with Bart before M3.
 
 Write a log entry with the P1 to P5 headline numbers. P3 is the first read on H2's mechanism.
 
@@ -417,6 +429,7 @@ Write a log entry with the P1 to P5 headline numbers. P3 is the first read on H2
    - `rung2_s_init: Literal["measured", "zero"] = "measured"`;
    - `rung2_attach: Literal["none", "s", "all"] = "none"`;
    - `rung2_smooth_lambda: float = 0.1`, `rung2_lr_F: float = 1e-3`, `rung2_lr_s: float = 1e-3`.
+   - *As built (2026-11-13):* also `rung2_prior: Literal["F", "composed", "none"] = "F"` (section 2.2, shape prior), and `rung2_lr_F` defaults to 1e-2 (step 6's rule with the prior on). The trainer refuses `--curve_model rung2` with `--patch_size` or `--batch_size` other than 1, and asserts at import that `diagnostics.MODEL_DEFAULTS` equals these defaults.
 2. **`Runner.__init__`, Rung 2 mode:**
    - Assert the flag guard (section 2.2).
    - Compute `s_measured` (also when `--dark_branch shared`), the per-view CDFs and, for `usedrange`, y_max.
@@ -461,7 +474,7 @@ python run_rung0.py --root ../results/rung2/smoke_m2 --scenes buu bike --variant
 
    For the gradient check, run each of `rung2`, `rung2exp` and `rung2att` once directly with `--grad_check` and the protocol's smoke settings.
 4. **Pass if:**
-   - Start-up prints 54 curve parameters for buu (32 + 22).
+   - Start-up prints 54 curve parameters for buu (32 + 22). *(2026-11-13: 55 with the shape prior, 32 + 22 + 1.)*
    - `grad_check` output:
      - `rung2`: `loss_regress_enh` gives no gradient to θ or s.
      - `rung2att`: s gets a non-zero gradient from `loss_regress_enh`; θ gets none.
@@ -512,7 +525,7 @@ python run_rung0.py --data_root ../data/LOM_vexp --root ../results/vexp --varian
 python run_rung0.py --root ../results/rung2 --variants rung2 --seeds 1 2
 ```
 
-- 45 runs × about 8 min ≈ 6 h (*inferred*: `detach` takes 8.1 min on this set, and Rung 2 drops two networks). Replace the estimate with the step 8 speed estimate (the ratio to `detach`'s smoke, not 300 steps scaled up).
+- 45 runs × about 8 min ≈ 6 h (*inferred*: `detach` takes 8.1 min on this set, and Rung 2 drops two networks). Replace the estimate with the step 8 speed estimate (the ratio to `detach`'s smoke, not 300 steps scaled up). *(2026-11-13, step 8: Rung 2's smokes took 0.51–0.59 min against `detach`'s 0.62, so about 6.6–7.7 min per run and 5 to 6 h for the 45 runs, inferred.)*
 - `--root ../results/rung2` with the default LOM data root is allowed by the runner's guard.
 
 ### 5.2 Re-score
@@ -547,7 +560,7 @@ Same style as `vexp_analyze.py`: `pathlib`, `__main__` guard, helpers imported r
   - Varying set: `results/vexp/<scene>_{baseline,detach,detachexp,rung2,rung2exp}_seed*`.
   - Dataset: `results/vexp/dataset/{gains,oracle}.json`.
   - M1's exposure numbers for official and `detach`: `results/vexp/summary/T4_exposure.csv` and `numbers.json`.
-  - `results/rung2/preview/`.
+  - `results/rung2/preview/`. *(2026-11-13: read `results/rung2/preview_final/`, the preview of the decided default; `preview/` and `preview_lrF1e-2/` are the 2026-11-11 runs behind the shape-prior decision.)*
 - **Stop before any table if:**
   - a run's `data_dir` does not match its root;
   - its `cfg.json` flags do not match its variant (section 2.3);
@@ -662,8 +675,8 @@ Same rules as M1's report: direct answers first, every claim *measured* or *infe
 **M2**
 - [x] Step 0: decision logged, branch question asked (2026-11-11; branch: `main`).
 - [x] Part A: switch built; step 3 checks passed; `detachexp` batch `ok` (15 runs), re-scored, quick look logged (2026-11-11).
-- [ ] Part B: `rung2.py` and `test_rung2.py` pass; preview tables P1 to P5 written and logged; knot-spacing and learning-rate choices confirmed by Bart.
-- [ ] Part C: Rung 2 wired in; step 8 regression and smoke checks passed; docs updated; commit lists and messages given to Bart.
+- [x] Part B: `rung2.py` and `test_rung2.py` pass; preview tables P1 to P5 written and logged; knot-spacing and learning-rate choices confirmed by Bart (2026-11-13: with the shape prior restored; final preview in `results/rung2/preview_final/`).
+- [x] Part C: Rung 2 wired in; step 8 regression and smoke checks passed; docs updated; commit lists and messages given to Bart (2026-11-13).
 
 **M3**
 - [ ] 45 runs `ok`, all re-scored with `--ref_root ../results/rung0`.
@@ -685,3 +698,5 @@ Same rules as M1's report: direct answers first, every claim *measured* or *infe
 2. Is the factorial reading of H2 in section 6.5 acceptable?
 3. Rung 3: the recommendation is to drop it and spend the time on H3 and the colour-preserving variant.
 4. Is LOM overexposure in scope for H1? It needs official and `detach` baselines on `over_exp` (30 runs, about 5 h) plus Rung 2 (15 runs). (Pending Wei; until then H1 is tested on low light only.)
+
+**Tell (added 2026-11-13):** Rung 2's curve loss keeps the official shape prior, as one learned global γ on F (K + N + 1 parameters). The agreed design had removed it; without it, Rung 2 would fit a different target than `detach` (section 2.2 note, research log 2026-11-13).
