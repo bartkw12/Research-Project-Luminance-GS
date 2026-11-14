@@ -45,7 +45,8 @@ from rendering_double import rasterization_dual
 
 from tools import pixel_project, pixel_project_back, LUT_mapping
 from losses import L_spa, HistogramPriorLoss, gamma_curve, s_curve
-from diagnostics import Diagnostics
+from diagnostics import Diagnostics, MODEL_DEFAULTS
+from rung2 import ExposureCurve, hist_target, init_heights, make_knots, used_range_max
 
 
 @dataclass
@@ -185,6 +186,27 @@ class Config:
     # render is scaled by 2^{-s_k} before loss_regress_low, with s_k from "measured" (log2(m_bar/m_k), geometric
     # mean, fixed), "model" (Rung 2's own s_k, stop-gradient) or "gains" (the set's true gains; diagnosis only)
     dark_branch: Literal["shared", "measured", "model", "gains"] = "shared"
+    # M2 part C: curve model. "official" is the official code (255-entry curve, bias and shape networks, colour
+    # basis). "rung2": one shared monotone curve F plus one exposure s_k per training view, L_k(x) = F(min(1, 2^{s_k} x))
+    # on R, G and B (rung2.py; Implementation_guides/M2_rung2_plan.md, 2.2). The rung2_* flags act only with "rung2".
+    curve_model: Literal["official", "rung2"] = "official"
+    # Rung 2: segments of F, knot spacing, F init (cdf: the views' shifted HE-CDFs aligned by s_k), s_k init
+    rung2_knots: int = 32
+    rung2_knot_spacing: Literal["quadratic", "uniform", "usedrange"] = "quadratic"
+    rung2_F_init: Literal["cdf", "identity"] = "cdf"
+    rung2_s_init: Literal["measured", "zero"] = "measured"
+    # Rung 2: gradient from the enhancement loss into the curve. "none": detached (default); "s": into s_k only (the
+    # H3 ablation); "all": into F and s_k
+    rung2_attach: Literal["none", "s", "all"] = "none"
+    # Rung 2: shape-prior term of the curve loss (decided 2026-11-13): the official 0.5[mse(p, X) + 0.01 mse(p, T_k)]
+    # with one learned global gamma, p = x^gamma, on the shared F ("F"), on each view's composed curve ("composed",
+    # the official form) or none ("none", the plan's first draft; an M5 ablation)
+    rung2_prior: Literal["F", "composed", "none"] = "F"
+    # Rung 2: weight of the first-difference smoothness term (the official lambda_smooth)
+    rung2_smooth_lambda: float = 0.1
+    # Rung 2: Adam learning rates of F (with the prior's gamma) and of the s_k; no weight decay; decayed to 1%
+    rung2_lr_F: float = 1e-2
+    rung2_lr_s: float = 1e-3
 
     def adjust_steps(self, factor: float):
         self.eval_steps = [int(i * factor) for i in self.eval_steps]
@@ -196,6 +218,10 @@ class Config:
         self.refine_stop_iter = int(self.refine_stop_iter * factor)
         self.reset_every = int(self.reset_every * factor)
         self.refine_every = int(self.refine_every * factor)
+
+# M2: the re-score checks a run's model flags against diagnostics.MODEL_DEFAULTS, so they must be these defaults
+_stale = {k: v for k, v in MODEL_DEFAULTS.items() if Config.__dataclass_fields__[k].default != v}
+assert not _stale, f"diagnostics.MODEL_DEFAULTS differs from the Config defaults: {_stale}"
 
 cfg = tyro.cli(Config)
 
@@ -316,12 +342,19 @@ class Runner:
         )
         self.valset = Dataset(self.parser, split="val") # Validation Set
 
-        # M2: per-view exposures for the dark branch (part C: also for Rung 2's s_k init). Nothing runs in the
-        # default. The guard comes first, so nothing is written before the exit.
-        if cfg.dark_branch == "model":
-            raise SystemExit("--dark_branch model needs --curve_model rung2")  # part C relaxes this
+        # M2: per-view exposures for the dark branch and for Rung 2's s_k init. Nothing runs in the default. The
+        # guards come first, so nothing is written before an exit.
+        if cfg.dark_branch == "model" and cfg.curve_model != "rung2":
+            raise SystemExit("--dark_branch model needs --curve_model rung2")
+        if cfg.curve_model == "rung2":
+            clash = [f for f in ("detach_pseudo_target", "detach_curve_in_target", "freeze_color_basis") if getattr(cfg, f)]
+            if clash:
+                raise SystemExit(f"--curve_model rung2 sets its own gradient flow (--rung2_attach) and has no colour "
+                                 f"basis: drop --{', --'.join(clash)}")
+            if cfg.patch_size is not None or cfg.batch_size != 1:
+                raise SystemExit("--curve_model rung2 needs whole images, one view per step (patch_size None, batch_size 1)")
         self.s_measured = self.s_gains = None
-        if cfg.dark_branch != "shared":
+        if cfg.dark_branch != "shared" or cfg.curve_model == "rung2":
             self.s_measured = self.measure_exposures()
         if cfg.dark_branch == "gains":
             self.s_gains = self.load_gains()
@@ -346,43 +379,52 @@ class Runner:
         print("Model initialized. Number of GS:", len(self.splats["means3d"]))
         
         self.constrast_level = cfg.constrast_level
-        
-        curve = torch.linspace(0, 1, 255).unsqueeze(0).cuda()   # Luminance Curve
-        self.curve = torch.nn.Parameter(curve)
-        self.curve_optimizers = [
-                torch.optim.Adam(
-                    [self.curve],
-                    # [self.curve, self.curve_2, self.curve_3],
-                    lr=1e-3 * math.sqrt(cfg.batch_size),
-                    weight_decay=1e-4,
-                )
-            ]
-        
-        
-        self.curve_adjust = CrossAttention().to(self.device)    # Output the curve bias parameters, L_k_b
-        self.curve_adjust_gamma = CrossAttention_Curve().to(self.device)    # Output the curve shape control parameters, Eq.9 
 
-        self.adjust_optimizers = [
-                torch.optim.Adam(
-                    list(self.curve_adjust.parameters()) + list(self.curve_adjust_gamma.parameters()),
-                    lr=1e-5 * math.sqrt(cfg.batch_size),
-                    weight_decay=1e-5,
-                )
+        if cfg.curve_model == "rung2":
+            # M2: Rung 2 replaces the curve, the bias and shape networks and the colour basis (none of them is built)
+            self.rung2 = self.build_rung2()
+            self.curve_optimizers = [
+                torch.optim.Adam(self.rung2.f_params(), lr=cfg.rung2_lr_F * math.sqrt(cfg.batch_size), weight_decay=0.0),
+                torch.optim.Adam([self.rung2.s], lr=cfg.rung2_lr_s * math.sqrt(cfg.batch_size), weight_decay=0.0),
             ]
-        
-        self.pesdo_curve = torch.nn.Parameter(torch.linspace(0, 1, 255).unsqueeze(0).cuda(), requires_grad=False)
+            self.adjust_optimizers, self.sat_optimizers = [], []
+        else:
+            curve = torch.linspace(0, 1, 255).unsqueeze(0).cuda()   # Luminance Curve
+            self.curve = torch.nn.Parameter(curve)
+            self.curve_optimizers = [
+                    torch.optim.Adam(
+                        [self.curve],
+                        # [self.curve, self.curve_2, self.curve_3],
+                        lr=1e-3 * math.sqrt(cfg.batch_size),
+                        weight_decay=1e-4,
+                    )
+                ]
 
-        self.axis1_para = [torch.nn.Parameter(torch.tensor([0.0, 0.0, 0.0]).cuda()) for _ in range(len(self.trainset))]
-        self.axis2_para = [torch.nn.Parameter(torch.tensor([0.0, 0.0]).cuda()) for _ in range(len(self.trainset))]
 
-        self.sat_optimizers = [
-                torch.optim.Adam(
-                    self.axis1_para + self.axis2_para,
-                    lr=2e-4 * math.sqrt(cfg.batch_size),
-                    weight_decay=1e-4,
-                )
-            ]
-        
+            self.curve_adjust = CrossAttention().to(self.device)    # Output the curve bias parameters, L_k_b
+            self.curve_adjust_gamma = CrossAttention_Curve().to(self.device)    # Output the curve shape control parameters, Eq.9
+
+            self.adjust_optimizers = [
+                    torch.optim.Adam(
+                        list(self.curve_adjust.parameters()) + list(self.curve_adjust_gamma.parameters()),
+                        lr=1e-5 * math.sqrt(cfg.batch_size),
+                        weight_decay=1e-5,
+                    )
+                ]
+
+            self.pesdo_curve = torch.nn.Parameter(torch.linspace(0, 1, 255).unsqueeze(0).cuda(), requires_grad=False)
+
+            self.axis1_para = [torch.nn.Parameter(torch.tensor([0.0, 0.0, 0.0]).cuda()) for _ in range(len(self.trainset))]
+            self.axis2_para = [torch.nn.Parameter(torch.tensor([0.0, 0.0]).cuda()) for _ in range(len(self.trainset))]
+
+            self.sat_optimizers = [
+                    torch.optim.Adam(
+                        self.axis1_para + self.axis2_para,
+                        lr=2e-4 * math.sqrt(cfg.batch_size),
+                        weight_decay=1e-4,
+                    )
+                ]
+
         self.pose_optimizers = []
         if cfg.pose_opt:
             self.pose_adjust = CameraOptModule(len(self.trainset)).to(self.device)
@@ -503,6 +545,9 @@ class Runner:
         device = self.device
         cfg = self.cfg
 
+        if cfg.curve_model == "rung2":
+            return self.rung2_forward(pixels, image_ids)
+
         curve_adj_bias = self.curve_adjust(pixels.permute(0,3,1,2), camtoworlds) # encode low-light GT and camera position to get adjust curve
 
         gamma_alpha_beta = self.curve_adjust_gamma(pixels.permute(0,3,1,2), camtoworlds)
@@ -552,6 +597,23 @@ class Runner:
             "projected": (t1s[0], t2s[0], t3s[0]),  # LUT inputs, [1, H, W] each
         }
 
+    def rung2_forward(self, pixels: Tensor, image_ids: Tensor) -> Dict[str, Tensor]:
+        """curve_forward for Rung 2, with the official branch's keys so train() and the diagnostics read both.
+        Official-only quantities are zeros or NaN; the shape prior (one global gamma) fills gamma and pesdo_curve."""
+        r = self.rung2
+        curve_adj = r.composed_curve(image_ids)  # [1, 255] F(min(1, 2^{s_k} x_b)); attached, for the curve loss
+        nan = torch.full((1,), float("nan"), device=self.device)
+        return {
+            "curve_bias": torch.zeros_like(curve_adj),
+            "curve_preclamp": curve_adj,
+            "curve_adj": curve_adj,
+            "gamma": r.gamma().reshape(1), "alpha": nan, "beta": nan,
+            "pesdo_curve": r.prior_curve() if r.prior != "none" else torch.full_like(curve_adj, float("nan")),
+            "pixels_enh": r.map_pixels(pixels, image_ids, self.cfg.rung2_attach),  # gradient as --rung2_attach says
+            "projected": (pixels[..., 0], pixels[..., 1], pixels[..., 2]),  # F acts on R, G and B: the fixed basis
+            "s_k": r.s[image_ids],
+        }
+
     def train(self):
         cfg = self.cfg
         device = self.device
@@ -574,22 +636,14 @@ class Runner:
             ),
         ]
 
-        # curve optimizer & curve adjustment optimizer & sat optimizer
-        scheulers.append(
-                torch.optim.lr_scheduler.ExponentialLR(
-                    self.curve_optimizers[0], gamma=0.01 ** (1.0 / max_steps)
+        # curve optimizer & curve adjustment optimizer & sat optimizer (one each in the official model, in this
+        # order; M2: Rung 2 has its F and s optimizers in curve_optimizers and the other two lists empty)
+        for curve_side in self.curve_optimizers + self.adjust_optimizers + self.sat_optimizers:
+            scheulers.append(
+                    torch.optim.lr_scheduler.ExponentialLR(
+                        curve_side, gamma=0.01 ** (1.0 / max_steps)
+                    )
                 )
-            )
-        scheulers.append(
-                torch.optim.lr_scheduler.ExponentialLR(
-                    self.adjust_optimizers[0], gamma=0.01 ** (1.0 / max_steps)
-                )
-            )
-        scheulers.append(
-                torch.optim.lr_scheduler.ExponentialLR(
-                    self.sat_optimizers[0], gamma=0.01 ** (1.0 / max_steps)
-                )
-            )
 
         if cfg.pose_opt:
             # pose optimization has a learning rate schedule
@@ -694,12 +748,17 @@ class Runner:
             ssimloss_enh = 1.0 - self.ssim(pixels_enh.permute(0,3,1,2), colors_enh.permute(0,3,1,2))
             loss_regress_enh = l1loss_enh * (1.0 - cfg.ssim_lambda) + ssimloss_enh * cfg.ssim_lambda
             
-            hist_loss, hist_parts = loss_histo(curve_adj, pixels, pesdo_curve, step, exp_name=cfg.exp_name, return_parts=True)
+            if cfg.curve_model == "rung2":
+                # M2: this view's official HE-CDF, shifted one bin (rung2.hist_target), and Rung 2's curve loss
+                target = hist_target(loss_histo.compute_histogram_equalization(pixels))
+                hist_loss, hist_parts = self.rung2.loss(curve_adj, target, step, cfg.exp_name, cfg.rung2_smooth_lambda)
+            else:
+                hist_loss, hist_parts = loss_histo(curve_adj, pixels, pesdo_curve, step, exp_name=cfg.exp_name, return_parts=True)
 
             loss = loss_regress_low + 0.5*loss_regress_enh + loss_co + 10 * hist_loss
 
             if cfg.grad_check and step == init_step:
-                self.grad_check(loss_regress_enh, image_ids)
+                self.grad_check(loss_regress_enh, image_ids, loss_regress_low)
 
             loss.backward()
 
@@ -816,6 +875,8 @@ class Runner:
             for optimizer in self.curve_optimizers:
                 optimizer.step()
                 optimizer.zero_grad(set_to_none=True)
+            if cfg.curve_model == "rung2":
+                self.rung2.project_gauge()  # mean s = 0: only relative exposure is identifiable
             for optimizer in self.adjust_optimizers:
                 optimizer.step()
                 optimizer.zero_grad(set_to_none=True)
@@ -875,12 +936,23 @@ class Runner:
                 "colour basis moved despite --freeze_color_basis"
             print("[freeze_color_basis] colour basis is still exactly zero (RGB) for every view")
 
+        if cfg.curve_model == "rung2":
+            mean_s = float(self.rung2.s.mean())
+            assert abs(mean_s) < 1e-5, f"Rung 2: mean s = {mean_s:.2e} after the gauge projection"
+            assert self.rung2.strictly_increasing(), "Rung 2: F is not strictly increasing"
+            print(f"[rung2] end: |mean s| = {abs(mean_s):.1e}, F strictly increasing, s in "
+                  f"[{float(self.rung2.s.min()):+.3f}, {float(self.rung2.s.max()):+.3f}], "
+                  f"prior gamma {float(self.rung2.gamma()):.4f}")
+
         if diag is not None:
             diag.final_snapshot(max_steps)
 
-    def grad_check(self, loss_regress_enh: Tensor, image_ids: Tensor):
-        """Print which parameters receive gradient from the enhancement loss.
+    def grad_check(self, loss_regress_enh: Tensor, image_ids: Tensor, loss_regress_low: Optional[Tensor] = None):
+        """Print which parameters receive gradient from the enhancement loss (Rung 2: and from the dark loss).
         Uses autograd.grad, so no .grad is written and training continues unchanged."""
+        if self.cfg.curve_model == "rung2":
+            self.grad_check_rung2({"loss_regress_enh": loss_regress_enh, "loss_regress_low": loss_regress_low})
+            return
         groups = {
             "curve": [self.curve],
             "curve_adjust (bias net)": list(self.curve_adjust.parameters()),
@@ -899,6 +971,54 @@ class Runner:
                 print(f"[grad_check]   {name:32s} grad norm {norm:.3e} ({len(gs)}/{len(ps)} tensors)")
             else:
                 print(f"[grad_check]   {name:32s} None")
+
+    def grad_check_rung2(self, losses: Dict[str, Optional[Tensor]]):
+        """Rung 2's grad check: the gradient norm each loss sends to theta (F), s and the prior's rho."""
+        r, cfg = self.rung2, self.cfg
+        groups = {"rung2 theta (F)": [r.theta], "rung2 s (exposures)": [r.s]}
+        if r.prior != "none":
+            groups["rung2 rho (prior gamma)"] = [r.rho]
+        flat = [p for ps in groups.values() for p in ps]
+        print(f"[grad_check] Rung 2 (rung2_attach={cfg.rung2_attach}, dark_branch={cfg.dark_branch}, "
+              f"rung2_prior={cfg.rung2_prior})")
+        for lname, loss in losses.items():
+            if loss is None:
+                continue
+            grads = iter(torch.autograd.grad(loss, flat, allow_unused=True, retain_graph=True))
+            for name, ps in groups.items():
+                gs = [g for g in (next(grads) for _ in ps) if g is not None]
+                if gs:
+                    norm = torch.sqrt(sum((g.float() ** 2).sum() for g in gs)).item()
+                    print(f"[grad_check]   {lname:16s} -> {name:24s} grad norm {norm:.3e}")
+                else:
+                    print(f"[grad_check]   {lname:16s} -> {name:24s} None")
+
+    # ------------------------------------------------------------------ M2: Rung 2
+    def build_rung2(self) -> ExposureCurve:
+        """Rung 2's curve (rung2.py): knots, F initialised from the training photos' one-bin-shifted HE-CDFs aligned
+        by the initial exposures, s_k initialised at the measured exposures (or 0). Reads trainset[i] (no DataLoader),
+        so no random numbers are drawn; CDFs as HistogramPriorLoss computes them in the training step."""
+        cfg = self.cfg
+        hp = HistogramPriorLoss()
+        n = len(self.trainset)
+        cdfs, images = [], []
+        for i in range(n):
+            img = self.trainset[i]["image"][None] / 255.0  # [1, H, W, 3] on the CPU
+            cdfs.append(hp.compute_histogram_equalization(img))
+            if cfg.rung2_knot_spacing == "usedrange":
+                images.append(img)
+        targets = hist_target(torch.cat(cdfs))
+        s_init = self.s_measured.detach().cpu() if cfg.rung2_s_init == "measured" else torch.zeros(n)
+        y_max = used_range_max(images, s_init) if cfg.rung2_knot_spacing == "usedrange" else None
+        knots = make_knots(cfg.rung2_knots, cfg.rung2_knot_spacing, y_max)
+        model = ExposureCurve(knots, init_heights(cfg.rung2_F_init, knots, targets, s_init), s_init,
+                              prior=cfg.rung2_prior).to(self.device)
+        print(f"[rung2] curve parameters: {model.n_params()} (K = {model.K} increments of F, N = {model.N} exposures"
+              f"{', 1 prior gamma' if model.prior != 'none' else ''}); knots {cfg.rung2_knot_spacing}"
+              f"{f' (y_max {y_max:.4f})' if y_max is not None else ''}, F init {cfg.rung2_F_init}, s init "
+              f"{cfg.rung2_s_init}, prior {cfg.rung2_prior}, attach {cfg.rung2_attach}, lr F {cfg.rung2_lr_F:g}, "
+              f"lr s {cfg.rung2_lr_s:g}")
+        return model
 
     # ------------------------------------------------------------------ M2: exposure-aware dark branch
     def train_view_names(self) -> List[str]:
