@@ -18,6 +18,14 @@ Conventions
   The official LUT truncates, so input level l >= 1 reads curve[l - 1] ~ CDF[l - 1]; an interpolated fit to the
   unshifted CDF would map level l to about CDF[l], one bin brighter, which lifts the darkest shadows most.
   With the shift both read the same bin, level 0 stays black, and F(0) = 0 agrees with the target at b = 0.
+- Shape prior (decided by Bart 2026-11-13; ExposureCurve(prior=...)): the official HistogramPriorLoss also pulls
+  each view's curve toward its shape network's pseudo curve, which Rung 0 found to be a gamma curve. From step 3000
+  (w = 0.5) the official optimum sits halfway between the HE-CDF and that gamma curve, and detach's curves do
+  (2026-11-11 log entry). Rung 2 keeps that term with ONE learned global gamma = exp(rho), starting at 1 as the
+  official network does: 0.5 [mse(p, X) + 0.01 mse(p, T_k)], p = clamp(x_b, 1e-3, 1)^gamma (losses.gamma_curve),
+  X = F on the grid ("F", the default; s_k gets no gradient from it, so exposure compensation is untouched), or each
+  view's composed curve ("composed", the official form; it pulls every view toward one curve, so s_k toward 0), or
+  no prior ("none", the plan's first draft; an M5 ablation). Parameters: K + N, plus 1 with a prior.
 - 2^s is computed as exp(ln 2 * s), never torch.exp2: torch 1.13 compiles exp2's CUDA kernel at run time
   (NVRTC), which fails in this env (nvrtc-builtins64_117.dll missing).
 """
@@ -37,6 +45,10 @@ SPACINGS = ("quadratic", "uniform", "usedrange")
 F_INITS = ("cdf", "identity")
 ATTACH = ("none", "s", "all")
 ALIGNS = ("shift", "none")
+PRIORS = ("F", "composed", "none")
+PRIOR_WEIGHT = 0.5        # the official HistogramPriorLoss: total = w cdf + lambda smooth + 0.5 pseudo
+PRIOR_TARGET_WEIGHT = 0.01  # pseudo = mse(p, curve) + 0.01 mse(p, target)
+GAMMA_X_FLOOR = 1e-3      # losses.gamma_curve clamps x to [1e-3, 1] before the power
 
 Index = Union[int, Tensor]
 
@@ -139,18 +151,24 @@ def interp(yq: Tensor, knots: Tensor, h: Tensor) -> Tensor:
 # ------------------------------------------------------------------ the model
 class ExposureCurve(torch.nn.Module):
     """Rung 2: L_k(x) = F(min(1, 2^{s_k} x)); one shared monotone F, one exposure s_k per training view.
-    Parameters: theta [K] (F's increments, through softplus) and s [N]. Buffers: knots [K+1], the official
-    grid [255] and s_init [N] (kept for the diagnostics)."""
+    Parameters: theta [K] (F's increments, through softplus), s [N] and, with a shape prior, rho [] (the prior's
+    gamma = exp(rho)). Buffers: knots [K+1], the official grid [255] and s_init [N] (kept for the diagnostics)."""
 
-    def __init__(self, knots: Tensor, h_init: Tensor, s_init: Tensor):
+    def __init__(self, knots: Tensor, h_init: Tensor, s_init: Tensor, prior: str = "none"):
         super().__init__()
         if h_init.numel() != knots.numel():
             raise ValueError(f"{h_init.numel()} heights for {knots.numel()} knots")
+        if prior not in PRIORS:
+            raise ValueError(f"unknown shape prior {prior!r}; expected one of {PRIORS}")
+        self.prior = prior
         self.register_buffer("knots", knots.detach().clone().float())
         self.register_buffer("grid", torch.linspace(0, 1, N_BINS))
         self.register_buffer("s_init", s_init.detach().clone().float().reshape(-1))
         self.theta = torch.nn.Parameter(theta_from_heights(h_init).to(self.knots.device))
         self.s = torch.nn.Parameter(self.s_init.clone())
+        if prior != "none":
+            # gamma = exp(rho) = 1 at the start: the identity curve, as the official shape network starts
+            self.rho = torch.nn.Parameter(torch.zeros((), device=self.knots.device))
 
     @property
     def K(self) -> int:
@@ -161,7 +179,11 @@ class ExposureCurve(torch.nn.Module):
         return self.s.numel()
 
     def n_params(self) -> int:
-        return self.K + self.N
+        return self.K + self.N + (self.prior != "none")
+
+    def f_params(self) -> list:
+        """The parameters on F's side (theta and the prior's rho), which share F's learning rate."""
+        return [self.theta] + ([self.rho] if self.prior != "none" else [])
 
     def heights(self) -> Tensor:
         """[K+1]: F at the knots, [0, c / c_K] with c = cumsum(softplus(theta))."""
@@ -205,11 +227,39 @@ class ExposureCurve(torch.nn.Module):
         """Only relative exposure is identifiable: keep mean s = 0, so F carries the overall brightening."""
         self.s.sub_(self.s.mean())
 
+    # ---------------------------------------------------------------- shape prior and curve loss
+    def gamma(self) -> Tensor:
+        """The shape prior's gamma = exp(rho) (NaN without a prior)."""
+        if self.prior == "none":
+            return torch.full((), float("nan"), device=self.knots.device)
+        return torch.exp(self.rho)
+
+    def prior_curve(self) -> Tensor:
+        """[1, 255] the shape prior on the official grid, p = clamp(x_b, 1e-3, 1)^gamma (losses.gamma_curve with
+        one global gamma; the official shape network's alpha and beta never moved, Rung 0). Gradient to rho."""
+        if self.prior == "none":
+            raise ValueError("this ExposureCurve has no shape prior")
+        return torch.clamp(self.grid, GAMMA_X_FLOOR, 1.0)[None] ** self.gamma()
+
+    def loss(self, curve: Tensor, target: Tensor, step: int, exp_name: str = "",
+             smooth_lambda: float = 0.1) -> Tuple[Tensor, Dict[str, object]]:
+        """L_curve of composed curves `curve` [B, 255] (composed_curve, attached) against `target` [B, 255]
+        (hist_target): curve_loss, plus the shape-prior term on F ("F") or on the composed curves ("composed")."""
+        if self.prior == "none":
+            return curve_loss(curve, target, step, exp_name, smooth_lambda)
+        x = self.F(self.grid)[None] if self.prior == "F" else curve
+        return curve_loss(curve, target, step, exp_name, smooth_lambda, prior=self.prior_curve(), prior_x=x)
+
+    @torch.no_grad()
+    def strictly_increasing(self) -> bool:
+        return bool((torch.diff(self.heights()) > 0).all())
+
     @torch.no_grad()
     def summary(self) -> Dict[str, object]:
         """Plain numbers for json (the diagnostics' rung2_state.json)."""
-        return {"K": self.K, "N": self.N, "n_params": self.n_params(),
-                "knots": self.knots.cpu().tolist(), "heights": self.heights().cpu().tolist(),
+        return {"K": self.K, "N": self.N, "n_params": self.n_params(), "prior": self.prior,
+                "gamma": float(self.gamma()), "knots": self.knots.cpu().tolist(),
+                "heights": self.heights().cpu().tolist(), "F_strictly_increasing": self.strictly_increasing(),
                 "s_init": self.s_init.cpu().tolist(), "s_final": self.s.cpu().tolist(),
                 "mean_s": float(self.s.mean())}
 
@@ -222,13 +272,21 @@ def curve_weight(step: int, exp_name: str = "") -> float:
     return 0.1 if exp_name == "over_exp" else 0.5
 
 
-def curve_loss(curve: Tensor, target: Tensor, step: int, exp_name: str = "",
-               smooth_lambda: float = 0.1) -> Tuple[Tensor, Dict[str, object]]:
-    """L_curve = w(t) mean (curve - target)^2 + smooth_lambda mean (curve[b+1] - curve[b])^2, on [B, 255].
-    The official L_hist (losses.HistogramPriorLoss.forward) minus its shape-prior term. parts has the keys
-    HistogramPriorLoss returns ("pseudo" = NaN: no shape prior), so Diagnostics.log_losses works unchanged."""
+def curve_loss(curve: Tensor, target: Tensor, step: int, exp_name: str = "", smooth_lambda: float = 0.1,
+               prior: Optional[Tensor] = None, prior_x: Optional[Tensor] = None) -> Tuple[Tensor, Dict[str, object]]:
+    """L_curve = w(t) mean (curve - target)^2 + smooth_lambda mean (curve[b+1] - curve[b])^2, on [B, 255],
+    plus, with a shape-prior curve `prior` [1, 255], the official term 0.5 [mse(prior, X) + 0.01 mse(prior, target)]
+    with X = prior_x (default: curve itself). With prior = None this is the official L_hist
+    (losses.HistogramPriorLoss.forward) minus its shape-prior term; with prior_x = None it has the official form.
+    parts has the keys HistogramPriorLoss returns ("pseudo" = NaN without a prior), so Diagnostics.log_losses works
+    unchanged."""
     cdf_term = torch.mean((curve - target) ** 2)
     smooth = torch.mean((curve[:, 1:] - curve[:, :-1]) ** 2)
     w = curve_weight(step, exp_name)
     total = w * cdf_term + smooth_lambda * smooth
-    return total, {"cdf": cdf_term, "pseudo": float("nan"), "smooth": smooth, "w_cdf": w}
+    pseudo = float("nan")
+    if prior is not None:
+        x = curve if prior_x is None else prior_x
+        pseudo = torch.mean((prior - x) ** 2) + PRIOR_TARGET_WEIGHT * torch.mean((prior - target) ** 2)
+        total = total + PRIOR_WEIGHT * pseudo
+    return total, {"cdf": cdf_term, "pseudo": pseudo, "smooth": smooth, "w_cdf": w}
