@@ -49,8 +49,21 @@ HUE_MIN_PIXELS = 500                # fewer masked pixels in a view -> NaN
 RESCORE_EXAMPLES = {"bike": "29", "shrub": "26"}
 # M2: Config flags that change the model or the dark branch, with their defaults (the official code). A re-score
 # must rebuild the run with the same values (rescore_runs.MODEL_FLAGS passes them on). Kept here because this
-# module must not import the trainer.
-MODEL_DEFAULTS = {"dark_branch": "shared"}
+# module must not import the trainer; the trainer asserts at import that these equal its Config defaults.
+MODEL_DEFAULTS = {
+    "dark_branch": "shared",
+    # part C: the curve model and Rung 2's flags (they act only with curve_model "rung2")
+    "curve_model": "official",
+    "rung2_knots": 32,
+    "rung2_knot_spacing": "quadratic",
+    "rung2_F_init": "cdf",
+    "rung2_s_init": "measured",
+    "rung2_attach": "none",
+    "rung2_prior": "F",
+    "rung2_smooth_lambda": 0.1,
+    "rung2_lr_F": 1e-2,
+    "rung2_lr_s": 1e-3,
+}
 
 
 @contextlib.contextmanager
@@ -230,6 +243,8 @@ class Diagnostics:
         )
 
     def _curve_modules(self):
+        if self.cfg.curve_model == "rung2":
+            return (self.runner.rung2,)
         return self.runner.curve_adjust, self.runner.curve_adjust_gamma
 
     def _time(self, key: str, seconds: float):
@@ -264,9 +279,11 @@ class Diagnostics:
         """Recompute every training view's curve exactly as the training step does."""
         tic = time.time()
         runner = self.runner
+        rung2 = self.cfg.curve_model == "rung2"  # M2: same keys; official-only ones hold zeros or NaN
         keys = ["curve_bias", "curve_preclamp", "curve_adj", "pesdo_curve", "cdf_target", "bin_hist",
                 "gamma", "alpha", "beta", "axis1", "axis2", "mean_brightness"]
         acc = {k: [] for k in keys}
+        extra = {}
         with rng_guard(), eval_mode(*self._curve_modules()):
             for i in range(len(runner.trainset)):
                 pixels, c2w, _, ids = self._view(i)
@@ -281,18 +298,41 @@ class Diagnostics:
                     acc[k].append(out[k][0].cpu().numpy())
                 for k in ("gamma", "alpha", "beta"):
                     acc[k].append(_f(out[k][0]))
-                acc["axis1"].append(runner.axis1_para[i].detach().cpu().numpy())
-                acc["axis2"].append(runner.axis2_para[i].detach().cpu().numpy())
+                if rung2:  # no colour basis: F acts on R, G and B, i.e. the official basis at its RGB init
+                    acc["axis1"].append(np.zeros(3, dtype=np.float32))
+                    acc["axis2"].append(np.zeros(2, dtype=np.float32))
+                else:
+                    acc["axis1"].append(runner.axis1_para[i].detach().cpu().numpy())
+                    acc["axis2"].append(runner.axis2_para[i].detach().cpu().numpy())
                 acc["mean_brightness"].append(_f(pixels.mean()))
-            curve_global = runner.curve[0].detach().cpu().numpy()
+            if rung2:
+                r = runner.rung2
+                curve_global = r.F(r.grid).cpu().numpy()  # the shared F on the 255-bin grid
+                extra = {"s": r.s.cpu().numpy(), "s_init": r.s_init.cpu().numpy(),
+                         "F_knots": r.knots.cpu().numpy(), "F_heights": r.heights().cpu().numpy()}
+                self._log_exposures(step, extra["s"], extra["s_init"])
+            else:
+                curve_global = runner.curve[0].detach().cpu().numpy()
         np.savez_compressed(
             self.out_dir / f"curves_step{step:05d}.npz",
             step=step,
             view_names=np.array(self.view_names),
             curve_global=curve_global,
+            **extra,
             **{k: np.stack(v) if isinstance(v[0], np.ndarray) else np.array(v) for k, v in acc.items()},
         )
         self._time("snapshot_curves", time.time() - tic)
+
+    def _log_exposures(self, step: int, s: np.ndarray, s_init: np.ndarray):
+        """M2, Rung 2: append (step, view, s) to exposures_by_step.csv; the first call also writes step 0 = s_init."""
+        first = not getattr(self, "_exposures_started", False)
+        with open(self.out_dir / "exposures_by_step.csv", "w" if first else "a", newline="") as f:
+            w = csv.writer(f)
+            if first:
+                w.writerow(["step", "view", "s"])
+                w.writerows([0, name, float(v)] for name, v in zip(self.view_names, s_init))
+            w.writerows([step, name, float(v)] for name, v in zip(self.view_names, s))
+        self._exposures_started = True
 
     # ------------------------------------------------------ final snapshot
     @torch.no_grad()
@@ -303,8 +343,21 @@ class Diagnostics:
             views = self._score_views(step)
             self._consistency(views)
             self._save_curve_state(step)
+            if self.cfg.curve_model == "rung2":
+                self._save_rung2_state(step)
         self._time("final_snapshot", time.time() - tic)
         self.close()
+
+    def _save_rung2_state(self, step: int):
+        """M2: Rung 2's learned F and s_k as plain json (committed; curve_state.pt is git-ignored)."""
+        r, cfg = self.runner.rung2, self.cfg
+        state = {"step": step, "view_names": self.view_names, **r.summary(),
+                 "F_grid": r.F(r.grid).cpu().tolist(), "knot_spacing": cfg.rung2_knot_spacing,
+                 "F_init": cfg.rung2_F_init, "s_init_mode": cfg.rung2_s_init, "attach": cfg.rung2_attach,
+                 "smooth_lambda": cfg.rung2_smooth_lambda, "lr_F": cfg.rung2_lr_F, "lr_s": cfg.rung2_lr_s,
+                 "dark_branch": cfg.dark_branch}
+        with open(self.out_dir / "rung2_state.json", "w") as f:
+            json.dump(state, f, indent=1)
 
     def _render(self, c2w, K, width: int, height: int):
         cfg = self.cfg
@@ -464,6 +517,14 @@ class Diagnostics:
 
     def _save_curve_state(self, step: int):
         runner = self.runner
+        if self.cfg.curve_model == "rung2":  # M2: theta, s, rho and the knots, grid and s_init buffers
+            torch.save({
+                "step": step,
+                "curve_model": "rung2",
+                "prior": runner.rung2.prior,
+                "rung2": {k: v.detach().cpu() for k, v in runner.rung2.state_dict().items()},
+            }, self.out_dir / "curve_state.pt")
+            return
         torch.save({
             "step": step,
             "curve": runner.curve.detach().cpu(),
@@ -488,6 +549,17 @@ class Diagnostics:
         for k in runner.splats.keys():
             runner.splats[k].data = ckpt["splats"][k]
         st = torch.load(run_dir / "diagnostics" / "curve_state.pt", map_location=self.device)
+        assert (st.get("curve_model", "official") == "rung2") == (cfg.curve_model == "rung2"), \
+            f"curve_state.pt holds a {st.get('curve_model', 'official')} curve, the re-score built {cfg.curve_model}"
+        if cfg.curve_model == "rung2":
+            r, sd = runner.rung2, st["rung2"]
+            assert sd["s"].numel() == r.N, "curve_state.pt has a different number of views"
+            assert st["prior"] == r.prior, f"curve_state.pt has prior {st['prior']!r}, the re-score built {r.prior!r}"
+            if cfg.rung2_knot_spacing == "usedrange":  # the run's knots came from its photos: they must recompute
+                d = float((sd["knots"].to(self.device) - r.knots).abs().max())
+                assert d <= 1e-6, f"usedrange knots differ from the run's by {d:.2e}"
+            r.load_state_dict({k: v.to(self.device) for k, v in sd.items()})  # knots from the state
+            return str(ckpt_path)
         assert st["axis1"].shape[0] == len(runner.axis1_para), "curve_state.pt has a different number of views"
         runner.curve.data.copy_(st["curve"].to(self.device))
         runner.curve_adjust.load_state_dict(st["curve_adjust"])
