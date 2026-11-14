@@ -856,6 +856,17 @@ $$\mathcal{L}_{curve} = w(t)\,\overline{\Big(F\big(\min(1,2^{s_k}x_b)\big) - \ma
   - `detach`'s truncating lookup maps level ℓ to about CDF[ℓ−1], while an interpolated fit on this grid maps it to about CDF[ℓ], one bin brighter. That would lift the shadows most on bike and shrub.
   - So the target in the loss above (and in the `cdf` initialisation) is the CDF shifted by one bin, T_k = [0, CDF_k[0], …, CDF_k[253]]. Rung 2 then reads the same bin as `detach` for every level ≥ 1, and black stays black.
 
+*Decided 2026-11-13 (Bart): the shape prior stays, as one global γ on F.*
+- **Why the plan above was wrong.** It dropped the official shape-prior term so that Rung 2 would "differ from `detach` only in the curve model". But from step 3000 (w = 0.5) the official loss is minimised halfway between the HE-CDF and the gamma prior, and `detach`'s curves sit there (mean |diff| 0.009–0.020). Without the term, Rung 2 fits pure HE, which is far darker in the shadows. H1 would then compare different targets.
+- **The loss gains the official term, with one learned γ, on the shared F:**
+
+$$\mathcal{L}_{curve} \mathrel{+}= 0.5\Big[\overline{(p - F)^2} + 0.01\,\overline{(p - T_k)^2}\Big],\qquad p(x) = \operatorname{clamp}(x, 10^{-3}, 1)^{\gamma},\quad \gamma = e^{\rho}\ (\text{starts at } 1)$$
+
+- **On F, not on each view's curve,** so the prior never trains s_k and exposure compensation is left to the HE term. In the curve preview, the pseudo-target leak stays near 0 (−0.003 to +0.029). The official form (prior on each view's curve) pulls s_k toward 0 (leak +0.09 to +0.12).
+- **Parameters** K + N + 1. **Learning rates** 1e-2 for F and γ, 1e-3 for s, from plan step 6's rule applied with the prior on.
+- **Clamp.** The earlier optional-ablation idea above ("no 1e-3 clamp") differs from what is built. The built prior uses the official clamp, which only affects grid point b = 0, where F(0) = 0 anyway.
+- **M5 ablations gain** "no prior" (the first draft) and, as a fallback only, a learnable black level.
+
 #### Training mode: detached by default
 
 Rung 0.5 chose the detached mode, so L_enh does not train F. F and s_k then learn only from L_curve, which compares curves with each photo's HE-CDF and never sees a render.
@@ -908,12 +919,12 @@ The 2×2 on the varying-exposure set separates the two changes:
 |---|---|---|
 | Shared curve | L_g: 255 free values, not monotone | F: K = 32, monotone, F(0) = 0 |
 | Per-view curve change | bias network, **143,743** params → 255 values per view | **1 number per view** (s_k) |
-| Shape prior | shape network, **111,235** params → γ, α, β per view | removed (optional 1 global γ) |
+| Shape prior | shape network, **111,235** params → γ, α, β per view | one global γ on F (decided 2026-11-13; first planned as removed) |
 | Colour basis | 5 numbers per view | fixed RGB |
 | Lookup | truncated LUT, no gradient to pixel values | interpolated, gradient flows to s_k |
 | Image loss into the curve | attached (official); cut in the `detach` reference | F detached; s_k attached only in the H3 ablation |
 | Dark branch (L_low) | one dark render for every view | the same by default; on the varying-exposure set, also scaled per view by 2^(−s_k) (`--dark_branch`, M2) |
-| **Total curve parameters** | **≈ 255,000 + 5N** | **≈ 32 + N** |
+| **Total curve parameters** | **≈ 255,000 + 5N** | **32 + N + 1** (55 to 76 on LOM) |
 | Test-time rendering | unchanged (curve not used) | unchanged (curve not used) |
 
 **Overexposure** uses the same form. s_k is then a darkening gain, and F maps bright values down. Only the CDF weight changes, as in the original.
@@ -1129,7 +1140,7 @@ No, because the dark branch is a separate factor in a 2×2 on the varying-exposu
   - `detach` is the bar for H2 there (pooled brightness-matched PSNR 21.03 dB against 19.31 for official).
   - The official per-view curves follow brightness instead of compensating it.
   - The shared dark branch loses 3.6–11.9 dB of fit.
-- **M2 (in progress):** an exposure-aware dark branch (`--dark_branch`, dark render × 2^(−s_k), no new parameters) and Rung 2 behind flags. A 2×2 on the varying set separates the curve-model effect (H2) from the dark-branch effect.
+- **M2 (built 2026-11-13):** an exposure-aware dark branch (`--dark_branch`, dark render × 2^(−s_k), no new parameters) and Rung 2 behind `--curve_model rung2`, whose curve loss keeps the official shape prior as one global γ on F (decided Nov 13). A 2×2 on the varying set separates the curve-model effect (H2) from the dark-branch effect.
 - **Rung 2 (core):** L_k(x) = F(min(1, 2^(s_k)·x)). F is shared, monotone, anchored at black and has K = 32 knots dense near black, with interpolation. s_k is one exposure per view, with mean 0. The colour basis is fixed RGB. By default F and s_k are detached, so they are fitted from the photos' histograms only; attaching s_k is the main ablation. Parameters drop from about 255k to about 32 + N, and the model is physically grounded.
 - **Hypotheses:**
   - H1: matches the `detach` reference on LOM.
