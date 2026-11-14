@@ -4,6 +4,7 @@
 
 Tests 1 to 10 are the plan's. 11 to 13 were added with the code: the target shift and the initialisation round
 trip (11), used_range_max (12), and the one-bin alignment against the official LUT (13; decided 2026-11-11).
+14 (added 2026-11-13): the shape prior with one global gamma (decided 2026-11-13).
 """
 
 import math
@@ -13,7 +14,7 @@ import traceback
 import numpy as np
 import torch
 
-from rung2 import (LN2, ExposureCurve, curve_loss, hist_target, init_heights, interp, make_knots,
+from rung2 import (LN2, PRIOR_WEIGHT, ExposureCurve, curve_loss, hist_target, init_heights, interp, make_knots,
                    theta_from_heights, used_range_max)
 
 K = 32
@@ -285,9 +286,67 @@ def test_13_alignment_matches_official_lut():
     print(f"    levels 1-16, |F - official LUT|: shifted max {float(e_s.max()):.4f}, unshifted max {float(e_n.max()):.4f}")
 
 
+def test_14_shape_prior():
+    """The shape prior (decided 2026-11-13): the official term with one global gamma, on F or on the composed
+    curves; gamma starts at 1; with prior "F" the term gives no gradient to s, so exposure compensation is the
+    HE term's alone."""
+    from losses import HistogramPriorLoss, gamma_curve
+    g = _gen(7)
+    knots = make_knots(K, "quadratic")
+    n = 4
+    for prior, extra in (("none", 0), ("F", 1), ("composed", 1)):
+        m = ExposureCurve(knots, init_heights("identity", knots), torch.zeros(n), prior=prior)
+        assert m.n_params() == K + n + extra, f"{prior}: n_params {m.n_params()} != {K + n + extra}"
+        assert sum(p.numel() for p in m.parameters()) == m.n_params(), f"{prior}: parameter tensors do not add up"
+        assert sum(p.numel() for p in m.f_params()) == K + extra, f"{prior}: f_params is not theta (+ rho)"
+    assert _raises(lambda: ExposureCurve(knots, init_heights("identity", knots), torch.zeros(n), prior="beta")), \
+        "unknown prior accepted"
+    assert math.isnan(float(ExposureCurve(knots, init_heights("identity", knots), torch.zeros(n)).gamma())), \
+        "gamma is not NaN without a prior"
+
+    m = _model(N=n, seed=8)
+    mp = ExposureCurve(knots, m.heights().detach(), m.s.detach(), prior="F")
+    assert float(mp.gamma()) == 1.0, "gamma does not start at 1"
+    with torch.no_grad():
+        mp.rho.fill_(math.log(0.15))
+    want = gamma_curve(mp.grid[None], torch.tensor([0.15]))
+    assert float((mp.prior_curve().detach() - want).abs().max()) <= 1e-6, "prior_curve is not losses.gamma_curve"
+
+    # the algebra of the official HistogramPriorLoss, with its pseudo curve replaced by the gamma curve
+    hp = HistogramPriorLoss()
+    img = torch.rand(1, 64, 64, 3, generator=g)
+    curve = torch.rand(1, 255, generator=g).sort().values
+    p = gamma_curve(torch.linspace(0, 1, 255)[None], torch.tensor([0.3]))
+    for step in (0, 3000):
+        tot_o, par_o = hp(curve, img, p, step, exp_name="low", return_parts=True)
+        tot_r, par_r = curve_loss(curve, hp.compute_histogram_equalization(img), step, "low", hp.lambda_smooth, prior=p)
+        assert abs(float(tot_o) - float(tot_r)) <= 1e-7, f"step {step}: total differs from HistogramPriorLoss"
+        for key in ("cdf", "pseudo", "smooth", "w_cdf"):
+            assert abs(float(par_o[key]) - float(par_r[key])) <= 1e-7, f"step {step}: {key} differs"
+
+    # where the prior acts: on F it trains theta and rho but never s; on the composed curves it also pulls s
+    T = hist_target(torch.rand(n, 255, generator=g).sort(dim=1).values)
+    views = torch.arange(n)
+    for prior, s_moves in (("F", False), ("composed", True)):
+        mq = ExposureCurve(knots, m.heights().detach(), m.s.detach(), prior=prior)
+        with torch.no_grad():
+            mq.rho.fill_(math.log(0.3))
+        _, parts = mq.loss(mq.composed_curve(views), T, 3000, "low", 0.1)
+        (PRIOR_WEIGHT * parts["pseudo"]).backward()
+        gs = 0.0 if mq.s.grad is None else float(mq.s.grad.abs().max())
+        assert (gs > 0) == s_moves, f"prior {prior}: |d prior / d s| = {gs:.2e}"
+        assert float(mq.theta.grad.abs().max()) > 0 and float(mq.rho.grad.abs()) > 0, \
+            f"prior {prior}: theta or rho gets no gradient from the prior"
+        total, parts = mq.loss(mq.composed_curve(views), T, 3000, "low", 0.1)
+        base, _ = curve_loss(mq.composed_curve(views), T, 3000, "low", 0.1)
+        assert abs(float(total) - float(base) - PRIOR_WEIGHT * float(parts["pseudo"])) <= 1e-7, \
+            f"prior {prior}: total is not the curve loss plus 0.5 pseudo"
+
+
 TESTS = [test_1_knots, test_2_heights, test_3_interp, test_4_identity, test_5_gradients, test_6_composed_vs_map,
          test_7_gauge, test_8_n_params, test_9_synthetic_recovery, test_10_curve_loss,
-         test_11_target_and_roundtrip, test_12_used_range_max, test_13_alignment_matches_official_lut]
+         test_11_target_and_roundtrip, test_12_used_range_max, test_13_alignment_matches_official_lut,
+         test_14_shape_prior]
 
 
 def main():
