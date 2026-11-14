@@ -32,10 +32,12 @@ How experiments in this project are set up, scored and compared, so results from
   - Rung 2 runs on LOM go to a new root, `results/rung2/`. Varying-set runs join M1's in `results/vexp/`, so all four cells of the 2×2 share one root.
   - The 2×2 on the varying set: curve (`detach` or Rung 2) × dark branch (shared or exposure-aware), i.e. `detach`, `detachexp`, `rung2`, `rung2exp`. "exp" in a variant name means the exposure-aware dark branch.
   - Re-score every root other than `results/rung0` with `--ref_root ../results/rung0`. Only `rung0` holds the `<scene>_baseline_seed0` reference runs; without the flag, `rescore_runs.py` skips every run in `results/rung2/`.
+  - *Built 2026-11-13 (part C):* the variants are `rung2` (`--curve_model rung2`), `rung2exp` (plus `--dark_branch model`) and `rung2att` (plus `--rung2_attach s`; H3, run in M5). `run_rung0.py` refuses them with the default `results/rung0` root. The Rung 2 default keeps the official shape-prior term with one global γ on F (`--rung2_prior F`, decided 2026-11-13).
 - **Variants** are entries in `VARIANTS` in `examples/run_rung0.py` (name → extra flags). `baseline` (no flags) is the official code and stays in every table, labelled "official".
 - **Batch runner:** `python run_rung0.py --scenes ... --variants ... --seeds 0 1 2 [--root ...] [--dry_run]`. It is resumable: a run counts as done when `stats/val_step9999.json` exists, and an incomplete run folder is deleted and restarted. Each run logs to `<root>/logs/<run>.log` and adds a row to `<root>/runs.csv` (finish time, ok, return code, minutes).
 - **Smoke test first:** about 300 steps per new flag set, for example `--max_steps 300 --eval_steps 300 --save_steps 300 --diag_steps 1 300 --diagnostics`, into a `smoke*` folder (git-ignored).
 - **Cost:** one run takes about 8 to 14 minutes (mean minutes per 10k-step run: `baseline` 12.6, `frozenbasis` 13.1, `detachcurve` 11.3, `detach` 7.9; source `Rung0.5_results.md` Q7). One configuration on 5 scenes × 3 seeds takes about 3 hours. Before any batch over an hour, the PC must not sleep: `powercfg /change standby-timeout-ac 0` in a Windows terminal, restored afterwards.
+  - *Rung 2 (2026-11-13, inferred):* its 300-step smokes took 0.51–0.59 min against `detach`'s 0.62, so about 6.6–7.7 min per 10k-step run (ratio × `detach`'s 8.1 min on the varying set; never scale a 300-step run by 10000/300). Replace this with M3's measured minutes.
 
 ## Per-run outputs
 
@@ -46,7 +48,8 @@ How experiments in this project are set up, scored and compared, so results from
 | `stats/train_*.json`, other `stats/val_*.json` | intermediate stats | yes |
 | `diagnostics/*.csv`, `diagnostics/timing.json` | loss log, pseudo-target scores, consistency | yes |
 | `rescore/*.csv`, `rescore/*.json` | Rung 0.5 re-scoring (val metrics, colour metrics, shared-depth consistency) | yes |
-| `exposure_init.json` (and a copy in `rescore/`) | M2: per training view, the mean input and s_measured = log2(m̄/m_k). Written whenever `--dark_branch` is not `shared` | yes |
+| `exposure_init.json` (and a copy in `rescore/`) | M2: per training view, the mean input and s_measured = log2(m̄/m_k). Written whenever `--dark_branch` is not `shared` (and, since 2026-11-13, with `--curve_model rung2`) | yes |
+| `diagnostics/rung2_state.json`, `diagnostics/exposures_by_step.csv` | M2 part C, Rung 2 runs only: the learned F (knots, heights, F on the grid), s_init and s_final per view, γ, flags and `n_params`; s per view at every diagnostics step (step 0 = s_init) | yes |
 | `ckpts/`, `*.pt`, `*.npz`, `renders/`, `renders_depth/`, `videos/`, `tb/`, per-view PNGs | bulky outputs | **no** (git-ignored) |
 
 Summary folders (`results/rung0/summary/`, `summary_rung05/`) and the hand-written reports in `Luminance-GS/Implementation_guides/` are committed in full. Once a rung's report is written, its summary folder is not edited again; a re-analysis goes into a new folder.
@@ -67,7 +70,7 @@ Summary folders (`results/rung0/summary/`, `summary_rung05/`) and the hand-writt
 | Pseudo-target leak (varying-exposure set) | slope of log2(mean pseudo-target, varying / LOM, same view and seed) against u_k: 0 = exposure fully compensated, 1 = passes straight through. Same for the enhanced render at the training view, and for the dark input as a check (≈ 1) | `vexp_analyze.py` T4b |
 | Dark-branch fit | `fit_psnr_lowrender_vs_input`: shared dark render vs the dark input at the training views. On the varying set, report the paired difference against signed u_k, split by sign (not against \|u_k\|) | `rescore/pseudo_targets.csv`, `vexp_analyze.py` T5 |
 | Dark-branch fit as trained (M2) | `fit_psnr_lowrender_exp_vs_input`: the dark render as its loss sees it, i.e. ×2^(−s_k) with an exposure-aware `--dark_branch`, and equal to the column above with `shared`. `s_dark` is the s_k used (0 for `shared`). Compare cells with this column | `rescore/pseudo_targets.csv` (last two columns) |
-| Curve parameters | count of learnable curve parameters (baseline about 255k + 5N; Rung 2 about 32 + N) | by hand |
+| Curve parameters | count of learnable curve parameters (baseline about 255k + 5N; Rung 2 about 32 + N; *2026-11-13:* 32 + N + 1 with the shape prior's γ) | by hand; Rung 2 runs print it at start-up and store it as `n_params` in `rung2_state.json` |
 | Wall time | minutes per run from `runs.csv`; exclude `sofa_detach_seed1` (PC slept 11 h) | `runs.csv` |
 
 Always report raw and brightness-matched PSNR side by side. The unsupervised method sets global brightness through the histogram prior (pseudo-targets average 0.54 to 0.62 in every scene, while the ground truth ranges 0.36 to 0.54), so raw PSNR mostly measures that offset on bike and shrub. Rung 2 does not change this: its exposures are relative (mean 0), and global brightness still comes from the CDF fit.
