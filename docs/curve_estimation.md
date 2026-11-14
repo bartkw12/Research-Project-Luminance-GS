@@ -2,17 +2,17 @@
 
 Reference for any change to the tone curve, the pseudo-target, the colour basis, the losses or the optimisers. It describes what the **code** does, which differs from the paper in places (see `repo_vs_paper.md`). The long version with diagrams and a worked example is sections 6.1 to 6.7 of `Luminance_GS_Research_Project_Explained.md`.
 
-Paths are relative to `Luminance-GS/examples/`. Line numbers are for `simple_trainer_ours.py` on `main` with the M2 part A changes (2026-11-11) and will drift, so search by function name first.
+Paths are relative to `Luminance-GS/examples/`. Line numbers are for `simple_trainer_ours.py` on `main` with the M2 part C changes (2026-11-13) and will drift, so search by function name first.
 
 ## One training step
 
 Batch size 1: one training view k per step.
 
-1. **Render twice** (`Runner.rasterize_splats`, about line 445; `gsplat/rendering_double.py:rasterization_dual`). The same Gaussians are rasterised with two colour sets:
+1. **Render twice** (`Runner.rasterize_splats`, about line 487; `gsplat/rendering_double.py:rasterization_dual`). The same Gaussians are rasterised with two colour sets:
    - base SH colours `c` give the **enhanced** render `colors_enh` (used at test time);
    - `c_low = c * adjust_k + adjust_b` (per Gaussian, per channel; starts at k = 1, b = 0) gives the **dark** render `colors_low`.
-2. **Make the pseudo-target** with `Runner.curve_forward(pixels, camtoworlds, image_ids)` (about line 499). It returns `pixels_enh`, `curve_adj` (the view curve L_k), `pesdo_curve` (the prior P_k) and the raw curve pieces. Training and `diagnostics.py` both call it, so they cannot drift apart.
-3. **Losses** (about lines 686 to 699):
+2. **Make the pseudo-target** with `Runner.curve_forward(pixels, camtoworlds, image_ids)` (about line 541). It returns `pixels_enh`, `curve_adj` (the view curve L_k), `pesdo_curve` (the prior P_k) and the raw curve pieces. Training and `diagnostics.py` both call it, so they cannot drift apart. With `--curve_model rung2` it hands over to `Runner.rung2_forward`, which returns the same keys (see "Rung 2 as built").
+3. **Losses** (about lines 740 to 758):
 
    ```
    loss = loss_regress_low + 0.5 * loss_regress_enh + loss_co + 10 * hist_loss
@@ -102,7 +102,7 @@ Each Gaussian has one dark colour, `c·adjust_k + adjust_b`, for every view, so 
 |---|---|---|
 | `shared` (default) | none | the official code; nothing is computed |
 | `measured` | log2(m̄/m_k), fixed. m_k is the training view's mean as loaded (undistorted, /255), m̄ the geometric mean | `Runner.measure_exposures`; also written to `<result_dir>/exposure_init.json` |
-| `model` | Rung 2's s_k, `.detach()` | needs `--curve_model rung2` (part C); refused until then |
+| `model` | Rung 2's s_k, `.detach()` | needs `--curve_model rung2` (built in part C, 2026-11-13; variant `rung2exp`) |
 | `gains` | −(log2_ratio − mean) from `<data_dir>/exposure_gains.json`, the set's true gains | `Runner.load_gains`; diagnosis only |
 
 - **One function for training and diagnostics.** `Runner.dark_scale(image_ids)` returns the factor (or `None`) and is shared by `train()` and `diagnostics.py`, so the two cannot drift apart.
@@ -116,7 +116,7 @@ Each Gaussian has one dark colour, `c·adjust_k + adjust_b`, for every view, so 
 - **Variant:** `detachexp` in `run_rung0.py` = `--detach_pseudo_target --dark_branch measured`.
 - **Built-in check** (smoke test, buu, 300 steps): `detach` and `detachexp` with the same seed produced identical pseudo-targets. Nothing in the curve path sees the dark render.
 
-## What Rung 2 changes (planned)
+## What Rung 2 changes (planned; built 2026-11-13)
 
 Rung 2 replaces L_g, the bias net, the shape net and the colour basis with `L_k(x) = F(min(1, 2^{s_k} x))`:
 
@@ -128,9 +128,45 @@ L_hist becomes L_curve: the MSE between F(min(1, 2^{s_k} x_b)) and CDF_k on the 
 
 *Update (2026-11-11):*
 - **Flag names:** the Rung 2 flag names are now set in `Luminance-GS/Implementation_guides/M2_rung2_plan.md` section 2.2, and go here once the code exists.
-- **L_curve** keeps the official smoothness term, 0.1·mean of the squared first differences of the composed curve. It is L_hist minus its shape-prior term.
+- **L_curve** keeps the official smoothness term, 0.1·mean of the squared first differences of the composed curve. It is L_hist minus its shape-prior term. *(Superseded 2026-11-13: the shape-prior term is kept, with one global γ on F; see "Rung 2 as built".)*
 - **L_low is no longer fixed.** On the varying-exposure set it can be exposure-aware ("The dark branch" above; `rung2exp` uses Rung 2's own s_k with stop-gradient).
 - **Target alignment (decided by Bart, 2026-11-11):** the CDF target is shifted by one bin, T_k = [0, CDF_k[0], …, CDF_k[253]], in the loss and the `cdf` initialisation. Rung 2 then reads the same bin as the official truncating lookup for every level ≥ 1, and level 0 stays black (plan section 2.2).
+
+### Rung 2 as built (M2 part C, 2026-11-13)
+
+`--curve_model rung2` (default `official`). The `--rung2_*` flags act only then.
+
+| Flag | Default | Meaning |
+|---|---|---|
+| `--rung2_knots` | 32 | K, the segments of F |
+| `--rung2_knot_spacing` | `quadratic` | y_j = (j/K)²; also `uniform`, `usedrange` (the step 6 rule kept quadratic) |
+| `--rung2_F_init` | `cdf` | the views' shifted HE-CDFs aligned by their initial s_k and averaged; also `identity` |
+| `--rung2_s_init` | `measured` | log2(m̄/m_k), the same numbers as `--dark_branch measured`; also `zero` |
+| `--rung2_attach` | `none` | gradient from L_enh: `none`, `s` (H3; variant `rung2att`), `all` |
+| `--rung2_prior` | `F` | the shape-prior term (below): `F`, `composed` (the official form), `none` (the first draft; M5 ablation) |
+| `--rung2_smooth_lambda` | 0.1 | first-difference smoothness of the composed curve |
+| `--rung2_lr_F`, `--rung2_lr_s` | 1e-2, 1e-3 | Adam on (θ, ρ) and on s; no weight decay; ExponentialLR to 1% |
+
+- **Curve loss (decided by Bart, 2026-11-13):** L_curve = w(t)·mse(L_k, T_k) + 0.1·mean(L_k[b+1] − L_k[b])² + 0.5·[mse(p, F) + 0.01·mse(p, T_k)], with p = clamp(x_b, 1e-3, 1)^γ (`losses.gamma_curve`; the clamp only touches b = 0) and one learned global γ = exp(ρ), starting at 1. The total loss uses 10·L_curve, as the official uses 10·L_hist.
+  - This is the official L_hist with the shape network replaced by one γ, and the prior moved from each view's curve to the shared F. So the prior never trains s_k.
+  - Why: from step 3000 the official loss puts the curve halfway between the HE-CDF and the gamma prior, and `detach`'s curves sit there. Without the term, Rung 2 would fit a different target (research log, 2026-11-11 part B and 2026-11-13).
+  - Learning rate 1e-2 for F and γ: plan step 6's rule, applied with the prior on (log, 2026-11-13).
+- **Code:**
+  - `Runner.build_rung2`: the init. It reads `trainset[i]` (no random numbers) and prints the parameter count, K + N + 1.
+  - `Runner.rung2_forward`: `curve_forward`'s Rung 2 branch, with the same keys. `curve_adj` = the composed curve, `pixels_enh` = `map_pixels` under `--rung2_attach`, `pesdo_curve` = p, `gamma` = γ, `projected` = (R, G, B); official-only keys are zeros or NaN.
+  - `train()`: target = `hist_target` of the step's HE-CDF, then `ExposureCurve.loss`; the gauge projection after the optimiser step; end-of-run asserts on mean s and a monotone F.
+  - `grad_check_rung2`: gradient norms from L_enh and L_low into θ, s and ρ.
+- **Not built in Rung 2 mode:** `self.curve`, the bias and shape networks, `pesdo_curve`, the colour basis and their optimisers. Refused with `--detach_pseudo_target`, `--detach_curve_in_target`, `--freeze_color_basis`, `--patch_size`, or a batch size other than 1.
+- **Diagnostics:**
+  - `curves_step*.npz` keeps every key (official-only ones zeros or NaN; `curve_global` = F on the grid) and adds `s`, `s_init`, `F_knots` and `F_heights`.
+  - New files: `diagnostics/rung2_state.json` (view names, s_init, s_final, knots, heights, γ, flags, `n_params`) and `diagnostics/exposures_by_step.csv` (step, view, s; step 0 is s_init).
+  - `curve_state.pt` holds the module's state, and `_load_run_state` restores it, knots included.
+- **Re-scoring:** `rescore_runs.MODEL_FLAGS` passes `curve_model` and every `rung2_*` flag on from `cfg.json`. `diagnostics.MODEL_DEFAULTS` mirrors the `Config` defaults, and the trainer asserts this at start-up.
+- **Checks (2026-11-13, research log):**
+  - 14 unit tests pass.
+  - Re-scores of an official and a `detach` run with the new code are bit-identical to their old outputs.
+  - `rung2` and `rung2exp` with the same seed give bit-identical F, s and pseudo-targets.
+  - Gradient flow is as designed.
 
 **Default mode: detached** (chosen by Rung 0.5, where cutting L_enh from the curve explained 85 to 100% of the detach gain).
 
