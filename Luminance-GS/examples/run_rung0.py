@@ -12,6 +12,9 @@ Run from Luminance-GS/examples:
                                               # M1: the same runs on the varying-exposure set
     python run_rung0.py --data_root ../data/LOM_vexp --root ../results/vexp --variants detachexp
                                               # M2: detach with the exposure-aware dark branch
+    python run_rung0.py --data_root ../data/LOM_vexp --root ../results/vexp --variants rung2 rung2exp
+    python run_rung0.py --root ../results/rung2 --variants rung2
+                                              # M3: Rung 2 on the varying set and on LOM (never in results/rung0)
 """
 
 import argparse
@@ -35,7 +38,14 @@ VARIANTS = {
     "detachcurve": ["--detach_curve_in_target"],
     # M2: "exp" = exposure-aware dark branch (view k's dark render scaled by 2^{-s_k} before loss_regress_low)
     "detachexp": ["--detach_pseudo_target", "--dark_branch", "measured"],
+    # M2 part C: Rung 2 (one shared monotone curve F + one exposure s_k per view; rung2.py). rung2exp's dark branch
+    # uses Rung 2's own s_k (stop-gradient); rung2att sends the enhancement loss into s_k only (H3, run in M5)
+    "rung2": ["--curve_model", "rung2"],
+    "rung2exp": ["--curve_model", "rung2", "--dark_branch", "model"],
+    "rung2att": ["--curve_model", "rung2", "--rung2_attach", "s"],
 }
+# results/rung0 holds Rungs 0 and 0.5 only (CLAUDE.md rule 6): these variants must go to another root
+NOT_IN_RUNG0 = {"rung2", "rung2exp", "rung2att"}
 
 
 def run_name(scene: str, variant: str, seed: int) -> str:
@@ -64,6 +74,9 @@ def main():
     # never put runs on another dataset into the protected Rung 0 root
     if data != DATA.resolve() and root == (EXAMPLES.parent / "results" / "rung0").resolve():
         raise SystemExit(f"[run_rung0] --data_root {data} is not LOM_full: pass a --root other than results/rung0")
+    if NOT_IN_RUNG0 & set(args.variants) and root == (EXAMPLES.parent / "results" / "rung0").resolve():
+        raise SystemExit(f"[run_rung0] {sorted(NOT_IN_RUNG0 & set(args.variants))} do not belong in results/rung0: "
+                         f"pass --root ../results/rung2 (LOM) or ../results/vexp (varying set)")
     (root / "logs").mkdir(parents=True, exist_ok=True)
     status_path = root / "runs.csv"
     new_status = not status_path.exists()
