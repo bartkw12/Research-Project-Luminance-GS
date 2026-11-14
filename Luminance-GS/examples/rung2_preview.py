@@ -5,39 +5,48 @@ photos' HE-CDFs, never on the Gaussians. So a run's whole F and s_k trajectory c
 rendering. The replay differs from a real run only in the random view order (a seeded permutation per epoch
 here, the DataLoader's shuffle there).
 
-    python rung2_preview.py                     (from Luminance-GS/examples, luminancegs env; CPU, ~15 min)
+    python rung2_preview.py                     (from Luminance-GS/examples, luminancegs env; CPU, ~25 min)
     python rung2_preview.py --scenes buu --steps 2000 --out ../results/rung2/preview_quick     (quick look)
 
 Per scene, on LOM and on the varying-exposure set: load the training photos with the trainer's own Parser and
 Dataset; compute the HE-CDFs, the measured exposures (as Runner.measure_exposures) and the 1/4-size grey
-histograms; for each configuration replay the steps of 10 * L_curve with the trainer's optimisers (Adam, lr 1e-3,
-no weight decay, ExponentialLR to 1%) and the gauge projection; fit the same objective full-batch as the optimum;
-map every training photo through the result.
+histograms; for each configuration replay the steps of 10 * L_curve with the trainer's optimisers (Adam on F's
+side and on s, no weight decay, ExponentialLR to 1%) and the gauge projection; map every training photo through
+the result.
 
-Configurations: knot spacing {quadratic, usedrange} x F init {cdf, identity}, all with the one-bin-shifted
-target (decided 2026-11-11), plus quadratic/cdf with the unshifted target as the alignment check. EXPLORATORY,
-not in the plan (added 2026-11-11 after the first preview showed detach's curve sits halfway between the HE-CDF
-and its gamma shape prior): quadratic/cdf plus the official shape-prior term with one learned global gamma, on
-the shared F (priorF) or on each view's composed curve (priorL). They take no part in the decision rules.
+Configurations. The default is the trainer's (decided 2026-11-13): quadratic knots, cdf init, one-bin-shifted
+target, and the official shape-prior term with one learned global gamma on the shared F (priorF). Around it: the
+usedrange knots and the identity init (the step 6 rules), the unshifted target (alignment check), no prior (the
+plan's first draft; an M5 ablation) and the prior on each view's composed curve (priorL, the official form;
+rejected 2026-11-13 because it pulls s_k toward 0).
+
+Learning-rate rule (plan step 6, applied with the prior on): the default is also replayed at the other rates of
+the ladder 1e-3, 3e-3, 1e-2 (F and gamma; s keeps --lr_s). The rule takes the first rate whose final objective is
+within 5% of the full-batch optimum in every scene and set. The optimum minimises the same objective over all
+views at the late weight: 10k full-batch Adam steps at lr 3e-2 from the cdf init, or a polish of the best ladder
+replay if that ends lower. (The plan's 3k steps at 1e-2 suffice without the prior but stop up to 13% above the
+optimum with it, because F then travels far from its init: scratch check of 2026-11-13.)
 
 Tables (tables.md, one CSV each, numbers.json):
     P1 fit       residual x255 of the composed curves against their targets (grey-histogram weighted, as in
                  build_vexp.fit_exposure_form) next to the histogram oracle's on the same targets; final
-                 objective against the full-batch optimum; steps to within 5% of the final objective;
-                 steps the identity init needs to come within 0.01 of the cdf init's final F
+                 objective against the full-batch optimum; steps to within 5% of the final objective; the
+                 learning-rate ladder; steps the identity init needs to come within 0.01 of the cdf init's F
     P2 exposure  (varying set) s_k against u_k: slope, r, unpaired and paired RMSE, movement from the init,
                  next to the init and the histogram oracle (vexp_analyze.recovery_stats)
     P3 leak      paired pseudo-target leak: slope of log2(mean, varying / LOM) on u_k, next to M1's
     P4 dark end  pseudo-target value at input levels 0-16 and the dark-end slope (levels 1-8), next to detach's
                  (seed-0 curves_step10000.npz through the official LUT rule: level l reads curve[max(l-1, 0)]);
-                 fraction of training pixels at levels 0-2
+                 fraction of training pixels at levels 0-2; distance of the applied curves to detach's
     P5 quality   pseudo-target PSNR, raw and brightness-matched, against high/, next to detach's.
                  DIAGNOSTIC ONLY: it uses the normal-light images, so it never chooses a setting.
-Writes only under results/rung2/ into a folder named preview* (default results/rung2/preview/).
+Writes only under results/rung2/ into a folder named preview* (default results/rung2/preview_final/; preview/ and
+preview_lrF1e-2/ hold the 2026-11-11 runs the decision was based on, with the earlier configuration names).
 """
 
 import argparse
 import contextlib
+import copy
 import hashlib
 import io
 import json
@@ -61,8 +70,7 @@ from datasets.colmap import Dataset, Parser  # noqa: E402
 from diagnostics import load_train_gt, nchw, psnr, psnr_gt_mean  # noqa: E402
 from losses import HistogramPriorLoss  # noqa: E402
 from rung0_analyze import INK, INK2, MUTED, SCENES, SEEDS, SERIES, md_table, read_csv, savefig, write_csv  # noqa: E402
-from rung2 import (ExposureCurve, curve_loss, hist_target, init_heights, make_knots,  # noqa: E402
-                   used_range_max)
+from rung2 import ExposureCurve, hist_target, init_heights, make_knots, used_range_max  # noqa: E402
 from vexp_analyze import recovery_stats, rmse_c  # noqa: E402
 
 RESULTS = EXAMPLES.parent / "results"
@@ -70,32 +78,33 @@ LOM_DATA = EXAMPLES.parent / "data" / "LOM_full"
 VEXP_DATA = EXAMPLES.parent / "data" / "LOM_vexp"
 DATASET = RESULTS / "vexp" / "dataset"
 RUNG2 = RESULTS / "rung2"
-OUT_DEFAULT = RUNG2 / "preview"
+OUT_DEFAULT = RUNG2 / "preview_final"
 SETS = {"lom": (LOM_DATA, RESULTS / "rung0"), "vexp": (VEXP_DATA, RESULTS / "vexp")}
 
 # name: (knot spacing, F init, target alignment, shape prior)
 CONFIGS = {
-    "quadratic-cdf": ("quadratic", "cdf", "shift", None),
-    "usedrange-cdf": ("usedrange", "cdf", "shift", None),
-    "quadratic-identity": ("quadratic", "identity", "shift", None),
-    "usedrange-identity": ("usedrange", "identity", "shift", None),
-    "quadratic-cdf-unshifted": ("quadratic", "cdf", "none", None),
-    # EXPLORATORY (not in the plan; added 2026-11-11 for Bart's decision): the official shape-prior term
-    # 0.5 [mse(p, X) + 0.01 mse(p, T_k)] with ONE learned global gamma, p = clamp(x, 1e-3, 1)^gamma, on the shared
-    # F (X = F on the grid) or on each view's composed curve (X = L_k, the official form)
-    "quadratic-cdf-priorF": ("quadratic", "cdf", "shift", "F"),
-    "quadratic-cdf-priorL": ("quadratic", "cdf", "shift", "composed"),
+    "quadratic-cdf-priorF": ("quadratic", "cdf", "shift", "F"),             # the default (2026-11-13)
+    "usedrange-cdf-priorF": ("usedrange", "cdf", "shift", "F"),             # knot-spacing rule
+    "quadratic-identity-priorF": ("quadratic", "identity", "shift", "F"),   # F-init rule (head start, risk 5)
+    "quadratic-cdf-priorF-unshifted": ("quadratic", "cdf", "none", "F"),    # alignment check
+    "quadratic-cdf-noprior": ("quadratic", "cdf", "shift", "none"),         # the plan's first draft; M5 ablation
+    "quadratic-cdf-priorL": ("quadratic", "cdf", "shift", "composed"),      # the official form; rejected
 }
-DEFAULT = "quadratic-cdf"
-ALIGN_CHECK = "quadratic-cdf-unshifted"
-EXPLORATORY = ["quadratic-cdf-priorF", "quadratic-cdf-priorL"]
-SHOWN = [DEFAULT, ALIGN_CHECK] + EXPLORATORY  # the configurations in the P4 and P5 tables
+DEFAULT = "quadratic-cdf-priorF"
+USEDRANGE = "usedrange-cdf-priorF"
+IDENTITY = "quadratic-identity-priorF"
+ALIGN_CHECK = "quadratic-cdf-priorF-unshifted"
+NOPRIOR = "quadratic-cdf-noprior"
+PRIOR_L = "quadratic-cdf-priorL"
+SHOWN = [DEFAULT, ALIGN_CHECK, NOPRIOR, PRIOR_L]  # the configurations in the P2 to P5 tables
+OPTIMUM_OF = {DEFAULT: DEFAULT, IDENTITY: DEFAULT, NOPRIOR: NOPRIOR}  # configs judged against a full-batch optimum
+LR_LADDER = [1e-3, 3e-3, 1e-2]  # plan step 6: keep 1e-3 unless > 5% above the optimum, then 3e-3, then 1e-2
 LEVELS = [0, 1, 2, 4, 8, 16]
 LATE_STEP = 3000          # the objective is compared at the late-training weight w = 0.5
 F_CLOSE = 0.01            # identity-init convergence: max |F_identity - F_cdf final| on the 255-bin grid
 WITHIN = 0.05             # "within 5% of the final objective"
 SPACING_GAIN = 0.30       # usedrange must lower the pooled P1 residual by at least 30% to become the default
-LR_GAP = 5.0              # replay objective more than 5% above the full-batch optimum -> try lr 3e-3
+LR_GAP = 5.0              # replay objective more than 5% above the full-batch optimum -> next rate of the ladder
 
 
 # ------------------------------------------------------------------ output guard
@@ -146,7 +155,8 @@ def load_gt(d: dict) -> list:
 
 
 # ------------------------------------------------------------------ fitting
-def build(d: dict, spacing: str, init: str, align: str, K: int, y_max_cache: dict):
+def build(d: dict, config: str, K: int, y_max_cache: dict):
+    spacing, init, align, prior = CONFIGS[config]
     targets = hist_target(d["cdf"], align)
     y_max = None
     if spacing == "usedrange":
@@ -154,39 +164,22 @@ def build(d: dict, spacing: str, init: str, align: str, K: int, y_max_cache: dic
             y_max_cache["y_max"] = used_range_max(d["images"], d["s0"])
         y_max = y_max_cache["y_max"]
     knots = make_knots(K, spacing, y_max)
-    return ExposureCurve(knots, init_heights(init, knots, targets, d["s0"]), d["s0"]), targets, y_max
+    model = ExposureCurve(knots, init_heights(init, knots, targets, d["s0"]), d["s0"], prior=prior)
+    return model, targets, y_max
 
 
 @torch.no_grad()
 def objective(model: ExposureCurve, targets: torch.Tensor, lam: float) -> float:
-    """L_curve over all views at the late-training weight: what the replay should end near."""
-    return float(curve_loss(model.composed_curve(torch.arange(model.N)), targets, LATE_STEP, "low", lam)[0])
+    """The curve loss (with the model's shape prior, if any) over all views at the late-training weight."""
+    return float(model.loss(model.composed_curve(torch.arange(model.N)), targets, LATE_STEP, "low", lam)[0])
 
 
-class GammaPrior(torch.nn.Module):
-    """EXPLORATORY: the official shape prior reduced to what Rung 0 found it to be, a gamma curve
-    (losses.gamma_curve; alpha and beta never moved, and s_curve(x, 0.5, 1) is the identity), with one global
-    gamma = exp(rho), starting at 1 as the official shape network does."""
-
-    def __init__(self):
-        super().__init__()
-        self.rho = torch.nn.Parameter(torch.zeros(()))
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return torch.clamp(x, 1e-3, 1.0) ** torch.exp(self.rho)
-
-
-def replay(model: ExposureCurve, targets: torch.Tensor, a, prior=None):
-    """The trainer's Rung 2 curve updates: one view per step, 10 * L_curve, two Adams, ExponentialLR to 1% over
-    the run, then the gauge projection. With an (exploratory) prior, L_curve also gets the official shape-prior
-    term on F or on the composed curve, and gamma its own Adam. Returns checkpoints (step, objective without the
-    prior, F on the 255-bin grid) and the learned gamma (NaN without a prior)."""
-    opts = [torch.optim.Adam([model.theta], lr=a.lr_F, weight_decay=0.0),
+def replay(model: ExposureCurve, targets: torch.Tensor, a, lr_F: float):
+    """The trainer's Rung 2 curve updates (simple_trainer_ours.Runner.train): one view per step, 10 * L_curve with
+    the model's shape prior, Adam on F's side (theta, rho) at lr_F and on s at a.lr_s, ExponentialLR to 1% over
+    the run, then the gauge projection. Returns checkpoints (step, objective, F on the 255-bin grid)."""
+    opts = [torch.optim.Adam(model.f_params(), lr=lr_F, weight_decay=0.0),
             torch.optim.Adam([model.s], lr=a.lr_s, weight_decay=0.0)]
-    gp = None
-    if prior is not None:
-        gp = GammaPrior()
-        opts.append(torch.optim.Adam([gp.rho], lr=a.lr_F, weight_decay=0.0))
     scheds = [torch.optim.lr_scheduler.ExponentialLR(o, gamma=0.01 ** (1.0 / a.steps)) for o in opts]
     gen = torch.Generator().manual_seed(a.seed)
     order, traj = [], []
@@ -196,12 +189,7 @@ def replay(model: ExposureCurve, targets: torch.Tensor, a, prior=None):
         if not order:
             order = torch.randperm(model.N, generator=gen).tolist()
         k = order.pop(0)
-        curve = model.composed_curve(k)
-        loss, _ = curve_loss(curve, targets[k:k + 1], step, "low", a.smooth_lambda)
-        if gp is not None:
-            p = gp(model.grid)[None]
-            x = model.F(model.grid)[None] if prior == "F" else curve
-            loss = loss + 0.5 * (torch.mean((p - x) ** 2) + 0.01 * torch.mean((p - targets[k:k + 1]) ** 2))
+        loss, _ = model.loss(model.composed_curve(k), targets[k:k + 1], step, "low", a.smooth_lambda)
         for o in opts:
             o.zero_grad(set_to_none=True)
         (10 * loss).backward()
@@ -211,22 +199,32 @@ def replay(model: ExposureCurve, targets: torch.Tensor, a, prior=None):
             s.step()
         model.project_gauge()
     traj.append((a.steps, objective(model, targets, a.smooth_lambda), model.F(model.grid).detach().numpy()))
-    return traj, (float(torch.exp(gp.rho)) if gp is not None else float("nan"))
+    return traj
 
 
-def full_batch(model: ExposureCurve, targets: torch.Tensor, a) -> float:
-    """The optimum the replay is judged against: all views per step, late weight, Adam with a larger decaying lr."""
-    opt = torch.optim.Adam([model.theta, model.s], lr=a.full_lr)
-    sched = torch.optim.lr_scheduler.ExponentialLR(opt, gamma=0.01 ** (1.0 / a.full_steps))
+def full_batch(model: ExposureCurve, targets: torch.Tensor, steps: int, lr: float, lam: float) -> float:
+    """All views per step at the late weight; Adam on every parameter, ExponentialLR to 1%; gauge projection."""
+    opt = torch.optim.Adam(list(model.parameters()), lr=lr)
+    sched = torch.optim.lr_scheduler.ExponentialLR(opt, gamma=0.01 ** (1.0 / steps))
     views = torch.arange(model.N)
-    for _ in range(a.full_steps):
-        loss, _ = curve_loss(model.composed_curve(views), targets, LATE_STEP, "low", a.smooth_lambda)
+    for _ in range(steps):
+        loss, _ = model.loss(model.composed_curve(views), targets, LATE_STEP, "low", lam)
         opt.zero_grad(set_to_none=True)
         loss.backward()
         opt.step()
         sched.step()
         model.project_gauge()
-    return objective(model, targets, a.smooth_lambda)
+    return objective(model, targets, lam)
+
+
+def optimum(d: dict, config: str, replayed: list, a, y_cache: dict) -> dict:
+    """The full-batch optimum of a configuration's objective: a cold start from its init, and a polish of the
+    lowest-ending replay of the same objective; the lower of the two."""
+    m, t, _ = build(d, config, a.K, y_cache)
+    cold = full_batch(m, t, a.full_steps, a.full_lr, a.smooth_lambda)
+    best = min(replayed, key=lambda r: r["traj"][-1][1])
+    polish = full_batch(copy.deepcopy(best["model"]), best["targets"], a.polish_steps, a.polish_lr, a.smooth_lambda)
+    return {"J": min(cold, polish), "cold": cold, "polish": polish, "from": "cold" if cold <= polish else "polish"}
 
 
 def weighted_resid255(curves: np.ndarray, targets: np.ndarray, hist: np.ndarray) -> float:
@@ -266,7 +264,7 @@ def evaluate(model: ExposureCurve, d: dict, gt: list) -> dict:
     x = torch.arange(256, dtype=torch.float32) / 255.0  # every 8-bit input level
     L = model.F(torch.clamp(model.gain(torch.arange(model.N))[:, None] * x[None], max=1.0)).numpy()  # [V, 256]
     return {"mean_pseudo": np.array(mean_pseudo), "pseudo_psnr": np.array(p_raw), "pseudo_psnr_gtmean": np.array(p_bm),
-            "L_levels": L, "F_levels": model.F(x).numpy(),
+            "L_levels": L, "F_levels": model.F(x).numpy(), "gamma": float(model.gamma()),
             "slope_1_8": float(((L[:, 8] - L[:, 1]) / (7 / 255)).mean()),
             "curves": model.composed_curve(torch.arange(model.N)).numpy()}
 
@@ -290,23 +288,25 @@ def detach_reference(scene: str, which: str, names: list) -> dict:
 
 # ------------------------------------------------------------------ figures
 def fig_curves(scene: str, per_set: dict):
-    fig, axes = plt.subplots(1, 2, figsize=(11, 4.2), sharey=True)
-    for ax, (which, (model, targets, model_prior, detach_lut)) in zip(axes, per_set.items()):
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.4), sharey=True)
+    for ax, (which, (model, targets, model_noprior, detach_lut)) in zip(axes, per_set.items()):
         T = targets.numpy()
         x = model.grid.numpy()
         with torch.no_grad():
             curves = model.composed_curve(torch.arange(model.N)).numpy()
             Fg = model.F(model.grid).numpy()
-            Fp = model_prior.F(model.grid).numpy()
+            p = model.prior_curve()[0].numpy()
+            Fn = model_noprior.F(model.grid).numpy()
         xmax = min(1.0, 1.25 * float(np.argmax(T >= 0.995, axis=1).max()) / 254)
         for k in range(model.N):
             ax.plot(x, T[k], color=MUTED, lw=0.8, alpha=0.6, label="views' targets (shifted HE-CDF)" if k == 0 else None)
             ax.plot(x, curves[k], color=SERIES[0], lw=1.0, alpha=0.6,
                     label="per-view curve F(min(1, 2^s_k x))" if k == 0 else None)
-        ax.plot(x, Fg, color=INK, lw=2.2, label="shared F")
+        ax.plot(x, p, color=SERIES[3], lw=1.6, ls=":", label=f"gamma prior x^{float(model.gamma()):.3f}")
+        ax.plot(x, Fn, color=SERIES[1], lw=1.6, label="shared F without prior (first draft)")
         ax.plot(np.arange(256) / 255, detach_lut.mean(0), color=SERIES[2], lw=2.0, ls="--",
                 label="detach, mean applied curve (seed 0)")
-        ax.plot(x, Fp, color=SERIES[1], lw=2.0, label="shared F with gamma prior (exploratory)")
+        ax.plot(x, Fg, color=INK, lw=2.2, label="shared F (default: with gamma prior)")
         ax.set_xlim(0, xmax)
         ax.set_ylim(0, 1.02)
         ax.set_title("LOM" if which == "lom" else "varying-exposure set")
@@ -350,9 +350,11 @@ def main():
     ap.add_argument("--scenes", nargs="+", default=SCENES, choices=SCENES)
     ap.add_argument("--steps", type=int, default=10_000)
     ap.add_argument("--every", type=int, default=100, help="checkpoint interval of the replay")
-    ap.add_argument("--full_steps", type=int, default=3000)
-    ap.add_argument("--full_lr", type=float, default=1e-2)
-    ap.add_argument("--lr_F", type=float, default=1e-3)
+    ap.add_argument("--full_steps", type=int, default=10_000, help="cold-start full-batch steps for the optimum")
+    ap.add_argument("--full_lr", type=float, default=3e-2)
+    ap.add_argument("--polish_steps", type=int, default=3000, help="full-batch polish of the best replay")
+    ap.add_argument("--polish_lr", type=float, default=1e-3)
+    ap.add_argument("--lr_F", type=float, default=1e-2, help="F's side (theta, gamma); the trainer's default")
     ap.add_argument("--lr_s", type=float, default=1e-3)
     ap.add_argument("--K", type=int, default=32)
     ap.add_argument("--smooth_lambda", type=float, default=0.1)
@@ -360,6 +362,8 @@ def main():
     ap.add_argument("--threads", type=int, default=2, help="CPU threads (2 leaves room for a training batch)")
     ap.add_argument("--out", type=Path, default=OUT_DEFAULT)
     a = ap.parse_args()
+    if a.lr_F not in LR_LADDER:
+        raise SystemExit(f"--lr_F must be on the ladder {LR_LADDER}")
 
     torch.set_num_threads(a.threads)
     cv2.setNumThreads(a.threads)
@@ -371,7 +375,7 @@ def main():
     oracle_json = {r["scene"]: r for r in json.loads((DATASET / "oracle.json").read_text())["rows"]}
     t4 = {(r["scene"], r["method"]): r for r in read_csv(RESULTS / "vexp" / "summary" / "T4_exposure.csv")}
 
-    P1, P2, P3, P4, P4s, P4d, P5, VIEWS, CHECKS = [], [], [], [], [], [], [], [], []
+    P1, LADDER, P2, P3, P4, P4s, P4d, P5, VIEWS, CHECKS = [], [], [], [], [], [], [], [], [], []
     exp_fig = {}
     for scene in a.scenes:
         t0 = time.time()
@@ -390,45 +394,56 @@ def main():
                        "init_vs_oracle_json_s_init": float(np.abs(data["vexp"]["s0"].double().numpy() - oj["s_init"]).max()),
                        "oracle_vs_oracle_json_s_oracle": float(np.abs(oracle["vexp"] - oj["s_oracle"]).max())})
 
-        res, opt_cache = {}, {}
+        res, opt = {}, {}
         for w, d in data.items():
             y_cache = {}
-            for name, (spacing, init, align, prior) in CONFIGS.items():
-                model, targets, y_max = build(d, spacing, init, align, a.K, y_cache)
+            for name in CONFIGS:
+                model, targets, y_max = build(d, name, a.K, y_cache)
                 tc = time.time()
-                traj, gamma = replay(model, targets, a, prior)
-                secs = time.time() - tc
-                if (spacing, align) not in opt_cache.setdefault(w, {}):
-                    m_opt, t_opt, _ = build(d, spacing, "cdf", align, a.K, y_cache)
-                    T_np = t_opt.double().numpy()
-                    opt_cache[w][(spacing, align)] = {
-                        "J": full_batch(m_opt, t_opt, a),
-                        "oracle_resid": fit_exposure_form(T_np, d["hist"])[2]}
-                res[(w, name)] = {"model": model, "targets": targets, "traj": traj, "y_max": y_max, "secs": secs,
-                                  "gamma": gamma, "prior": prior, **evaluate(model, d, gt)}
-        print(f"[rung2_preview] {scene}: fitted {len(CONFIGS)} configurations on both sets "
+                traj = replay(model, targets, a, a.lr_F)
+                res[(w, name)] = {"model": model, "targets": targets, "traj": traj, "y_max": y_max,
+                                  "secs": time.time() - tc, **evaluate(model, d, gt)}
+            # the learning-rate ladder: the default at the other rates (same seed, init and view order)
+            ladder = {a.lr_F: res[(w, DEFAULT)]}
+            for lr in LR_LADDER:
+                if lr not in ladder:
+                    model, targets, _ = build(d, DEFAULT, a.K, y_cache)
+                    ladder[lr] = {"model": model, "targets": targets, "traj": replay(model, targets, a, lr)}
+            opt[w] = {DEFAULT: optimum(d, DEFAULT, list(ladder.values()) + [res[(w, IDENTITY)]], a, y_cache),
+                      NOPRIOR: optimum(d, NOPRIOR, [res[(w, NOPRIOR)]], a, y_cache)}
+            oc = opt[w][DEFAULT]
+            for lr in LR_LADDER:
+                r = ladder[lr]
+                J = r["traj"][-1][1]
+                LADDER.append({"scene": scene, "set": w, "lr_F": lr, "objective": J, "objective_opt": oc["J"],
+                               "gap_pct": 100 * (J / oc["J"] - 1), "step_within_5pct": first_step_within(r["traj"], WITHIN),
+                               "gamma": float(r["model"].gamma()),
+                               "F_maxdiff_to_main": float(np.abs(r["traj"][-1][2] - ladder[a.lr_F]["traj"][-1][2]).max())})
+        print(f"[rung2_preview] {scene}: fitted {len(CONFIGS)} configurations and the ladder on both sets "
               f"({time.time() - t0:.0f} s)", flush=True)
 
-        # P1 fit (with a prior the objective is a different one, so its gap and convergence are not reported)
+        # P1 fit
         refs = {w: detach_reference(scene, w, names) for w in SETS}
         nan = float("nan")
+        oracle_resid = {(w, al): fit_exposure_form(hist_target(d["cdf"], al).double().numpy(), d["hist"])[2]
+                        for w, d in data.items() for al in ("shift", "none")}
         for w, d in data.items():
+            F_ref = res[(w, DEFAULT)]["traj"][-1][2]
             for name, (spacing, init, align, prior) in CONFIGS.items():
                 r = res[(w, name)]
-                oc = opt_cache[w][(spacing, align)]
                 J = r["traj"][-1][1]
-                ref = f"{spacing}-cdf" + ("" if align == "shift" else "-unshifted")
-                F_ref = res[(w, ref)]["traj"][-1][2]
+                oc = opt[w].get(OPTIMUM_OF.get(name))
                 P1.append({"scene": scene, "set": w, "config": name, "y_max": r["y_max"] if r["y_max"] else nan,
                            "resid255": weighted_resid255(r["curves"], r["targets"].numpy(), d["hist"]),
-                           "oracle_resid255": oc["oracle_resid"],
-                           "objective": J, "objective_opt": oc["J"],
-                           "gap_pct": 100 * (J / oc["J"] - 1) if prior is None else nan,
-                           "step_within_5pct": first_step_within(r["traj"], WITHIN) if prior is None else nan,
+                           "oracle_resid255": oracle_resid[(w, align)],
+                           "objective": J, "objective_opt": oc["J"] if oc else nan,
+                           "objective_opt_cold": oc["cold"] if oc else nan,
+                           "objective_opt_polish": oc["polish"] if oc else nan,
+                           "gap_pct": 100 * (J / oc["J"] - 1) if oc else nan,
+                           "step_within_5pct": first_step_within(r["traj"], WITHIN),
                            "gamma": r["gamma"], "detach_gamma_mean": refs[w]["gamma"],
                            "init_to_final_F_maxdiff": float(np.abs(r["traj"][0][2] - r["traj"][-1][2]).max()),
-                           "steps_to_ref_F_0.01": (first_step_close(r["traj"], F_ref, F_CLOSE) if init == "identity"
-                                                   else float("nan")),
+                           "steps_to_default_F_0.01": first_step_close(r["traj"], F_ref, F_CLOSE) if name == IDENTITY else nan,
                            "replay_seconds": r["secs"]})
 
         # P2 exposure (varying set), P3 leak
@@ -489,7 +504,7 @@ def main():
                                   "pseudo_psnr_gtmean": float(r["pseudo_psnr_gtmean"][k])})
 
         savefig(fig_curves(scene, {w: (res[(w, DEFAULT)]["model"], res[(w, DEFAULT)]["targets"],
-                                       res[(w, "quadratic-cdf-priorF")]["model"], refs[w]["L_levels"]) for w in SETS}),
+                                       res[(w, NOPRIOR)]["model"], refs[w]["L_levels"]) for w in SETS}),
                 f"curves_{scene}", fig_dir)
         print(f"[rung2_preview] {scene}: done ({time.time() - t0:.0f} s)", flush=True)
 
@@ -499,33 +514,35 @@ def main():
     def pooled(config, key="resid255"):
         return float(np.mean([r[key] for r in P1 if r["config"] == config]))
 
-    q, ur = pooled("quadratic-cdf"), pooled("usedrange-cdf")
-    gaps = [r["gap_pct"] for r in P1 if r["config"] == DEFAULT]
-    ident = {n: [r["steps_to_ref_F_0.01"] for r in P1 if r["config"] == n] for n in CONFIGS if "identity" in n}
+    q, ur = pooled(DEFAULT), pooled(USEDRANGE)
+    ladder_max = {lr: float(np.max([r["gap_pct"] for r in LADDER if r["lr_F"] == lr])) for lr in LR_LADDER}
+    lr_pick = next((lr for lr in LR_LADDER if ladder_max[lr] <= LR_GAP), None)
+    ident = [r["steps_to_default_F_0.01"] for r in P1 if r["config"] == IDENTITY]
     p5_lom = [r for r in P5 if r["config"] == DEFAULT and r["set"] == "lom"]
     worse = [r["scene"] for r in p5_lom if r["gap_gtmean"] < -r["detach_psnr_gtmean_sd"]]
     decisions = {
         "knot_spacing": {"pooled_resid255_quadratic": q, "pooled_resid255_usedrange": ur,
                          "reduction": 1 - ur / q, "rule": f"switch to usedrange if reduction >= {SPACING_GAIN:.0%}",
                          "outcome": "usedrange" if 1 - ur / q >= SPACING_GAIN else "quadratic"},
-        "learning_rate": {"max_gap_pct": float(np.max(gaps)), "rule": f"try 3e-3 if any gap > {LR_GAP}%",
-                          "outcome": "try 3e-3" if np.max(gaps) > LR_GAP else "keep 1e-3"},
-        "identity_init_steps_to_0.01": {n: [float(x) for x in v] for n, v in ident.items()},
+        "learning_rate": {"ladder_max_gap_pct": {f"{lr:g}": v for lr, v in ladder_max.items()},
+                          "rule": f"first lr_F of {LR_LADDER} whose largest gap is <= {LR_GAP}%",
+                          "outcome": lr_pick, "main_tables_lr_F": a.lr_F, "consistent": lr_pick == a.lr_F},
+        "identity_init_steps_to_0.01": [float(x) for x in ident],
         "p5_lom_scenes_worse_than_detach_sd": worse,
         "p5_rule": "stop and ask Bart if 2 or more LOM scenes (diagnostic only; never chooses a setting)",
         "p5_outcome": "stop and ask Bart" if len(worse) >= 2 else "no flag",
     }
 
     # ------------------------------------------------------------------ outputs
-    for name, rows in (("P1_fit", P1), ("P2_exposure", P2), ("P3_leak", P3), ("P4_dark_end", P4),
-                       ("P4_dark_slope", P4s), ("P4_distance_to_detach", P4d), ("P5_pseudo_quality", P5),
-                       ("views", VIEWS), ("checks", CHECKS)):
+    for name, rows in (("P1_fit", P1), ("P1_lr_ladder", LADDER), ("P2_exposure", P2), ("P3_leak", P3),
+                       ("P4_dark_end", P4), ("P4_dark_slope", P4s), ("P4_distance_to_detach", P4d),
+                       ("P5_pseudo_quality", P5), ("views", VIEWS), ("checks", CHECKS)):
         write_csv(name, rows, out)
     meta = {"date": time.strftime("%Y-%m-%d %H:%M"), "seconds": round(time.time() - t_start),
             "script_sha256_16": hashlib.sha256(Path(__file__).read_bytes()).hexdigest()[:16],
             "rung2_sha256_16": hashlib.sha256((EXAMPLES / "rung2.py").read_bytes()).hexdigest()[:16],
             "torch": torch.__version__, "args": {k: (str(v) if isinstance(v, Path) else v) for k, v in vars(a).items()},
-            "configs": CONFIGS, "default": DEFAULT}
+            "configs": CONFIGS, "default": DEFAULT, "lr_ladder": LR_LADDER}
     (out / "numbers.json").write_text(json.dumps({"meta": meta, "decisions": decisions, "checks": CHECKS}, indent=1))
 
     def sel(rows, **kw):
@@ -535,53 +552,65 @@ def main():
         return ", ".join("never" if np.isnan(x) else str(int(x)) for x in v)
 
     row_order = ", ".join(f"{p['scene']}/{p['set']}" for p in sel(P1, config=DEFAULT))
-    ident_str = "; ".join(f"{n}: {steps_str(v)}" for n, v in ident.items())
+    lr_str = "; ".join(f"{lr:g}: {ladder_max[lr]:+.2f}%" for lr in LR_LADDER)
+    if lr_pick is None:
+        lr_outcome = "**none of the ladder passes: ask Bart**"
+    else:
+        lr_outcome = f"**{lr_pick:g}**" + ("" if lr_pick == a.lr_F else
+                                          f" (these tables used lr_F {a.lr_F:g}: rerun with --lr_F {lr_pick:g})")
 
-    md = [f"# Rung 2 preview (M2 step 6)\n",
+    md = [f"# Rung 2 preview (M2 step 6), final configuration\n",
           f"Curve loss only, no 3DGS: a replay of the trainer's F and s_k updates on the training photos. "
-          f"{a.steps} steps, lr {a.lr_F:g} (F) and {a.lr_s:g} (s), K = {a.K}, smoothness {a.smooth_lambda:g}, "
-          f"seed {a.seed}. Default configuration `{DEFAULT}` (one-bin-shifted target, decided 2026-11-11); "
-          f"`{ALIGN_CHECK}` is the alignment check. Generated {meta['date']} in {meta['seconds']} s by "
-          f"`rung2_preview.py` ({meta['script_sha256_16']}). Every number here is *measured* on the replay; "
-          f"how a 3DGS run follows it is *inferred*.\n",
-          "## Decision rules (training photos only; Bart confirms)\n",
+          f"{a.steps} steps, lr {a.lr_F:g} (F and gamma) and {a.lr_s:g} (s), K = {a.K}, smoothness "
+          f"{a.smooth_lambda:g}, seed {a.seed}. Default configuration `{DEFAULT}` (decided 2026-11-13: one-bin-shifted "
+          f"target, and the official shape-prior term 0.5 [mse(p, F) + 0.01 mse(p, T_k)] with one learned global "
+          f"gamma, p = clamp(x, 1e-3, 1)^gamma, on the shared F). `{ALIGN_CHECK}` is the alignment check, `{NOPRIOR}` "
+          f"the plan's first draft (an M5 ablation), `{PRIOR_L}` the prior in the official form (rejected). "
+          f"Generated {meta['date']} in {meta['seconds']} s by `rung2_preview.py` ({meta['script_sha256_16']}). "
+          f"Every number here is *measured* on the replay; how a 3DGS run follows it is *inferred*.\n",
+          "## Decision rules (training photos only)\n",
+          f"- **Learning rate (F and gamma), plan step 6 with the prior on:** largest gap of the replay objective above "
+          f"the full-batch optimum, over scenes and sets, per rate: {lr_str} (rule: the first rate of the ladder "
+          f"within {LR_GAP:g}%) -> {lr_outcome}.",
           f"- **Knot spacing:** pooled P1 residual quadratic {q:.3f}/255, usedrange {ur:.3f}/255, reduction "
           f"{100 * (1 - ur / q):.1f}% (rule: switch at >= 30%) -> **{decisions['knot_spacing']['outcome']}**.",
-          f"- **Learning rate:** largest gap of the replay objective above the full-batch optimum "
-          f"{np.max(gaps):.2f}% (rule: try 3e-3 above 5%) -> **{decisions['learning_rate']['outcome']}**.",
           f"- **F init:** steps the identity init needs to come within {F_CLOSE} of the cdf init's final F: "
-          f"{ident_str} (in the order {row_order}).",
+          f"{steps_str(ident)} (in the order {row_order}).",
           f"- **P5 flag (diagnostic only):** LOM scenes where `{DEFAULT}` is below `detach` by more than detach's "
-          f"brightness-matched seed sd: {', '.join(worse) if worse else 'none'} -> **{decisions['p5_outcome']}**.\n",
-          f"Exploratory configurations (not in the plan, added for Bart's decision): {', '.join(EXPLORATORY)}. They add "
-          f"the official shape-prior term 0.5 [mse(p, X) + 0.01 mse(p, T_k)] with one learned global gamma, "
-          f"p = clamp(x, 1e-3, 1)^gamma, on the shared F (priorF) or on each view's composed curve (priorL, the "
-          f"official form). They take no part in the rules above.\n"]
+          f"brightness-matched seed sd: {', '.join(worse) if worse else 'none'} -> **{decisions['p5_outcome']}**.\n"]
 
-    md += ["## P1 fit: weighted residual x255 against the targets\n"]
+    md += ["## P1 learning-rate ladder (default configuration)\n",
+           f"Objective = the curve loss with the prior over all views at the late weight. Optimum = the lower of "
+           f"{a.full_steps} cold-start full-batch Adam steps (lr {a.full_lr:g}) and a {a.polish_steps}-step polish "
+           f"(lr {a.polish_lr:g}) of the lowest-ending replay (ladder and identity init).\n"]
+    md += [md_table([{"scene": r["scene"], "set": r["set"], "lr_F": f"{r['lr_F']:g}", "objective": f"{r['objective']:.4e}",
+                      "optimum": f"{r['objective_opt']:.4e}", "gap %": f"{r['gap_pct']:+.2f}",
+                      "step within 5%": r["step_within_5pct"], "gamma": f3(r["gamma"]),
+                      f"max dF to lr {a.lr_F:g}": f3(r["F_maxdiff_to_main"])} for r in LADDER])]
+
+    md += ["\n## P1 fit: weighted residual x255 against the targets\n"]
     t = []
     for r in sel(P1, config=DEFAULT):
         row = {"scene": r["scene"], "set": r["set"], "oracle": f3(r["oracle_resid255"])}
         for n in CONFIGS:
             if n != ALIGN_CHECK:
                 row[n] = f3(sel(P1, scene=r["scene"], set=r["set"], config=n)[0]["resid255"])
-        row["usedrange y_max"] = f3(sel(P1, scene=r["scene"], set=r["set"], config="usedrange-cdf")[0]["y_max"])
-        for n in EXPLORATORY:
-            row["gamma " + n.split("-")[-1]] = f3(sel(P1, scene=r["scene"], set=r["set"], config=n)[0]["gamma"])
+        row["usedrange y_max"] = f3(sel(P1, scene=r["scene"], set=r["set"], config=USEDRANGE)[0]["y_max"])
+        row["gamma"] = f3(r["gamma"])
         row["detach gamma (mean)"] = f3(r["detach_gamma_mean"])
         t.append(row)
-    md += [md_table(t), "\nDefault configuration: objective against the full-batch optimum, and convergence.\n"]
-    md += [md_table([{"scene": r["scene"], "set": r["set"], "objective": f"{r['objective']:.3e}",
-                      "optimum": f"{r['objective_opt']:.3e}", "gap %": f"{r['gap_pct']:+.2f}",
-                      "step within 5%": r["step_within_5pct"],
+    md += [md_table(t), "\nObjective against the full-batch optimum, and convergence.\n"]
+    md += [md_table([{"scene": r["scene"], "set": r["set"], "config": r["config"], "objective": f"{r['objective']:.4e}",
+                      "optimum": f"{r['objective_opt']:.4e}", "optimum from": "cold" if r["objective_opt"] == r["objective_opt_cold"] else "polish",
+                      "gap %": f"{r['gap_pct']:+.2f}", "step within 5%": r["step_within_5pct"],
                       "init-to-final max dF": f3(r["init_to_final_F_maxdiff"]),
-                      "replay s": f"{r['replay_seconds']:.1f}"} for r in sel(P1, config=DEFAULT)])]
+                      "replay s": f"{r['replay_seconds']:.1f}"} for r in P1 if r["config"] in (DEFAULT, NOPRIOR)])]
 
     md += ["\n## P2 exposure on the varying set: s_k against u_k (ideal slope -1, RMSE 0)\n"]
     md += [md_table([{"scene": r["scene"], "method": r["method"], "slope": f"{r['slope']:+.3f}", "r": f"{r['r']:+.3f}",
                       "rmse": f3(r["rmse"]), "rmse paired": f3(r["rmse_paired"]),
                       "move from init": f3(r["move_from_init"])}
-                     for r in P2 if r["method"] in ["init", "oracle", "usedrange-cdf"] + SHOWN])]
+                     for r in P2 if r["method"] in ["init", "oracle", USEDRANGE] + SHOWN])]
 
     md += ["\n## P3 paired pseudo-target leak (slope of log2(mean, varying / LOM) on u_k; 0 = compensated, "
            "1 = passes through)\n",
