@@ -1,0 +1,140 @@
+{
+ "meta": {
+  "date": "2026-11-13 17:41",
+  "seconds": 1286,
+  "script_sha256_16": "b2db513d3c0f95fb",
+  "rung2_sha256_16": "4b7c19f557b93fc0",
+  "torch": "1.13.1",
+  "args": {
+   "scenes": [
+    "buu",
+    "chair",
+    "sofa",
+    "bike",
+    "shrub"
+   ],
+   "steps": 10000,
+   "every": 100,
+   "full_steps": 10000,
+   "full_lr": 0.03,
+   "polish_steps": 3000,
+   "polish_lr": 0.001,
+   "lr_F": 0.01,
+   "lr_s": 0.001,
+   "K": 32,
+   "smooth_lambda": 0.1,
+   "seed": 0,
+   "threads": 4,
+   "out": "I:\\Python\\Research\\3DGS\\Luminance-GS\\Luminance-GS\\Luminance-GS\\results\\rung2\\preview_final"
+  },
+  "configs": {
+   "quadratic-cdf-priorF": [
+    "quadratic",
+    "cdf",
+    "shift",
+    "F"
+   ],
+   "usedrange-cdf-priorF": [
+    "usedrange",
+    "cdf",
+    "shift",
+    "F"
+   ],
+   "quadratic-identity-priorF": [
+    "quadratic",
+    "identity",
+    "shift",
+    "F"
+   ],
+   "quadratic-cdf-priorF-unshifted": [
+    "quadratic",
+    "cdf",
+    "none",
+    "F"
+   ],
+   "quadratic-cdf-noprior": [
+    "quadratic",
+    "cdf",
+    "shift",
+    "none"
+   ],
+   "quadratic-cdf-priorL": [
+    "quadratic",
+    "cdf",
+    "shift",
+    "composed"
+   ]
+  },
+  "default": "quadratic-cdf-priorF",
+  "lr_ladder": [
+   0.001,
+   0.003,
+   0.01
+  ]
+ },
+ "decisions": {
+  "knot_spacing": {
+   "pooled_resid255_quadratic": 44.388523638738924,
+   "pooled_resid255_usedrange": 44.512797707577114,
+   "reduction": -0.0027996891685249103,
+   "rule": "switch to usedrange if reduction >= 30%",
+   "outcome": "quadratic"
+  },
+  "learning_rate": {
+   "ladder_max_gap_pct": {
+    "0.001": 201.54205050492223,
+    "0.003": 7.003315057512238,
+    "0.01": 0.8222406778671587
+   },
+   "rule": "first lr_F of [0.001, 0.003, 0.01] whose largest gap is <= 5.0%",
+   "outcome": 0.01,
+   "main_tables_lr_F": 0.01,
+   "consistent": true
+  },
+  "identity_init_steps_to_0.01": [
+   NaN,
+   NaN,
+   NaN,
+   NaN,
+   NaN,
+   NaN,
+   NaN,
+   NaN,
+   NaN,
+   NaN
+  ],
+  "p5_lom_scenes_worse_than_detach_sd": [
+   "buu",
+   "sofa"
+  ],
+  "p5_rule": "stop and ask Bart if 2 or more LOM scenes (diagnostic only; never chooses a setting)",
+  "p5_outcome": "stop and ask Bart"
+ },
+ "checks": [
+  {
+   "scene": "buu",
+   "init_vs_oracle_json_s_init": 2.2291770029880809e-07,
+   "oracle_vs_oracle_json_s_oracle": 0.0
+  },
+  {
+   "scene": "chair",
+   "init_vs_oracle_json_s_init": 3.279427298608084e-07,
+   "oracle_vs_oracle_json_s_oracle": 0.0
+  },
+  {
+   "scene": "sofa",
+   "init_vs_oracle_json_s_init": 2.7968413052192886e-07,
+   "oracle_vs_oracle_json_s_oracle": 0.0
+  },
+  {
+   "scene": "bike",
+   "init_vs_oracle_json_s_init": 2.5916273038717463e-07,
+   "oracle_vs_oracle_json_s_oracle": 0.0
+  },
+  {
+   "scene": "shrub",
+   "init_vs_oracle_json_s_init": 2.518958970298968e-07,
+   "oracle_vs_oracle_json_s_oracle": 0.0
+  }
+ ]
+}
