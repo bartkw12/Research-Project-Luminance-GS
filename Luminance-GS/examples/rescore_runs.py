@@ -31,8 +31,9 @@ EXAMPLES = Path(__file__).resolve().parent
 RUN_RE = re.compile(r"^(?P<scene>[a-z]+)_(?P<variant>[a-z0-9]+)_seed(?P<seed>\d+)$")  # M2: digits too (rung2)
 REF_VARIANT, REF_SEED = "baseline", 0
 # M2: flags that change the model or the dark branch, passed on from the run's cfg.json so the re-score rebuilds
-# it (diagnostics.MODEL_DEFAULTS asserts they match). Part C adds curve_model and the rung2_* flags.
-MODEL_FLAGS = ["dark_branch"]
+# it (diagnostics.MODEL_DEFAULTS asserts they match). Part C added curve_model and the rung2_* flags.
+MODEL_FLAGS = ["dark_branch", "curve_model", "rung2_knots", "rung2_knot_spacing", "rung2_F_init", "rung2_s_init",
+               "rung2_attach", "rung2_prior", "rung2_smooth_lambda", "rung2_lr_F", "rung2_lr_s"]
 
 
 def final_ckpt(run_dir: Path) -> Path:
