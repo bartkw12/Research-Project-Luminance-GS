@@ -413,7 +413,7 @@ Figures: F and each view's composed curve against the views' CDFs, per scene (de
   - **Learning rate, by this step's rule with the prior on** (Bart: the rule, not closeness to `detach`, justifies it). The default was replayed at lr_F 1e-3, then 3e-3, then 1e-2 (F and γ; s at 1e-3). Largest gap of the final objective above the full-batch optimum: +201.5%, +7.0% (bike: +6.2% LOM, +7.0% varying) and +0.82%. **1e-2 is the first rate within 5%.**
   - **The optimum was strengthened.** This step's 3,000 full-batch steps at 1e-2 suffice without the prior, but with it they stop up to 13% above the optimum, because F travels far from its init. The optimum is now the lower of 10,000 cold-start steps at 3e-2 (within 0.013% of 30,000 steps) and a polish of the best replay.
   - **Knots:** quadratic (`usedrange` −0.3%). **F init:** `cdf` (the identity init never came within 0.01).
-  - **P5 flag (diagnostic only):** it fires on buu and sofa (bm gap −0.07 and −0.19 dB). The code reads "seed noise" as `detach`'s *pseudo-target* sd, 0.02 and 0.00 dB. Against H1's own noise (`detach`'s validation bm PSNR sd, 0.25 and 0.40 dB) the gaps are 0.3× and 0.5×. No setting was changed; raised with Bart before M3.
+  - **P5 flag (diagnostic only):** it fires on buu and sofa (bm gap −0.07 and −0.19 dB). The code reads "seed noise" as `detach`'s *pseudo-target* sd, 0.02 and 0.00 dB. Against H1's own noise (`detach`'s validation bm PSNR sd, 0.25 and 0.40 dB) the gaps are 0.3× and 0.5×. No setting was changed; raised with Bart before M3. *Cleared by Bart, 2026-11-14:* the rule's "LOM's brightness-matched seed noise" means `detach`'s validation noise, so P5 does not flag; proceed with the default.
 
 Write a log entry with the P1 to P5 headline numbers. P3 is the first read on H2's mechanism.
 
@@ -679,8 +679,8 @@ Same rules as M1's report: direct answers first, every claim *measured* or *infe
 - [x] Part C: Rung 2 wired in; step 8 regression and smoke checks passed; docs updated; commit lists and messages given to Bart (2026-11-13).
 
 **M3**
-- [ ] 45 runs `ok`, all re-scored with `--ref_root ../results/rung0`.
-- [ ] `rung2_analyze.py` written; `summary_seed0/` for the check-in, `summary/` once all seeds are done.
+- [x] 45 runs `ok`, all re-scored with `--ref_root ../results/rung0` (2026-11-14).
+- [x] `rung2_analyze.py` written; `summary_seed0/` for the check-in, `summary/` once all seeds are done (2026-11-14: H2 supported; H1 not supported, bike bm PSNR −0.15 dB at −3.8×; research log).
 - [ ] `Rung2_results.md` answers Q1 to Q5. Research log, `CLAUDE.md` rung table and protocol updated.
 
 ---
