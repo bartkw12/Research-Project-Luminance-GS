@@ -561,3 +561,74 @@ Entries up to 2026-10-23 were backfilled from git history, the run folders and t
   - *Inferred:* about 6.6–7.7 min per 10k-step Rung 2 run, so M3 (45 runs) takes about 5–6 h.
   - The 300-step bike pseudo-target is mid-trajectory (γ 0.54), so the dark end is judged from the preview, not from the smoke image.
 - **Next:** Bart's go for the M3 batch (plan 5.1, with the sleep check). Tell Wei that the prior is back.
+
+### 2026-11-14: P5 flag on the final preview cleared; M3 batch launched
+
+- **Rung / type:** Rung 2 (M2 → M3) · decision + setup
+- **Why:** plan step 6 says to stop and ask Bart when P5 flags two or more LOM scenes. The final preview (entry of 2026-11-13) flagged buu and sofa.
+- **Decision** (Bart, 2026-11-14): **confirmed, proceed with the default.**
+  - The plan's "LOM's brightness-matched seed noise" means `detach`'s *validation* noise, the noise H1 is judged against.
+  - Against that bar the pseudo-target gaps are small. Buu: −0.07 dB against a validation bm sd of 0.25 dB, i.e. −0.3×. Sofa: −0.19 dB against 0.40 dB, i.e. −0.5×. Source of the sd: `results/rung0/<scene>_detach_seed{0,1,2}/rescore/val_summary.json`.
+  - **Doc vs code (rule 8):** `rung2_preview.py` divides by `detach`'s *pseudo-target* bm PSNR sd instead: 0.02 dB (buu) and 0.00 dB (sofa). The same gaps then read −4.7× and about −700×, which is why the flag fired. `results/rung2/preview_final/` stays as written.
+  - P5 chose nothing; the default is unchanged.
+- **Setup:** Bart committed parts B and C as `c304662` and approved M3. At his request (option b of the run-batch skill), Claude started the plan's four commands as one background process at 17:18.
+  - Pre-flight: tree clean; all 10 data folders complete; GPU free; 3.9 TB free; sleep on AC already 0 (never); dry runs list 10 + 5 + 20 + 10 = 45 runs, none done.
+  - The first run printed 55 curve parameters with the decided defaults.
+- **Reproduce:** branch `main`, commit `c304662`. From `Luminance-GS/examples`, in order:
+  - `python -u run_rung0.py --data_root ../data/LOM_vexp --root ../results/vexp --variants rung2 rung2exp --seeds 0`
+  - `python -u run_rung0.py --root ../results/rung2 --variants rung2 --seeds 0`
+  - the same two with `--seeds 1 2`
+
+  Consoles in `results/{vexp,rung2}/batch_console_m3_{seed0,seeds12}.log` (git-ignored).
+- **Results:** pending. *Inferred* estimate: seed 0 done about 19:00–19:15, all 45 runs about 22:15–23:05.
+- **Next:** at seed 0, re-score those runs with `--ref_root ../results/rung0`, then run `rung2_analyze.py --seeds 0` (`results/rung2/summary_seed0/`). After all seeds, re-score and run the full analysis.
+
+### 2026-11-14: M3 results: H2 supported; H1 fails on bike by the pre-registered rule
+
+- **Rung / type:** Rung 2 (M3) · experiment + code (analysis)
+- **Why:** plan sections 5 and 6: the 2×2 on the varying-exposure set (H2) and Rung 2 on LOM (H1). This is the batch launched in the entry above.
+- **What was done:**
+  - **Batch:** all 45 runs `ok`, 17:18 to 20:48, 3.7–7.0 min per run (mean 4.67; the estimate of 6.6–7.7 was too high).
+  - **Re-score:** every run re-scored against `results/rung0/<scene>_baseline_seed0` depth. The 15 seed-0 runs were re-scored at 20:35–20:38 while the last LOM runs trained, so the wall times of `sofa_rung2_seed2` and `bike_rung2_seed2` may be about 0.2–0.3 min high.
+  - **`rung2_analyze.py` (new, CPU only, plan section 6):** tables R1–R6, the 6.5 decision rules, figures 1–6, and a seed-0 mode. Tested three ways:
+    - `--selftest`: the Rung 2 cells are copies of `detach`/`detachexp`, and every curve-model effect came out exactly 0.
+    - `--smoke`: runs on the 300-step smoke runs.
+    - On the real runs it reproduces M1's T1 means, paired leak and dark-fit slopes exactly (difference 0).
+  - **Integrity:**
+    - `rung2` vs `rung2exp`, same seed: s, F and pseudo-targets bit-identical in all 15 pairs.
+    - `fit_exposure_form` on `curve_adj` recovers each run's own s_k within 0.0066 stops.
+    - The trainer's s_k match the preview's within 0.0044 stops.
+- **Reproduce:** runs at commit `c304662`. From `examples/` (the script is uncommitted): `python rung2_analyze.py` (all seeds, 103 s) and `python rung2_analyze.py --seeds 0`.
+- **Results** (*measured*; source `results/rung2/summary/tables.md`; seed-0 snapshot in `summary_seed0/`). Values are rung2 − detach on LOM, paired by seed (×noise, * = real):
+
+  | Scene | bm PSNR | raw PSNR | SSIM | LPIPS | H1 rule |
+  |---|---|---|---|---|---|
+  | buu | −0.12 (−0.5×) | −1.54 (−3.8×) * | −0.0071 (−2.0×) | −0.0202 (−2.3×) * | meets |
+  | chair | +0.40 (+2.0×) | +1.07 (+4.5×) * | +0.0065 (+7.7×) * | −0.0164 (−7.6×) * | meets |
+  | sofa | −0.39 (−1.1×) | −0.34 (−1.0×) | −0.0002 (−0.1×) | −0.0090 (−1.3×) | meets |
+  | bike | −0.15 (−3.8×) * | +0.33 (+4.2×) * | −0.0004 (−0.1×) | +0.0076 (+1.4×) | **fails: bm PSNR** |
+  | shrub (reported only) | +0.16 (+0.5×) | +0.15 (+0.3×) | −0.0076 (−2.4×) * | +0.0498 (+1.3×) | — |
+  | pooled | −0.02 (−0.3×) | −0.07 (−0.5×) | −0.0018 (−1.2×) | +0.0023 (+0.3×) | — |
+
+  - **H1 extras (LOM, pooled):**
+    - Pseudo-target bm PSNR 23.80 vs 23.80.
+    - Hue error +1.23° (+4.7×, worse), mostly bike: 38.5° vs 31.8°, +6.75° (+3.3×). Angle error −0.48° (−2.7×, better).
+    - Curve parameters 55–76 vs about 255k; 4.6 vs 7.8 min per run.
+  - **H2, varying set, pooled factorial:**
+    - Curve-model main effect: bm PSNR **+2.11 dB (+5.3×)**, raw +1.35 (+2.3×), SSIM +0.0155 (+2.3×), LPIPS −0.0242 (−2.5×).
+    - Per scene, bm PSNR: buu +1.84 (+1.6×), chair +3.59 (+7.6×), sofa +2.95 (+3.5×), bike +0.56 (+2.7×), shrub +1.64 (+67.7×; LPIPS +0.054 worse).
+    - Shared column +2.09 (+4.0×); exposure-aware column +2.14 (+9.1×). Dark-branch main effect +0.28 (+0.7×); interaction +0.05 (+0.1×).
+    - Cells, bm PSNR: `detach` 21.03 ± 0.72, `detachexp` 21.28 ± 0.31, `rung2` 23.11 ± 0.11, `rung2exp` 23.42 ± 0.12.
+  - **Mechanism:**
+    - Paired pseudo-target leak: `rung2` 0.012 vs `detach` 0.512, a difference of −0.500 (−720×). Render leak 0.004 vs 0.222.
+    - Rung 2's s_k: slope −1.00, paired RMSE 0.018 stops (init 0.011, oracle 0.052, `detach` post-hoc 0.726).
+    - Dark fit: `rung2` 37.24 → `rung2exp` 44.87 dB (+7.63, +50.6×); LOM level 46.14.
+- **Takeaway:**
+  - **H2: supported** by the pre-registered rule. The main effect is real and positive and LPIPS is not worse. It is positive in all four non-shrub scenes (buu alone at +1.6×) and real in both dark-branch columns. The mechanism criterion also holds: the leak is near 0 and below `detach`'s.
+  - **H1: not supported** by the pre-registered rule. Buu, chair and sofa meet it. Bike fails on brightness-matched PSNR by 0.15 dB, which is −3.8× because bike's seed noise is only 0.04 dB. Pooled, the two models agree (−0.02 dB, −0.3×). The rule is reported as written, not reinterpreted.
+  - *Inferred:* Rung 2 is nearly insensitive to the exposure variation. Its pooled bm PSNR is 23.23 on LOM and 23.11 on the varying set, while `detach` drops from 23.25 to 21.03 (unpaired cell means from R1a and R3). Rung 2's seed sd on the varying set is also 0.11 against `detach`'s 0.72.
+  - *Inferred, untested:* possible bike causes are the dark end (level 0 maps to 0, against `detach`'s 84 levels; risk 1) and the hue shift.
+- **Next:**
+  - Bart decides on H1 follow-up. Plan 5.3 pre-declares only an identity-init head-start check for a borderline H1 (5 runs; about 25 min at Rung 2's speed). The learnable black level is an M5 fallback.
+  - `Rung2_results.md` by hand (Q1–Q5); send Wei the results.
+  - M5: H3 (`rung2att`).
