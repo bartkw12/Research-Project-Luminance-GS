@@ -1,0 +1,2287 @@
+{
+ "meta": {
+  "date": "2026-11-14 20:48",
+  "seconds": 39,
+  "seeds": [
+   0
+  ],
+  "scenes": [
+   "buu",
+   "chair",
+   "sofa",
+   "bike",
+   "shrub"
+  ],
+  "mode": "runs",
+  "script_sha256_16": "cfcde97621bd4381"
+ },
+ "cells": [
+  {
+   "set": "lom",
+   "cell": "official",
+   "runs": "5/5",
+   "source": "rung0/<scene>_baseline_seed*",
+   "status": "used"
+  },
+  {
+   "set": "lom",
+   "cell": "detach",
+   "runs": "5/5",
+   "source": "rung0/<scene>_detach_seed*",
+   "status": "used"
+  },
+  {
+   "set": "lom",
+   "cell": "rung2",
+   "runs": "5/5",
+   "source": "rung2/<scene>_rung2_seed*",
+   "status": "used"
+  },
+  {
+   "set": "vexp",
+   "cell": "official",
+   "runs": "5/5",
+   "source": "vexp/<scene>_baseline_seed*",
+   "status": "used"
+  },
+  {
+   "set": "vexp",
+   "cell": "detach",
+   "runs": "5/5",
+   "source": "vexp/<scene>_detach_seed*",
+   "status": "used"
+  },
+  {
+   "set": "vexp",
+   "cell": "detachexp",
+   "runs": "5/5",
+   "source": "vexp/<scene>_detachexp_seed*",
+   "status": "used"
+  },
+  {
+   "set": "vexp",
+   "cell": "rung2",
+   "runs": "5/5",
+   "source": "vexp/<scene>_rung2_seed*",
+   "status": "used"
+  },
+  {
+   "set": "vexp",
+   "cell": "rung2exp",
+   "runs": "5/5",
+   "source": "vexp/<scene>_rung2exp_seed*",
+   "status": "used"
+  }
+ ],
+ "integrity": [
+  {
+   "check": "max |rescore \u2212 training eval| psnr over all loaded runs",
+   "value": "2.54e-06",
+   "tolerance": "1e-03",
+   "ok": true
+  },
+  {
+   "check": "detach vs detachexp (same seed, 5 pairs): max |\u0394 log2 mean_pseudo|",
+   "value": "6.18e-06",
+   "tolerance": "1e-03",
+   "ok": true
+  },
+  {
+   "check": "buu seed 0: rung2 vs rung2exp, max |\u0394 s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "buu seed 0: rung2 vs rung2exp, max |\u0394 F heights|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "chair seed 0: rung2 vs rung2exp, max |\u0394 s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "chair seed 0: rung2 vs rung2exp, max |\u0394 F heights|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "sofa seed 0: rung2 vs rung2exp, max |\u0394 s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "sofa seed 0: rung2 vs rung2exp, max |\u0394 F heights|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "bike seed 0: rung2 vs rung2exp, max |\u0394 s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "bike seed 0: rung2 vs rung2exp, max |\u0394 F heights|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "shrub seed 0: rung2 vs rung2exp, max |\u0394 s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "shrub seed 0: rung2 vs rung2exp, max |\u0394 F heights|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "rung2 vs rung2exp (same seed, 5 pairs): max |\u0394 log2 mean_pseudo|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "lom bike seed 0: rung2 |mean s|",
+   "value": "1.66e-09",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "lom bike seed 0: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "2.37e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "lom bike seed 0: trainer s vs the preview's (report only; the view order differs)",
+   "value": "2.82e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "lom buu seed 0: rung2 |mean s|",
+   "value": "2.71e-09",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "lom buu seed 0: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "1.00e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "lom buu seed 0: trainer s vs the preview's (report only; the view order differs)",
+   "value": "2.63e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "lom chair seed 0: rung2 |mean s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "lom chair seed 0: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "8.45e-04",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "lom chair seed 0: trainer s vs the preview's (report only; the view order differs)",
+   "value": "3.32e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "lom shrub seed 0: rung2 |mean s|",
+   "value": "1.99e-09",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "lom shrub seed 0: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "6.60e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "lom shrub seed 0: trainer s vs the preview's (report only; the view order differs)",
+   "value": "8.93e-04",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "lom sofa seed 0: rung2 |mean s|",
+   "value": "5.14e-10",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "lom sofa seed 0: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "1.56e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "lom sofa seed 0: trainer s vs the preview's (report only; the view order differs)",
+   "value": "5.34e-04",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "vexp bike seed 0: rung2 s_init vs oracle.json s_init (stops)",
+   "value": "2.62e-08",
+   "tolerance": "1e-06",
+   "ok": true
+  },
+  {
+   "check": "vexp bike seed 0: rung2 |mean s|",
+   "value": "1.32e-08",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "vexp bike seed 0: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "6.17e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "vexp bike seed 0: trainer s vs the preview's (report only; the view order differs)",
+   "value": "4.36e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "vexp buu seed 0: rung2 s_init vs oracle.json s_init (stops)",
+   "value": "2.72e-08",
+   "tolerance": "1e-06",
+   "ok": true
+  },
+  {
+   "check": "vexp buu seed 0: rung2 |mean s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "vexp buu seed 0: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "1.08e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "vexp buu seed 0: trainer s vs the preview's (report only; the view order differs)",
+   "value": "2.66e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "vexp chair seed 0: rung2 s_init vs oracle.json s_init (stops)",
+   "value": "3.60e-08",
+   "tolerance": "1e-06",
+   "ok": true
+  },
+  {
+   "check": "vexp chair seed 0: rung2 |mean s|",
+   "value": "1.66e-08",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "vexp chair seed 0: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "1.63e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "vexp chair seed 0: trainer s vs the preview's (report only; the view order differs)",
+   "value": "2.31e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "vexp shrub seed 0: rung2 s_init vs oracle.json s_init (stops)",
+   "value": "4.18e-08",
+   "tolerance": "1e-06",
+   "ok": true
+  },
+  {
+   "check": "vexp shrub seed 0: rung2 |mean s|",
+   "value": "1.29e-08",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "vexp shrub seed 0: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "4.67e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "vexp shrub seed 0: trainer s vs the preview's (report only; the view order differs)",
+   "value": "3.02e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "vexp sofa seed 0: rung2 s_init vs oracle.json s_init (stops)",
+   "value": "2.97e-08",
+   "tolerance": "1e-06",
+   "ok": true
+  },
+  {
+   "check": "vexp sofa seed 0: rung2 |mean s|",
+   "value": "8.22e-09",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "vexp sofa seed 0: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "1.92e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "vexp sofa seed 0: trainer s vs the preview's (report only; the view order differs)",
+   "value": "2.60e-04",
+   "tolerance": "5e-02",
+   "ok": "report"
+  }
+ ],
+ "R1_rung2_minus_detach": {
+  "buu": {
+   "psnr_gtmean": {
+    "diff": -0.4271608988444022,
+    "ref_sd": 0.2509224758454608
+   },
+   "psnr": {
+    "diff": -1.521697998046875,
+    "ref_sd": 0.5196520438299815
+   },
+   "ssim": {
+    "diff": -0.008263051509857178,
+    "ref_sd": 0.004476436551517315
+   },
+   "lpips": {
+    "diff": -0.02099722127119702,
+    "ref_sd": 0.009253644542517729
+   }
+  },
+  "chair": {
+   "psnr_gtmean": {
+    "diff": 0.6321334838867188,
+    "ref_sd": 0.1150318230960414
+   },
+   "psnr": {
+    "diff": 1.341576004028319,
+    "ref_sd": 0.03327843504492198
+   },
+   "ssim": {
+    "diff": 0.00813316106796258,
+    "ref_sd": 0.0007161472655600316
+   },
+   "lpips": {
+    "diff": -0.016278678178787198,
+    "ref_sd": 0.001990529791878842
+   }
+  },
+  "sofa": {
+   "psnr_gtmean": {
+    "diff": -0.31204748153686523,
+    "ref_sd": 0.400302040552127
+   },
+   "psnr": {
+    "diff": -0.2096419334411621,
+    "ref_sd": 0.291099849445206
+   },
+   "ssim": {
+    "diff": -9.478628635406494e-05,
+    "ref_sd": 0.004424965474145135
+   },
+   "lpips": {
+    "diff": -0.01540670171380043,
+    "ref_sd": 0.005698514705712169
+   }
+  },
+  "bike": {
+   "psnr_gtmean": {
+    "diff": -0.1115260124206543,
+    "ref_sd": 0.0475764440894745
+   },
+   "psnr": {
+    "diff": 0.40157651901245117,
+    "ref_sd": 0.10160250724490259
+   },
+   "ssim": {
+    "diff": -0.007957547903060913,
+    "ref_sd": 0.003983817296885653
+   },
+   "lpips": {
+    "diff": 0.007480725646018982,
+    "ref_sd": 0.006857557292872061
+   }
+  },
+  "shrub": {
+   "psnr_gtmean": {
+    "diff": 0.5398639678955099,
+    "ref_sd": 0.49768915188822094
+   },
+   "psnr": {
+    "diff": 0.7041477203369144,
+    "ref_sd": 0.6585219837763131
+   },
+   "ssim": {
+    "diff": -0.004017436504363925,
+    "ref_sd": 0.004285454656552111
+   },
+   "lpips": {
+    "diff": 0.08049293458461765,
+    "ref_sd": 0.052531144463655255
+   }
+  },
+  "pooled": {
+   "psnr_gtmean": {
+    "diff": 0.06425261179605712,
+    "ref_sd": 0.06743549537168698
+   },
+   "psnr": {
+    "diff": 0.14319206237793125,
+    "ref_sd": 0.022304458961764893
+   },
+   "ssim": {
+    "diff": -0.002439932227134678,
+    "ref_sd": 0.0016488726517294421
+   },
+   "lpips": {
+    "diff": 0.0070582118133704075,
+    "ref_sd": 0.011594231373846412
+   }
+  },
+  "pooled_no_shrub": {
+   "psnr_gtmean": {
+    "diff": -0.05465022722880164,
+    "ref_sd": 0.07562868892992673
+   },
+   "psnr": {
+    "diff": 0.002953147888185015,
+    "ref_sd": 0.17519894753841248
+   },
+   "ssim": {
+    "diff": -0.0020455561578273107,
+    "ref_sd": 0.0018203110306943052
+   },
+   "lpips": {
+    "diff": -0.011300468879441417,
+    "ref_sd": 0.001425713429399704
+   }
+  }
+ },
+ "R4": [
+  {
+   "scene": "buu",
+   "metric": "psnr_gtmean",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 1.1081234614054374,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "buu",
+   "metric": "psnr_gtmean",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 1.6033945083618164,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "buu",
+   "metric": "psnr_gtmean",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.543694178263344,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "buu",
+   "metric": "psnr_gtmean",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 1.3799705505371094,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "buu",
+   "metric": "psnr_gtmean",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 0.8362763722737654,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "buu",
+   "metric": "psnr_gtmean",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 1.8752415974934884,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "buu",
+   "metric": "psnr_gtmean",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 1.3315474192301444,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "buu",
+   "metric": "psnr",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": -1.906526565551756,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "buu",
+   "metric": "psnr",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.2608629862467442,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "buu",
+   "metric": "psnr",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": 2.190020243326824,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "buu",
+   "metric": "psnr",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": -3.001536687215168,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "buu",
+   "metric": "psnr",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": -0.811516443888344,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "buu",
+   "metric": "psnr",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": -0.8341471354166679,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "buu",
+   "metric": "psnr",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 1.3558731079101562,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "buu",
+   "metric": "ssim",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": -0.0014942884445189875,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "buu",
+   "metric": "ssim",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.02732656399408978,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "buu",
+   "metric": "ssim",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.03317217032114661,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "buu",
+   "metric": "ssim",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 0.015091796716054318,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "buu",
+   "metric": "ssim",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": -0.018080373605092293,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "buu",
+   "metric": "ssim",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.043912649154663086,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "buu",
+   "metric": "ssim",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.010740478833516476,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "buu",
+   "metric": "lpips",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": -0.03907872488101323,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "buu",
+   "metric": "lpips",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": -0.052536375820636735,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "buu",
+   "metric": "lpips",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": 0.030996665358543368,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "buu",
+   "metric": "lpips",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": -0.054577057560284914,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "buu",
+   "metric": "lpips",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": -0.023580392201741546,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "buu",
+   "metric": "lpips",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": -0.06803470849990842,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "buu",
+   "metric": "lpips",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": -0.03703804314136505,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "chair",
+   "metric": "psnr_gtmean",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 3.589041519165038,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "chair",
+   "metric": "psnr_gtmean",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.3789451599121083,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "chair",
+   "metric": "psnr_gtmean",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": 0.3424186706542933,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "chair",
+   "metric": "psnr_gtmean",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 3.4178321838378913,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "chair",
+   "metric": "psnr_gtmean",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 3.7602508544921847,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "chair",
+   "metric": "psnr_gtmean",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.20773582458496165,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "chair",
+   "metric": "psnr_gtmean",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.550154495239255,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "chair",
+   "metric": "psnr",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 4.743097686767578,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "chair",
+   "metric": "psnr",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.7964817047119128,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "chair",
+   "metric": "psnr",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.7654121398925771,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "chair",
+   "metric": "psnr",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 5.125803756713866,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "chair",
+   "metric": "psnr",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 4.360391616821289,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "chair",
+   "metric": "psnr",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 1.1791877746582013,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "chair",
+   "metric": "psnr",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.4137756347656243,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "chair",
+   "metric": "ssim",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 0.030947446823120173,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "chair",
+   "metric": "ssim",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.013980460166931163,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "chair",
+   "metric": "ssim",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.010734534263610818,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "chair",
+   "metric": "ssim",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 0.03631471395492558,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "chair",
+   "metric": "ssim",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 0.025580179691314764,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "chair",
+   "metric": "ssim",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.019347727298736572,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "chair",
+   "metric": "ssim",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.008613193035125755,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "chair",
+   "metric": "lpips",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": -0.044444918632507324,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "chair",
+   "metric": "lpips",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": -0.009961605072021484,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "chair",
+   "metric": "lpips",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": 0.04098877906799314,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "chair",
+   "metric": "lpips",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": -0.0649393081665039,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "chair",
+   "metric": "lpips",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": -0.023950529098510753,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "chair",
+   "metric": "lpips",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": -0.030455994606018055,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "chair",
+   "metric": "lpips",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.010532784461975087,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "sofa",
+   "metric": "psnr_gtmean",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 3.486661195755005,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "sofa",
+   "metric": "psnr_gtmean",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.5576283931732178,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "sofa",
+   "metric": "psnr_gtmean",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": 0.689119815826416,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "sofa",
+   "metric": "psnr_gtmean",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 3.142101287841797,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "sofa",
+   "metric": "psnr_gtmean",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 3.831221103668213,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "sofa",
+   "metric": "psnr_gtmean",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.21306848526000977,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "sofa",
+   "metric": "psnr_gtmean",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.9021883010864258,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "sofa",
+   "metric": "psnr",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 2.4953452348709106,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "sofa",
+   "metric": "psnr",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 1.9913321733474731,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "sofa",
+   "metric": "psnr",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -3.1884796619415283,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "sofa",
+   "metric": "psnr",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 4.089585065841675,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "sofa",
+   "metric": "psnr",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 0.9011054039001465,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "sofa",
+   "metric": "psnr",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 3.5855720043182373,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "sofa",
+   "metric": "psnr",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.397092342376709,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "sofa",
+   "metric": "ssim",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 0.017234303057193756,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "sofa",
+   "metric": "ssim",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.016665227711200714,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "sofa",
+   "metric": "ssim",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.009532913565635681,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "sofa",
+   "metric": "ssim",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 0.022000759840011597,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "sofa",
+   "metric": "ssim",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 0.012467846274375916,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "sofa",
+   "metric": "ssim",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.021431684494018555,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "sofa",
+   "metric": "ssim",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.011898770928382874,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "sofa",
+   "metric": "lpips",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": -0.05878509767353535,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "sofa",
+   "metric": "lpips",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": -0.012472277507185936,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "sofa",
+   "metric": "lpips",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": 0.00414695218205452,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "sofa",
+   "metric": "lpips",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": -0.06085857376456261,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "sofa",
+   "metric": "lpips",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": -0.05671162158250809,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "sofa",
+   "metric": "lpips",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": -0.014545753598213196,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "sofa",
+   "metric": "lpips",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": -0.010398801416158676,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "bike",
+   "metric": "psnr_gtmean",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 0.8244531154632568,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "bike",
+   "metric": "psnr_gtmean",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.2620375156402588,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "bike",
+   "metric": "psnr_gtmean",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.5806155204772949,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "bike",
+   "metric": "psnr_gtmean",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 1.1147608757019043,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "bike",
+   "metric": "psnr_gtmean",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 0.5341453552246094,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "bike",
+   "metric": "psnr_gtmean",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.5523452758789062,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "bike",
+   "metric": "psnr_gtmean",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": -0.028270244598388672,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "bike",
+   "metric": "psnr",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 2.343916416168213,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "bike",
+   "metric": "psnr",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.7310783863067627,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "bike",
+   "metric": "psnr",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -1.6459784507751465,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "bike",
+   "metric": "psnr",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 3.166905641555786,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "bike",
+   "metric": "psnr",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 1.5209271907806396,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "bike",
+   "metric": "psnr",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 1.554067611694336,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "bike",
+   "metric": "psnr",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": -0.09191083908081055,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "bike",
+   "metric": "ssim",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 0.008061662316322327,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "bike",
+   "metric": "ssim",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.02063995599746704,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "bike",
+   "metric": "ssim",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.033683449029922485,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "bike",
+   "metric": "ssim",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 0.02490338683128357,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "bike",
+   "metric": "ssim",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": -0.008780062198638916,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "bike",
+   "metric": "ssim",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.037481680512428284,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "bike",
+   "metric": "ssim",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.0037982314825057983,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "bike",
+   "metric": "lpips",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": -0.04385147616267204,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "bike",
+   "metric": "lpips",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": -0.0021191276609897614,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "bike",
+   "metric": "lpips",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": 0.011664696037769318,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "bike",
+   "metric": "lpips",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": -0.0496838241815567,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "bike",
+   "metric": "lpips",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": -0.038019128143787384,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "bike",
+   "metric": "lpips",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": -0.00795147567987442,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "bike",
+   "metric": "lpips",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.0037132203578948975,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "shrub",
+   "metric": "psnr_gtmean",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 1.655360603332518,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "shrub",
+   "metric": "psnr_gtmean",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.08272171020507812,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "shrub",
+   "metric": "psnr_gtmean",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.13660430908203125,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "shrub",
+   "metric": "psnr_gtmean",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 1.7236627578735337,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "shrub",
+   "metric": "psnr_gtmean",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 1.5870584487915025,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "shrub",
+   "metric": "psnr_gtmean",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.15102386474609375,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "shrub",
+   "metric": "psnr_gtmean",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.0144195556640625,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "shrub",
+   "metric": "psnr",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 2.2503656387329105,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "shrub",
+   "metric": "psnr",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": -0.05013771057129013,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "shrub",
+   "metric": "psnr",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": 0.05544738769531321,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "shrub",
+   "metric": "psnr",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 2.222641944885254,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "shrub",
+   "metric": "psnr",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 2.278089332580567,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "shrub",
+   "metric": "psnr",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": -0.07786140441894673,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "shrub",
+   "metric": "psnr",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": -0.022414016723633523,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "shrub",
+   "metric": "ssim",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 0.04302915632724763,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "shrub",
+   "metric": "ssim",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.003238651156425465,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "shrub",
+   "metric": "ssim",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.004558438062667869,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "shrub",
+   "metric": "ssim",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 0.045308375358581565,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "shrub",
+   "metric": "ssim",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 0.040749937295913696,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "shrub",
+   "metric": "ssim",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.005517870187759399,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "shrub",
+   "metric": "ssim",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.0009594321250915305,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "shrub",
+   "metric": "lpips",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 0.053931427001953136,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "shrub",
+   "metric": "lpips",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": -0.0031111717224120983,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "shrub",
+   "metric": "lpips",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": 0.00573353767395024,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "shrub",
+   "metric": "lpips",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 0.051064658164978016,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "shrub",
+   "metric": "lpips",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 0.056798195838928256,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "shrub",
+   "metric": "lpips",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": -0.005977940559387218,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "shrub",
+   "metric": "lpips",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": -0.0002444028854369784,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled",
+   "metric": "psnr_gtmean",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 2.132727979024251,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled",
+   "metric": "psnr_gtmean",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.5769454574584945,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled",
+   "metric": "psnr_gtmean",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.045875104268393585,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled",
+   "metric": "psnr_gtmean",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 2.155665531158448,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled",
+   "metric": "psnr_gtmean",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 2.1097904268900542,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled",
+   "metric": "psnr_gtmean",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.5998830095926913,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled",
+   "metric": "psnr_gtmean",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.5540079053242977,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled",
+   "metric": "psnr",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 1.9852396821975704,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled",
+   "metric": "psnr",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.7459235080083184,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled",
+   "metric": "psnr",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.6708805243174272,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled",
+   "metric": "psnr",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 2.320679944356284,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled",
+   "metric": "psnr",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 1.6497994200388568,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled",
+   "metric": "psnr",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 1.081363770167032,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled",
+   "metric": "psnr",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.4104832458496048,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled",
+   "metric": "ssim",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 0.019555656015873057,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled",
+   "metric": "ssim",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.016370171805222822,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled",
+   "metric": "ssim",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.018336301048596626,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled",
+   "metric": "ssim",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 0.02872380654017137,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled",
+   "metric": "ssim",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 0.010387505491574744,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled",
+   "metric": "ssim",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.025538322329521135,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled",
+   "metric": "ssim",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.007202021280924509,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled",
+   "metric": "lpips",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": -0.026445758069554987,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled",
+   "metric": "lpips",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": -0.016040111556649223,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled",
+   "metric": "lpips",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": 0.018706126064062134,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled",
+   "metric": "lpips",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": -0.035798821101586054,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled",
+   "metric": "lpips",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": -0.01709269503752392,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled",
+   "metric": "lpips",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": -0.02539317458868029,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled",
+   "metric": "lpips",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": -0.0066870485246181555,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "psnr_gtmean",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 2.252069822947183,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "psnr_gtmean",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.7005013942718517,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "psnr_gtmean",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.02319280306498328,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "psnr_gtmean",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 2.2636662244796746,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "psnr_gtmean",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 2.2404734214146913,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "psnr_gtmean",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.7120977958043433,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "psnr_gtmean",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.68890499273936,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "psnr",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 1.9189581930637356,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "psnr",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.9449388126532217,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "psnr",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.8524625023206092,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "psnr",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 2.34518944422404,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "psnr",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 1.492726941903431,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "psnr",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 1.3711700638135262,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "psnr",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.5187075614929171,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "ssim",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 0.01368728093802929,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "ssim",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.019653051967422175,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "ssim",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.0217807667950789,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "ssim",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 0.02457766433556874,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "ssim",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 0.00279689754048984,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "ssim",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.030543435364961624,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "ssim",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.008762668569882726,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "lpips",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": -0.04654005433743197,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "lpips",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": -0.019272346515208483,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "lpips",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": 0.02194927316159012,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "lpips",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": -0.05751469091822703,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "lpips",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": -0.03556541775663691,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "lpips",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": -0.030246983096003544,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "lpips",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": -0.008297709934413422,
+   "noise": NaN,
+   "x_noise": NaN,
+   "real": null
+  }
+ ],
+ "R5a_leak_rung2_minus_detach": {
+  "buu": {
+   "diff": -0.6557684712894706,
+   "ref_sd": 0.003834620741679136
+  },
+  "chair": {
+   "diff": -0.4843743305263074,
+   "ref_sd": 0.0036191480529265832
+  },
+  "sofa": {
+   "diff": -0.5513490067224546,
+   "ref_sd": 0.004724048302221218
+  },
+  "bike": {
+   "diff": -0.4690537572694245,
+   "ref_sd": 0.007513790168442416
+  },
+  "shrub": {
+   "diff": -0.33553981999398835,
+   "ref_sd": 0.00523499613847966
+  },
+  "pooled": {
+   "diff": -0.499217077160329,
+   "ref_sd": 0.0009800798472161755
+  }
+ },
+ "decisions": []
+}

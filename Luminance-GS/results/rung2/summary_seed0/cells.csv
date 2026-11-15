@@ -1,0 +1,9 @@
+set,cell,runs,source,status
+lom,official,5/5,rung0/<scene>_baseline_seed*,used
+lom,detach,5/5,rung0/<scene>_detach_seed*,used
+lom,rung2,5/5,rung2/<scene>_rung2_seed*,used
+vexp,official,5/5,vexp/<scene>_baseline_seed*,used
+vexp,detach,5/5,vexp/<scene>_detach_seed*,used
+vexp,detachexp,5/5,vexp/<scene>_detachexp_seed*,used
+vexp,rung2,5/5,vexp/<scene>_rung2_seed*,used
+vexp,rung2exp,5/5,vexp/<scene>_rung2exp_seed*,used

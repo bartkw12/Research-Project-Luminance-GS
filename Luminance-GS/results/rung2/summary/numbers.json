@@ -1,0 +1,2954 @@
+{
+ "meta": {
+  "date": "2026-11-14 21:16",
+  "seconds": 103,
+  "seeds": [
+   0,
+   1,
+   2
+  ],
+  "scenes": [
+   "buu",
+   "chair",
+   "sofa",
+   "bike",
+   "shrub"
+  ],
+  "mode": "runs",
+  "script_sha256_16": "cfcde97621bd4381"
+ },
+ "cells": [
+  {
+   "set": "lom",
+   "cell": "official",
+   "runs": "15/15",
+   "source": "rung0/<scene>_baseline_seed*",
+   "status": "used"
+  },
+  {
+   "set": "lom",
+   "cell": "detach",
+   "runs": "15/15",
+   "source": "rung0/<scene>_detach_seed*",
+   "status": "used"
+  },
+  {
+   "set": "lom",
+   "cell": "rung2",
+   "runs": "15/15",
+   "source": "rung2/<scene>_rung2_seed*",
+   "status": "used"
+  },
+  {
+   "set": "vexp",
+   "cell": "official",
+   "runs": "15/15",
+   "source": "vexp/<scene>_baseline_seed*",
+   "status": "used"
+  },
+  {
+   "set": "vexp",
+   "cell": "detach",
+   "runs": "15/15",
+   "source": "vexp/<scene>_detach_seed*",
+   "status": "used"
+  },
+  {
+   "set": "vexp",
+   "cell": "detachexp",
+   "runs": "15/15",
+   "source": "vexp/<scene>_detachexp_seed*",
+   "status": "used"
+  },
+  {
+   "set": "vexp",
+   "cell": "rung2",
+   "runs": "15/15",
+   "source": "vexp/<scene>_rung2_seed*",
+   "status": "used"
+  },
+  {
+   "set": "vexp",
+   "cell": "rung2exp",
+   "runs": "15/15",
+   "source": "vexp/<scene>_rung2exp_seed*",
+   "status": "used"
+  }
+ ],
+ "integrity": [
+  {
+   "check": "max |rescore \u2212 training eval| psnr over all loaded runs",
+   "value": "2.54e-06",
+   "tolerance": "1e-03",
+   "ok": true
+  },
+  {
+   "check": "detach vs detachexp (same seed, 15 pairs): max |\u0394 log2 mean_pseudo|",
+   "value": "6.18e-06",
+   "tolerance": "1e-03",
+   "ok": true
+  },
+  {
+   "check": "buu seed 0: rung2 vs rung2exp, max |\u0394 s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "buu seed 0: rung2 vs rung2exp, max |\u0394 F heights|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "buu seed 1: rung2 vs rung2exp, max |\u0394 s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "buu seed 1: rung2 vs rung2exp, max |\u0394 F heights|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "buu seed 2: rung2 vs rung2exp, max |\u0394 s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "buu seed 2: rung2 vs rung2exp, max |\u0394 F heights|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "chair seed 0: rung2 vs rung2exp, max |\u0394 s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "chair seed 0: rung2 vs rung2exp, max |\u0394 F heights|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "chair seed 1: rung2 vs rung2exp, max |\u0394 s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "chair seed 1: rung2 vs rung2exp, max |\u0394 F heights|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "chair seed 2: rung2 vs rung2exp, max |\u0394 s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "chair seed 2: rung2 vs rung2exp, max |\u0394 F heights|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "sofa seed 0: rung2 vs rung2exp, max |\u0394 s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "sofa seed 0: rung2 vs rung2exp, max |\u0394 F heights|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "sofa seed 1: rung2 vs rung2exp, max |\u0394 s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "sofa seed 1: rung2 vs rung2exp, max |\u0394 F heights|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "sofa seed 2: rung2 vs rung2exp, max |\u0394 s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "sofa seed 2: rung2 vs rung2exp, max |\u0394 F heights|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "bike seed 0: rung2 vs rung2exp, max |\u0394 s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "bike seed 0: rung2 vs rung2exp, max |\u0394 F heights|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "bike seed 1: rung2 vs rung2exp, max |\u0394 s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "bike seed 1: rung2 vs rung2exp, max |\u0394 F heights|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "bike seed 2: rung2 vs rung2exp, max |\u0394 s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "bike seed 2: rung2 vs rung2exp, max |\u0394 F heights|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "shrub seed 0: rung2 vs rung2exp, max |\u0394 s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "shrub seed 0: rung2 vs rung2exp, max |\u0394 F heights|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "shrub seed 1: rung2 vs rung2exp, max |\u0394 s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "shrub seed 1: rung2 vs rung2exp, max |\u0394 F heights|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "shrub seed 2: rung2 vs rung2exp, max |\u0394 s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "shrub seed 2: rung2 vs rung2exp, max |\u0394 F heights|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "rung2 vs rung2exp (same seed, 15 pairs): max |\u0394 log2 mean_pseudo|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "lom bike seed 0: rung2 |mean s|",
+   "value": "1.66e-09",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "lom bike seed 0: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "2.37e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "lom bike seed 0: trainer s vs the preview's (report only; the view order differs)",
+   "value": "2.82e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "lom bike seed 1: rung2 |mean s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "lom bike seed 1: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "2.27e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "lom bike seed 1: trainer s vs the preview's (report only; the view order differs)",
+   "value": "1.98e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "lom bike seed 2: rung2 |mean s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "lom bike seed 2: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "2.22e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "lom bike seed 2: trainer s vs the preview's (report only; the view order differs)",
+   "value": "3.08e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "lom buu seed 0: rung2 |mean s|",
+   "value": "2.71e-09",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "lom buu seed 0: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "1.00e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "lom buu seed 0: trainer s vs the preview's (report only; the view order differs)",
+   "value": "2.63e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "lom buu seed 1: rung2 |mean s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "lom buu seed 1: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "1.16e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "lom buu seed 1: trainer s vs the preview's (report only; the view order differs)",
+   "value": "2.84e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "lom buu seed 2: rung2 |mean s|",
+   "value": "5.42e-09",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "lom buu seed 2: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "1.06e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "lom buu seed 2: trainer s vs the preview's (report only; the view order differs)",
+   "value": "2.58e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "lom chair seed 0: rung2 |mean s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "lom chair seed 0: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "8.45e-04",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "lom chair seed 0: trainer s vs the preview's (report only; the view order differs)",
+   "value": "3.32e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "lom chair seed 1: rung2 |mean s|",
+   "value": "1.04e-09",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "lom chair seed 1: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "7.63e-04",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "lom chair seed 1: trainer s vs the preview's (report only; the view order differs)",
+   "value": "3.99e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "lom chair seed 2: rung2 |mean s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "lom chair seed 2: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "8.11e-04",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "lom chair seed 2: trainer s vs the preview's (report only; the view order differs)",
+   "value": "2.57e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "lom shrub seed 0: rung2 |mean s|",
+   "value": "1.99e-09",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "lom shrub seed 0: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "6.60e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "lom shrub seed 0: trainer s vs the preview's (report only; the view order differs)",
+   "value": "8.93e-04",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "lom shrub seed 1: rung2 |mean s|",
+   "value": "9.93e-10",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "lom shrub seed 1: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "6.88e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "lom shrub seed 1: trainer s vs the preview's (report only; the view order differs)",
+   "value": "1.15e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "lom shrub seed 2: rung2 |mean s|",
+   "value": "1.99e-09",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "lom shrub seed 2: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "6.60e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "lom shrub seed 2: trainer s vs the preview's (report only; the view order differs)",
+   "value": "1.24e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "lom sofa seed 0: rung2 |mean s|",
+   "value": "5.14e-10",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "lom sofa seed 0: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "1.56e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "lom sofa seed 0: trainer s vs the preview's (report only; the view order differs)",
+   "value": "5.34e-04",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "lom sofa seed 1: rung2 |mean s|",
+   "value": "5.14e-10",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "lom sofa seed 1: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "1.29e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "lom sofa seed 1: trainer s vs the preview's (report only; the view order differs)",
+   "value": "4.28e-04",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "lom sofa seed 2: rung2 |mean s|",
+   "value": "7.71e-10",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "lom sofa seed 2: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "1.49e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "lom sofa seed 2: trainer s vs the preview's (report only; the view order differs)",
+   "value": "3.50e-04",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "vexp bike seed 0: rung2 s_init vs oracle.json s_init (stops)",
+   "value": "2.62e-08",
+   "tolerance": "1e-06",
+   "ok": true
+  },
+  {
+   "check": "vexp bike seed 0: rung2 |mean s|",
+   "value": "1.32e-08",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "vexp bike seed 0: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "6.17e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "vexp bike seed 0: trainer s vs the preview's (report only; the view order differs)",
+   "value": "4.36e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "vexp bike seed 1: rung2 s_init vs oracle.json s_init (stops)",
+   "value": "2.62e-08",
+   "tolerance": "1e-06",
+   "ok": true
+  },
+  {
+   "check": "vexp bike seed 1: rung2 |mean s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "vexp bike seed 1: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "6.03e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "vexp bike seed 1: trainer s vs the preview's (report only; the view order differs)",
+   "value": "4.96e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "vexp bike seed 2: rung2 s_init vs oracle.json s_init (stops)",
+   "value": "2.62e-08",
+   "tolerance": "1e-06",
+   "ok": true
+  },
+  {
+   "check": "vexp bike seed 2: rung2 |mean s|",
+   "value": "1.32e-08",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "vexp bike seed 2: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "6.32e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "vexp bike seed 2: trainer s vs the preview's (report only; the view order differs)",
+   "value": "5.37e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "vexp buu seed 0: rung2 s_init vs oracle.json s_init (stops)",
+   "value": "2.72e-08",
+   "tolerance": "1e-06",
+   "ok": true
+  },
+  {
+   "check": "vexp buu seed 0: rung2 |mean s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "vexp buu seed 0: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "1.08e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "vexp buu seed 0: trainer s vs the preview's (report only; the view order differs)",
+   "value": "2.66e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "vexp buu seed 1: rung2 s_init vs oracle.json s_init (stops)",
+   "value": "2.72e-08",
+   "tolerance": "1e-06",
+   "ok": true
+  },
+  {
+   "check": "vexp buu seed 1: rung2 |mean s|",
+   "value": "2.17e-08",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "vexp buu seed 1: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "8.51e-04",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "vexp buu seed 1: trainer s vs the preview's (report only; the view order differs)",
+   "value": "2.69e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "vexp buu seed 2: rung2 s_init vs oracle.json s_init (stops)",
+   "value": "2.72e-08",
+   "tolerance": "1e-06",
+   "ok": true
+  },
+  {
+   "check": "vexp buu seed 2: rung2 |mean s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "vexp buu seed 2: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "8.68e-04",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "vexp buu seed 2: trainer s vs the preview's (report only; the view order differs)",
+   "value": "1.69e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "vexp chair seed 0: rung2 s_init vs oracle.json s_init (stops)",
+   "value": "3.60e-08",
+   "tolerance": "1e-06",
+   "ok": true
+  },
+  {
+   "check": "vexp chair seed 0: rung2 |mean s|",
+   "value": "1.66e-08",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "vexp chair seed 0: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "1.63e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "vexp chair seed 0: trainer s vs the preview's (report only; the view order differs)",
+   "value": "2.31e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "vexp chair seed 1: rung2 s_init vs oracle.json s_init (stops)",
+   "value": "3.60e-08",
+   "tolerance": "1e-06",
+   "ok": true
+  },
+  {
+   "check": "vexp chair seed 1: rung2 |mean s|",
+   "value": "0.00e+00",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "vexp chair seed 1: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "1.65e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "vexp chair seed 1: trainer s vs the preview's (report only; the view order differs)",
+   "value": "2.58e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "vexp chair seed 2: rung2 s_init vs oracle.json s_init (stops)",
+   "value": "3.60e-08",
+   "tolerance": "1e-06",
+   "ok": true
+  },
+  {
+   "check": "vexp chair seed 2: rung2 |mean s|",
+   "value": "2.77e-09",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "vexp chair seed 2: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "1.45e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "vexp chair seed 2: trainer s vs the preview's (report only; the view order differs)",
+   "value": "2.90e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "vexp shrub seed 0: rung2 s_init vs oracle.json s_init (stops)",
+   "value": "4.18e-08",
+   "tolerance": "1e-06",
+   "ok": true
+  },
+  {
+   "check": "vexp shrub seed 0: rung2 |mean s|",
+   "value": "1.29e-08",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "vexp shrub seed 0: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "4.67e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "vexp shrub seed 0: trainer s vs the preview's (report only; the view order differs)",
+   "value": "3.02e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "vexp shrub seed 1: rung2 s_init vs oracle.json s_init (stops)",
+   "value": "4.18e-08",
+   "tolerance": "1e-06",
+   "ok": true
+  },
+  {
+   "check": "vexp shrub seed 1: rung2 |mean s|",
+   "value": "8.94e-09",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "vexp shrub seed 1: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "4.83e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "vexp shrub seed 1: trainer s vs the preview's (report only; the view order differs)",
+   "value": "3.02e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "vexp shrub seed 2: rung2 s_init vs oracle.json s_init (stops)",
+   "value": "4.18e-08",
+   "tolerance": "1e-06",
+   "ok": true
+  },
+  {
+   "check": "vexp shrub seed 2: rung2 |mean s|",
+   "value": "1.19e-08",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "vexp shrub seed 2: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "4.97e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "vexp shrub seed 2: trainer s vs the preview's (report only; the view order differs)",
+   "value": "3.24e-03",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "vexp sofa seed 0: rung2 s_init vs oracle.json s_init (stops)",
+   "value": "2.97e-08",
+   "tolerance": "1e-06",
+   "ok": true
+  },
+  {
+   "check": "vexp sofa seed 0: rung2 |mean s|",
+   "value": "8.22e-09",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "vexp sofa seed 0: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "1.92e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "vexp sofa seed 0: trainer s vs the preview's (report only; the view order differs)",
+   "value": "2.60e-04",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "vexp sofa seed 1: rung2 s_init vs oracle.json s_init (stops)",
+   "value": "2.97e-08",
+   "tolerance": "1e-06",
+   "ok": true
+  },
+  {
+   "check": "vexp sofa seed 1: rung2 |mean s|",
+   "value": "4.11e-09",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "vexp sofa seed 1: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "1.91e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "vexp sofa seed 1: trainer s vs the preview's (report only; the view order differs)",
+   "value": "2.84e-04",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "vexp sofa seed 2: rung2 s_init vs oracle.json s_init (stops)",
+   "value": "2.97e-08",
+   "tolerance": "1e-06",
+   "ok": true
+  },
+  {
+   "check": "vexp sofa seed 2: rung2 |mean s|",
+   "value": "1.64e-08",
+   "tolerance": "1e-05",
+   "ok": true
+  },
+  {
+   "check": "vexp sofa seed 2: fit_exposure_form(curve_adj) vs the run's s (stops)",
+   "value": "1.74e-03",
+   "tolerance": "1e-02",
+   "ok": true
+  },
+  {
+   "check": "vexp sofa seed 2: trainer s vs the preview's (report only; the view order differs)",
+   "value": "1.95e-04",
+   "tolerance": "5e-02",
+   "ok": "report"
+  },
+  {
+   "check": "M1 reproduction: T1 validation means (official, detach)",
+   "value": "0.00e+00",
+   "tolerance": "1e-09",
+   "ok": true
+  },
+  {
+   "check": "M1 reproduction: paired pseudo-target leak (official, detach) vs T4_exposure.csv",
+   "value": "0.00e+00",
+   "tolerance": "1e-09",
+   "ok": true
+  },
+  {
+   "check": "M1 reproduction: detach dark-fit change vs signed u (T5b)",
+   "value": "0.00e+00",
+   "tolerance": "1e-09",
+   "ok": true
+  }
+ ],
+ "R1_rung2_minus_detach": {
+  "buu": {
+   "psnr_gtmean": {
+    "diff": -0.11878119574652739,
+    "diff_sd": 0.4343469288730608,
+    "noise": 0.225550871662919,
+    "x_noise": -0.5266270747294799,
+    "real": false
+   },
+   "psnr": {
+    "diff": -1.537747277153862,
+    "diff_sd": 0.33410194895611245,
+    "noise": 0.4039673135289652,
+    "x_noise": -3.8066131235234275,
+    "real": true
+   },
+   "ssim": {
+    "diff": -0.007139212555355508,
+    "diff_sd": 0.005647204892850563,
+    "noise": 0.003645378221227252,
+    "x_noise": -1.958428487278344,
+    "real": false
+   },
+   "lpips": {
+    "diff": -0.02021712230311501,
+    "diff_sd": 0.011440334229488348,
+    "noise": 0.008630286119419059,
+    "x_noise": -2.3425784525989632,
+    "real": true
+   }
+  },
+  "chair": {
+   "psnr_gtmean": {
+    "diff": 0.3983362833658859,
+    "diff_sd": 0.20298136651016993,
+    "noise": 0.20114804810702136,
+    "x_noise": 1.9803139384874866,
+    "real": false
+   },
+   "psnr": {
+    "diff": 1.0668293635050443,
+    "diff_sd": 0.2993086654981731,
+    "noise": 0.23583715552734288,
+    "x_noise": 4.523584763900176,
+    "real": true
+   },
+   "ssim": {
+    "diff": 0.006511803468068418,
+    "diff_sd": 0.0014529344284178727,
+    "noise": 0.0008420092160445986,
+    "x_noise": 7.733648686956306,
+    "real": true
+   },
+   "lpips": {
+    "diff": -0.016421373685201007,
+    "diff_sd": 0.0023173672250295435,
+    "noise": 0.0021631164704448745,
+    "x_noise": -7.5915346721130215,
+    "real": true
+   }
+  },
+  "sofa": {
+   "psnr_gtmean": {
+    "diff": -0.3870244026184082,
+    "diff_sd": 0.3222761318008158,
+    "noise": 0.3398194511755715,
+    "x_noise": -1.1389118582810251,
+    "real": false
+   },
+   "psnr": {
+    "diff": -0.33901484807332355,
+    "diff_sd": 0.11479773007291531,
+    "noise": 0.3519714044534463,
+    "x_noise": -0.9631886107331867,
+    "real": false
+   },
+   "ssim": {
+    "diff": -0.00020971894264221191,
+    "diff_sd": 0.0028455162208850296,
+    "noise": 0.0034735042133393805,
+    "x_noise": -0.06037676356827877,
+    "real": false
+   },
+   "lpips": {
+    "diff": -0.009039655327796936,
+    "diff_sd": 0.005859170716256187,
+    "noise": 0.007084010629223351,
+    "x_noise": -1.2760646194552634,
+    "real": false
+   }
+  },
+  "bike": {
+   "psnr_gtmean": {
+    "diff": -0.1547861099243164,
+    "diff_sd": 0.07757824152025665,
+    "noise": 0.041135839470388035,
+    "x_noise": -3.7628042095929617,
+    "real": true
+   },
+   "psnr": {
+    "diff": 0.32694212595621747,
+    "diff_sd": 0.144706750464357,
+    "noise": 0.07821687572392302,
+    "x_noise": 4.179943559880909,
+    "real": true
+   },
+   "ssim": {
+    "diff": -0.0004110485315322876,
+    "diff_sd": 0.006538682559760409,
+    "noise": 0.004067468971047106,
+    "x_noise": -0.101057570311709,
+    "real": false
+   },
+   "lpips": {
+    "diff": 0.007592332859834035,
+    "diff_sd": 0.010026358295931645,
+    "noise": 0.005612069358617893,
+    "x_noise": 1.3528579877893436,
+    "real": false
+   }
+  },
+  "shrub": {
+   "psnr_gtmean": {
+    "diff": 0.16069628397623723,
+    "diff_sd": 0.5242573057806355,
+    "noise": 0.35254677846347454,
+    "x_noise": 0.4558154939795772,
+    "real": false
+   },
+   "psnr": {
+    "diff": 0.14882221221923805,
+    "diff_sd": 0.6815532152122381,
+    "noise": 0.46599631165606065,
+    "x_noise": 0.3193634981580707,
+    "real": false
+   },
+   "ssim": {
+    "diff": -0.007596037785212155,
+    "diff_sd": 0.004895475802837791,
+    "noise": 0.003181004180171432,
+    "x_noise": -2.3879370648305107,
+    "real": true
+   },
+   "lpips": {
+    "diff": 0.04982194006443025,
+    "diff_sd": 0.05148477877208283,
+    "noise": 0.03717819269942356,
+    "x_noise": 1.3400850457478728,
+    "real": false
+   }
+  },
+  "pooled": {
+   "psnr_gtmean": {
+    "diff": -0.020311828189427672,
+    "diff_sd": 0.10176297435297323,
+    "noise": 0.06814503575459727,
+    "x_noise": -0.2980676136494268,
+    "real": false
+   },
+   "psnr": {
+    "diff": -0.06683368470933478,
+    "diff_sd": 0.1856904813638518,
+    "noise": 0.12325536307331601,
+    "x_noise": -0.5422375387396334,
+    "real": false
+   },
+   "ssim": {
+    "diff": -0.0017688428693347265,
+    "diff_sd": 0.0006317861600157155,
+    "noise": 0.0014166229058437635,
+    "x_noise": -1.2486335368699797,
+    "real": false
+   },
+   "lpips": {
+    "diff": 0.0023472243216302777,
+    "diff_sd": 0.009406169255923077,
+    "noise": 0.008367682544014939,
+    "x_noise": 0.2805106801415586,
+    "real": false
+   }
+  },
+  "pooled_no_shrub": {
+   "psnr_gtmean": {
+    "diff": -0.06556385623084182,
+    "diff_sd": 0.016767145408223213,
+    "noise": 0.08011212313713499,
+    "x_noise": -0.8184011815366619,
+    "real": false
+   },
+   "psnr": {
+    "diff": -0.12074765894147887,
+    "diff_sd": 0.19880137820900087,
+    "noise": 0.1959245461230911,
+    "x_noise": -0.6162967393866935,
+    "real": false
+   },
+   "ssim": {
+    "diff": -0.0003120441403653788,
+    "diff_sd": 0.0016310910960218269,
+    "noise": 0.0015812613853457603,
+    "x_noise": -0.19733874693787384,
+    "real": false
+   },
+   "lpips": {
+    "diff": -0.009521454614069724,
+    "diff_sd": 0.0016000428409486903,
+    "noise": 0.0023117381377210666,
+    "x_noise": -4.118742715148553,
+    "real": true
+   }
+  }
+ },
+ "R4": [
+  {
+   "scene": "buu",
+   "metric": "psnr_gtmean",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 1.838682810465496,
+   "noise": 1.1294189490649529,
+   "x_noise": 1.6279900492087045,
+   "real": false
+  },
+  {
+   "scene": "buu",
+   "metric": "psnr_gtmean",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.32773929172092053,
+   "noise": 1.1294189490649529,
+   "x_noise": 0.29018398530700784,
+   "real": false
+  },
+  {
+   "scene": "buu",
+   "metric": "psnr_gtmean",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": 1.1427934434678828,
+   "noise": 1.1294189490649529,
+   "x_noise": 1.0118419249243185,
+   "real": false
+  },
+  {
+   "scene": "buu",
+   "metric": "psnr_gtmean",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 1.2672860887315547,
+   "noise": 1.0883384698718048,
+   "x_noise": 1.1644227635184374,
+   "real": false
+  },
+  {
+   "scene": "buu",
+   "metric": "psnr_gtmean",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 2.4100795321994375,
+   "noise": 1.169056756539675,
+   "x_noise": 2.061559046400024,
+   "real": true
+  },
+  {
+   "scene": "buu",
+   "metric": "psnr_gtmean",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": -0.24365743001302084,
+   "noise": 1.5724592443780008,
+   "x_noise": -0.154953097121065,
+   "real": false
+  },
+  {
+   "scene": "buu",
+   "metric": "psnr_gtmean",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.8991360134548619,
+   "noise": 0.2802610386481371,
+   "x_noise": 3.2082090960339,
+   "real": true
+  },
+  {
+   "scene": "buu",
+   "metric": "psnr",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": -2.186569319831,
+   "noise": 0.5272754348170199,
+   "x_noise": -4.146920519044859,
+   "real": true
+  },
+  {
+   "scene": "buu",
+   "metric": "psnr",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": -0.1322666803995768,
+   "noise": 0.5272754348170199,
+   "x_noise": -0.25084931264715044,
+   "real": false
+  },
+  {
+   "scene": "buu",
+   "metric": "psnr",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": 1.9986328548855237,
+   "noise": 0.5272754348170199,
+   "x_noise": 3.790491122688293,
+   "real": true
+  },
+  {
+   "scene": "buu",
+   "metric": "psnr",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": -3.185885747273762,
+   "noise": 0.6972451834415632,
+   "x_noise": -4.5692474081332595,
+   "real": true
+  },
+  {
+   "scene": "buu",
+   "metric": "psnr",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": -1.1872528923882382,
+   "noise": 0.2643632396731732,
+   "x_noise": -4.490990857337103,
+   "real": true
+  },
+  {
+   "scene": "buu",
+   "metric": "psnr",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": -1.1315831078423386,
+   "noise": 0.5778960062227018,
+   "x_noise": -1.9581085448897606,
+   "real": false
+  },
+  {
+   "scene": "buu",
+   "metric": "psnr",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.8670497470431849,
+   "noise": 0.4712483149198581,
+   "x_noise": 1.8398999414791288,
+   "real": false
+  },
+  {
+   "scene": "buu",
+   "metric": "ssim",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": -0.004678391748004477,
+   "noise": 0.008215903751484413,
+   "x_noise": -0.5694311775693826,
+   "real": false
+  },
+  {
+   "scene": "buu",
+   "metric": "ssim",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.017525947756237465,
+   "noise": 0.008215903751484413,
+   "x_noise": 2.1331734507078366,
+   "real": true
+  },
+  {
+   "scene": "buu",
+   "metric": "ssim",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.009447885884179033,
+   "noise": 0.008215903751484413,
+   "x_noise": -1.1499508964515355,
+   "real": false
+  },
+  {
+   "scene": "buu",
+   "metric": "ssim",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 4.555119408503986e-05,
+   "noise": 0.010788545713820803,
+   "x_noise": 0.004222181125551142,
+   "real": false
+  },
+  {
+   "scene": "buu",
+   "metric": "ssim",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": -0.009402334690093994,
+   "noise": 0.004313864889876604,
+   "x_noise": -2.179561699338002,
+   "real": true
+  },
+  {
+   "scene": "buu",
+   "metric": "ssim",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.022249890698326984,
+   "noise": 0.010314991734163625,
+   "x_noise": 2.1570439678235074,
+   "real": true
+  },
+  {
+   "scene": "buu",
+   "metric": "ssim",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.01280200481414795,
+   "noise": 0.0053481860879598594,
+   "x_noise": 2.3937096809268756,
+   "real": true
+  },
+  {
+   "scene": "buu",
+   "metric": "lpips",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": -0.04175284918811586,
+   "noise": 0.01628174656868305,
+   "x_noise": -2.56439620970547,
+   "real": true
+  },
+  {
+   "scene": "buu",
+   "metric": "lpips",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": -0.030655063688755032,
+   "noise": 0.01628174656868305,
+   "x_noise": -1.8827871788471506,
+   "real": false
+  },
+  {
+   "scene": "buu",
+   "metric": "lpips",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": 0.008934045831362397,
+   "noise": 0.01628174656868305,
+   "x_noise": 0.5487154460779099,
+   "real": false
+  },
+  {
+   "scene": "buu",
+   "metric": "lpips",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": -0.046219872103797056,
+   "noise": 0.018194820169012336,
+   "x_noise": -2.540276390448436,
+   "real": true
+  },
+  {
+   "scene": "buu",
+   "metric": "lpips",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": -0.03728582627243466,
+   "noise": 0.014111664029126628,
+   "x_noise": -2.6421991194997494,
+   "real": true
+  },
+  {
+   "scene": "buu",
+   "metric": "lpips",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": -0.03512208660443623,
+   "noise": 0.016934577223096957,
+   "x_noise": -2.0739866216756475,
+   "real": true
+  },
+  {
+   "scene": "buu",
+   "metric": "lpips",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": -0.026188040773073833,
+   "noise": 0.015601622894064908,
+   "x_noise": -1.6785459404377834,
+   "real": false
+  },
+  {
+   "scene": "chair",
+   "metric": "psnr_gtmean",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 3.589681879679361,
+   "noise": 0.4735400024720472,
+   "x_noise": 7.580525110740266,
+   "real": true
+  },
+  {
+   "scene": "chair",
+   "metric": "psnr_gtmean",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.3195125579833977,
+   "noise": 0.4735400024720472,
+   "x_noise": 0.6747319261634256,
+   "real": false
+  },
+  {
+   "scene": "chair",
+   "metric": "psnr_gtmean",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.3054878234863286,
+   "noise": 0.4735400024720472,
+   "x_noise": -0.645115136823866,
+   "real": false
+  },
+  {
+   "scene": "chair",
+   "metric": "psnr_gtmean",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 3.742425791422525,
+   "noise": 0.6280926225080014,
+   "x_noise": 5.958397945320318,
+   "real": true
+  },
+  {
+   "scene": "chair",
+   "metric": "psnr_gtmean",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 3.436937967936197,
+   "noise": 0.23233580316747193,
+   "x_noise": 14.792976033309806,
+   "real": true
+  },
+  {
+   "scene": "chair",
+   "metric": "psnr_gtmean",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.47225646972656204,
+   "noise": 0.5996822533078028,
+   "x_noise": 0.7875111646570003,
+   "real": false
+  },
+  {
+   "scene": "chair",
+   "metric": "psnr_gtmean",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.16676864624023344,
+   "noise": 0.29809639875404254,
+   "x_noise": 0.5594453570632807,
+   "real": false
+  },
+  {
+   "scene": "chair",
+   "metric": "psnr",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 4.387569872538248,
+   "noise": 0.7491733211861223,
+   "x_noise": 5.856548476114533,
+   "real": true
+  },
+  {
+   "scene": "chair",
+   "metric": "psnr",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.514898999532063,
+   "noise": 0.7491733211861223,
+   "x_noise": 0.6872895563297068,
+   "real": false
+  },
+  {
+   "scene": "chair",
+   "metric": "psnr",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.31192410786946684,
+   "noise": 0.7491733211861223,
+   "x_noise": -0.41635773598506637,
+   "real": false
+  },
+  {
+   "scene": "chair",
+   "metric": "psnr",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 4.5435319264729825,
+   "noise": 0.9859587497609681,
+   "x_noise": 4.60823734012655,
+   "real": true
+  },
+  {
+   "scene": "chair",
+   "metric": "psnr",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 4.231607818603515,
+   "noise": 0.38782299328930775,
+   "x_noise": 10.911183431166044,
+   "real": true
+  },
+  {
+   "scene": "chair",
+   "metric": "psnr",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.6708610534667964,
+   "noise": 1.0393859704923432,
+   "x_noise": 0.6454397812864633,
+   "real": false
+  },
+  {
+   "scene": "chair",
+   "metric": "psnr",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.3589369455973295,
+   "noise": 0.20542184571700106,
+   "x_noise": 1.7473163301814463,
+   "real": false
+  },
+  {
+   "scene": "chair",
+   "metric": "ssim",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 0.030327957868576078,
+   "noise": 0.01275033577441738,
+   "x_noise": 2.3786007212003715,
+   "real": true
+  },
+  {
+   "scene": "chair",
+   "metric": "ssim",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.014091930786768589,
+   "noise": 0.01275033577441738,
+   "x_noise": 1.1052203672191143,
+   "real": false
+  },
+  {
+   "scene": "chair",
+   "metric": "ssim",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.01444247961044313,
+   "noise": 0.01275033577441738,
+   "x_noise": -1.1327136685624322,
+   "real": false
+  },
+  {
+   "scene": "chair",
+   "metric": "ssim",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 0.03754919767379764,
+   "noise": 0.0179279642078525,
+   "x_noise": 2.094448496129359,
+   "real": true
+  },
+  {
+   "scene": "chair",
+   "metric": "ssim",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 0.023106718063354514,
+   "noise": 0.0019313788035325934,
+   "x_noise": 11.963845736057117,
+   "real": true
+  },
+  {
+   "scene": "chair",
+   "metric": "ssim",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.021313170591990154,
+   "noise": 0.018009954417217425,
+   "x_noise": 1.1834105794079561,
+   "real": false
+  },
+  {
+   "scene": "chair",
+   "metric": "ssim",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.006870690981547023,
+   "noise": 0.0008852494623131994,
+   "x_noise": 7.7613048909327516,
+   "real": true
+  },
+  {
+   "scene": "chair",
+   "metric": "lpips",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": -0.04807458619276683,
+   "noise": 0.026727208783561815,
+   "x_noise": -1.798713310547206,
+   "real": false
+  },
+  {
+   "scene": "chair",
+   "metric": "lpips",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": -0.018525621294975276,
+   "noise": 0.026727208783561815,
+   "x_noise": -0.6931371489255246,
+   "real": false
+  },
+  {
+   "scene": "chair",
+   "metric": "lpips",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": 0.050430140892664586,
+   "noise": 0.026727208783561815,
+   "x_noise": 1.886846520377426,
+   "real": false
+  },
+  {
+   "scene": "chair",
+   "metric": "lpips",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": -0.07328965663909913,
+   "noise": 0.037779581204442365,
+   "x_noise": -1.9399277149869851,
+   "real": false
+  },
+  {
+   "scene": "chair",
+   "metric": "lpips",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": -0.02285951574643454,
+   "noise": 0.0011792466820612988,
+   "x_noise": -19.38484635502775,
+   "real": true
+  },
+  {
+   "scene": "chair",
+   "metric": "lpips",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": -0.04374069174130757,
+   "noise": 0.03765717500499401,
+   "x_noise": -1.1615500030341301,
+   "real": false
+  },
+  {
+   "scene": "chair",
+   "metric": "lpips",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.006689449151357015,
+   "noise": 0.0032595320773788875,
+   "x_noise": 2.052272839338416,
+   "real": true
+  },
+  {
+   "scene": "sofa",
+   "metric": "psnr_gtmean",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 2.947368303934733,
+   "noise": 0.8371439909004328,
+   "x_noise": 3.520742352536678,
+   "real": true
+  },
+  {
+   "scene": "sofa",
+   "metric": "psnr_gtmean",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.5391330718994141,
+   "noise": 0.8371439909004328,
+   "x_noise": 0.6440147426962022,
+   "real": false
+  },
+  {
+   "scene": "sofa",
+   "metric": "psnr_gtmean",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": 0.009266535441080729,
+   "noise": 0.8371439909004328,
+   "x_noise": 0.011069225296730179,
+   "real": false
+  },
+  {
+   "scene": "sofa",
+   "metric": "psnr_gtmean",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 2.942735036214193,
+   "noise": 0.7917328989116709,
+   "x_noise": 3.7168280366514073,
+   "real": true
+  },
+  {
+   "scene": "sofa",
+   "metric": "psnr_gtmean",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 2.9520015716552734,
+   "noise": 0.8802153939703223,
+   "x_noise": 3.3537263627484393,
+   "real": true
+  },
+  {
+   "scene": "sofa",
+   "metric": "psnr_gtmean",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.5344998041788737,
+   "noise": 1.1706152434535662,
+   "x_noise": 0.4565973381672227,
+   "real": false
+  },
+  {
+   "scene": "sofa",
+   "metric": "psnr_gtmean",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.5437663396199545,
+   "noise": 0.17686173920765305,
+   "x_noise": 3.074527832057104,
+   "real": true
+  },
+  {
+   "scene": "sofa",
+   "metric": "psnr",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 0.7012030680974325,
+   "noise": 1.5445887897384358,
+   "x_noise": 0.45397394617642917,
+   "real": false
+  },
+  {
+   "scene": "sofa",
+   "metric": "psnr",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 1.214282234509786,
+   "noise": 1.5445887897384358,
+   "x_noise": 0.7861524326584134,
+   "real": false
+  },
+  {
+   "scene": "sofa",
+   "metric": "psnr",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -1.327148199081421,
+   "noise": 1.5445887897384358,
+   "x_noise": -0.8592242853880632,
+   "real": false
+  },
+  {
+   "scene": "sofa",
+   "metric": "psnr",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 1.3647771676381428,
+   "noise": 1.8399293821212772,
+   "x_noise": 0.7417551895740012,
+   "real": false
+  },
+  {
+   "scene": "sofa",
+   "metric": "psnr",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 0.03762896855672201,
+   "noise": 1.1773567545897492,
+   "x_noise": 0.03196054926429997,
+   "real": false
+  },
+  {
+   "scene": "sofa",
+   "metric": "psnr",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 1.8778563340504963,
+   "noise": 2.1727095313136022,
+   "x_noise": 0.8642923994148265,
+   "real": false
+  },
+  {
+   "scene": "sofa",
+   "metric": "psnr",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.5507081349690756,
+   "noise": 0.22548248559548412,
+   "x_noise": 2.4423543740645415,
+   "real": true
+  },
+  {
+   "scene": "sofa",
+   "metric": "ssim",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 0.007670593758424123,
+   "noise": 0.007737402643791841,
+   "x_noise": 0.9913654635226561,
+   "real": false
+  },
+  {
+   "scene": "sofa",
+   "metric": "ssim",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.011224277317523956,
+   "noise": 0.007737402643791841,
+   "x_noise": 1.450651831662119,
+   "real": false
+  },
+  {
+   "scene": "sofa",
+   "metric": "ssim",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.0036510775486628213,
+   "noise": 0.007737402643791841,
+   "x_noise": -0.4718737949604172,
+   "real": false
+  },
+  {
+   "scene": "sofa",
+   "metric": "ssim",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 0.009496132532755533,
+   "noise": 0.009388349487498407,
+   "x_noise": 1.0114805105413525,
+   "real": false
+  },
+  {
+   "scene": "sofa",
+   "metric": "ssim",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 0.005845054984092712,
+   "noise": 0.005620826740338324,
+   "x_noise": 1.0398923955697115,
+   "real": false
+  },
+  {
+   "scene": "sofa",
+   "metric": "ssim",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.013049816091855368,
+   "noise": 0.01077392864723292,
+   "x_noise": 1.2112402559123097,
+   "real": false
+  },
+  {
+   "scene": "sofa",
+   "metric": "ssim",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.009398738543192545,
+   "noise": 0.0019123966243035832,
+   "x_noise": 4.914638743736113,
+   "real": true
+  },
+  {
+   "scene": "sofa",
+   "metric": "lpips",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": -0.04548151046037674,
+   "noise": 0.01833390444300942,
+   "x_noise": -2.480732383096853,
+   "real": true
+  },
+  {
+   "scene": "sofa",
+   "metric": "lpips",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": -0.003988771388928096,
+   "noise": 0.01833390444300942,
+   "x_noise": -0.21756257110028654,
+   "real": false
+  },
+  {
+   "scene": "sofa",
+   "metric": "lpips",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.0032677253087361655,
+   "noise": 0.01833390444300942,
+   "x_noise": -0.1782340100491865,
+   "real": false
+  },
+  {
+   "scene": "sofa",
+   "metric": "lpips",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": -0.04384764780600866,
+   "noise": 0.01743848962067757,
+   "x_noise": -2.5144177483132832,
+   "real": true
+  },
+  {
+   "scene": "sofa",
+   "metric": "lpips",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": -0.04711537311474482,
+   "noise": 0.019187578898868976,
+   "x_noise": -2.45551423465532,
+   "real": true
+  },
+  {
+   "scene": "sofa",
+   "metric": "lpips",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": -0.002354908734560013,
+   "noise": 0.0239153859231099,
+   "x_noise": -0.09846835598351851,
+   "real": false
+  },
+  {
+   "scene": "sofa",
+   "metric": "lpips",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": -0.005622634043296178,
+   "noise": 0.010015908366170197,
+   "x_noise": -0.5613703558118829,
+   "real": false
+  },
+  {
+   "scene": "bike",
+   "metric": "psnr_gtmean",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 0.5586465994517008,
+   "noise": 0.20822502708508456,
+   "x_noise": 2.682898435755408,
+   "real": true
+  },
+  {
+   "scene": "bike",
+   "metric": "psnr_gtmean",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.1669487158457438,
+   "noise": 0.20822502708508456,
+   "x_noise": 0.8017706525619781,
+   "real": false
+  },
+  {
+   "scene": "bike",
+   "metric": "psnr_gtmean",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.49872032801310223,
+   "noise": 0.20822502708508456,
+   "x_noise": -2.3951027164919805,
+   "real": true
+  },
+  {
+   "scene": "bike",
+   "metric": "psnr_gtmean",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 0.808006763458252,
+   "noise": 0.25255544470935487,
+   "x_noise": 3.1993242687288723,
+   "real": true
+  },
+  {
+   "scene": "bike",
+   "metric": "psnr_gtmean",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 0.3092864354451497,
+   "noise": 0.15143008669623217,
+   "x_noise": 2.04243715494647,
+   "real": true
+  },
+  {
+   "scene": "bike",
+   "metric": "psnr_gtmean",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.4163088798522949,
+   "noise": 0.2925582578020614,
+   "x_noise": 1.4229948010353566,
+   "real": false
+  },
+  {
+   "scene": "bike",
+   "metric": "psnr_gtmean",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": -0.0824114481608073,
+   "noise": 0.03354086464286485,
+   "x_noise": -2.457046025447012,
+   "real": true
+  },
+  {
+   "scene": "bike",
+   "metric": "psnr",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 1.5690731604894002,
+   "noise": 0.6154422395964281,
+   "x_noise": 2.549505151804837,
+   "real": true
+  },
+  {
+   "scene": "bike",
+   "metric": "psnr",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.3342807690302531,
+   "noise": 0.6154422395964281,
+   "x_noise": 0.5431553889597428,
+   "real": false
+  },
+  {
+   "scene": "bike",
+   "metric": "psnr",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.7160344918568929,
+   "noise": 0.6154422395964281,
+   "x_noise": -1.163447104843547,
+   "real": false
+  },
+  {
+   "scene": "bike",
+   "metric": "psnr",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 1.9270904064178467,
+   "noise": 0.8400032950417303,
+   "x_noise": 2.294146246559796,
+   "real": true
+  },
+  {
+   "scene": "bike",
+   "metric": "psnr",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 1.2110559145609539,
+   "noise": 0.22788761457782278,
+   "x_noise": 5.314268249305768,
+   "real": true
+  },
+  {
+   "scene": "bike",
+   "metric": "psnr",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.6922980149586996,
+   "noise": 0.8675006446895144,
+   "x_noise": 0.7980374645213996,
+   "real": false
+  },
+  {
+   "scene": "bike",
+   "metric": "psnr",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": -0.02373647689819336,
+   "noise": 0.07057571836128533,
+   "x_noise": -0.3363263945353495,
+   "real": false
+  },
+  {
+   "scene": "bike",
+   "metric": "ssim",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 0.0008692915240923563,
+   "noise": 0.012026577926168881,
+   "x_noise": 0.07228087070394704,
+   "real": false
+  },
+  {
+   "scene": "bike",
+   "metric": "ssim",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.01823349545399348,
+   "noise": 0.012026577926168881,
+   "x_noise": 1.5161000548891665,
+   "real": false
+  },
+  {
+   "scene": "bike",
+   "metric": "ssim",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.016057804226875305,
+   "noise": 0.012026577926168881,
+   "x_noise": -1.335193130203297,
+   "real": false
+  },
+  {
+   "scene": "bike",
+   "metric": "ssim",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 0.008898193637530008,
+   "noise": 0.016157742615321644,
+   "x_noise": 0.5507077225683903,
+   "real": false
+  },
+  {
+   "scene": "bike",
+   "metric": "ssim",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": -0.007159610589345296,
+   "noise": 0.005310791542269768,
+   "x_noise": -1.348124951310999,
+   "real": false
+  },
+  {
+   "scene": "bike",
+   "metric": "ssim",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.026262397567431133,
+   "noise": 0.015609223411586569,
+   "x_noise": 1.682492259540396,
+   "real": false
+  },
+  {
+   "scene": "bike",
+   "metric": "ssim",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.010204593340555826,
+   "noise": 0.006754946166743514,
+   "x_noise": 1.5106846285164919,
+   "real": false
+  },
+  {
+   "scene": "bike",
+   "metric": "lpips",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": -0.040162223701675735,
+   "noise": 0.009074016921577752,
+   "x_noise": -4.426068856690263,
+   "real": true
+  },
+  {
+   "scene": "bike",
+   "metric": "lpips",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": -0.004264991109569867,
+   "noise": 0.009074016921577752,
+   "x_noise": -0.4700223888086257,
+   "real": false
+  },
+  {
+   "scene": "bike",
+   "metric": "lpips",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": 0.0019458470245202382,
+   "noise": 0.009074016921577752,
+   "x_noise": 0.2144416349823053,
+   "real": false
+  },
+  {
+   "scene": "bike",
+   "metric": "lpips",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": -0.04113514721393585,
+   "noise": 0.009565520049075123,
+   "x_noise": -4.300356593566823,
+   "real": true
+  },
+  {
+   "scene": "bike",
+   "metric": "lpips",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": -0.03918930018941561,
+   "noise": 0.008554320100212563,
+   "x_noise": -4.581229101824447,
+   "real": true
+  },
+  {
+   "scene": "bike",
+   "metric": "lpips",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": -0.005237914621829987,
+   "noise": 0.010238838853336572,
+   "x_noise": -0.5115731087146749,
+   "real": false
+  },
+  {
+   "scene": "bike",
+   "metric": "lpips",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": -0.003292067597309748,
+   "noise": 0.00773574463911292,
+   "x_noise": -0.4255657019318646,
+   "real": false
+  },
+  {
+   "scene": "shrub",
+   "metric": "psnr_gtmean",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 1.635305309295654,
+   "noise": 0.02414436559584597,
+   "x_noise": 67.73030762825293,
+   "real": true
+  },
+  {
+   "scene": "shrub",
+   "metric": "psnr_gtmean",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.06448799769083635,
+   "noise": 0.02414436559584597,
+   "x_noise": 2.670933615333073,
+   "real": true
+  },
+  {
+   "scene": "shrub",
+   "metric": "psnr_gtmean",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.085951550801596,
+   "noise": 0.02414436559584597,
+   "x_noise": -3.55990098229725,
+   "real": true
+  },
+  {
+   "scene": "shrub",
+   "metric": "psnr_gtmean",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 1.678281084696452,
+   "noise": 0.027682610761302327,
+   "x_noise": 60.62582388517092,
+   "real": true
+  },
+  {
+   "scene": "shrub",
+   "metric": "psnr_gtmean",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 1.592329533894856,
+   "noise": 0.019989343198063555,
+   "x_noise": 79.65892216254065,
+   "real": true
+  },
+  {
+   "scene": "shrub",
+   "metric": "psnr_gtmean",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.10746377309163435,
+   "noise": 0.03146701343376454,
+   "x_noise": 3.4151246452999646,
+   "real": true
+  },
+  {
+   "scene": "shrub",
+   "metric": "psnr_gtmean",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.021512222290038352,
+   "noise": 0.013256237988623442,
+   "x_noise": 1.6227999458443814,
+   "real": false
+  },
+  {
+   "scene": "shrub",
+   "metric": "psnr",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 2.2731153488159186,
+   "noise": 0.10520644935876343,
+   "x_noise": 21.606235764733313,
+   "real": true
+  },
+  {
+   "scene": "shrub",
+   "metric": "psnr",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": -0.03161710103352888,
+   "noise": 0.10520644935876343,
+   "x_noise": -0.30052436163596524,
+   "real": false
+  },
+  {
+   "scene": "shrub",
+   "metric": "psnr",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": 0.07474746704101658,
+   "noise": 0.10520644935876343,
+   "x_noise": 0.710483696547167,
+   "real": false
+  },
+  {
+   "scene": "shrub",
+   "metric": "psnr",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 2.23574161529541,
+   "noise": 0.13737721841000833,
+   "x_noise": 16.274471423804357,
+   "real": true
+  },
+  {
+   "scene": "shrub",
+   "metric": "psnr",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 2.3104890823364266,
+   "noise": 0.05713399894357972,
+   "x_noise": 40.439827861831496,
+   "real": true
+  },
+  {
+   "scene": "shrub",
+   "metric": "psnr",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": -0.06899083455403716,
+   "noise": 0.1451285529037722,
+   "x_noise": -0.47537740281736074,
+   "real": false
+  },
+  {
+   "scene": "shrub",
+   "metric": "psnr",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.005756632486979403,
+   "noise": 0.032779522653832195,
+   "x_noise": 0.17561672717971705,
+   "real": false
+  },
+  {
+   "scene": "shrub",
+   "metric": "ssim",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 0.04308607975641887,
+   "noise": 0.001039466789058783,
+   "x_noise": 41.45017446438331,
+   "real": true
+  },
+  {
+   "scene": "shrub",
+   "metric": "ssim",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.003480813900629672,
+   "noise": 0.001039466789058783,
+   "x_noise": 3.3486533069339153,
+   "real": true
+  },
+  {
+   "scene": "shrub",
+   "metric": "ssim",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.002883994579315171,
+   "noise": 0.001039466789058783,
+   "x_noise": -2.7744942019038166,
+   "real": true
+  },
+  {
+   "scene": "shrub",
+   "metric": "ssim",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 0.044528077046076454,
+   "noise": 0.0007160226805240249,
+   "x_noise": 62.188081826525874,
+   "real": true
+  },
+  {
+   "scene": "shrub",
+   "metric": "ssim",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 0.04164408246676129,
+   "noise": 0.001283859000080438,
+   "x_noise": 32.43664799962624,
+   "real": true
+  },
+  {
+   "scene": "shrub",
+   "metric": "ssim",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.004922811190287257,
+   "noise": 0.001357728334363476,
+   "x_noise": 3.6257703884445682,
+   "real": true
+  },
+  {
+   "scene": "shrub",
+   "metric": "ssim",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.0020388166109720864,
+   "noise": 0.0005635212340089178,
+   "x_noise": 3.61799429715868,
+   "real": true
+  },
+  {
+   "scene": "shrub",
+   "metric": "lpips",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 0.05427077114582063,
+   "noise": 0.001160452791073146,
+   "x_noise": 46.76689268473638,
+   "real": true
+  },
+  {
+   "scene": "shrub",
+   "metric": "lpips",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": -0.0017076859871546501,
+   "noise": 0.001160452791073146,
+   "x_noise": -1.4715686844748266,
+   "real": false
+  },
+  {
+   "scene": "shrub",
+   "metric": "lpips",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": 0.006910314162572225,
+   "noise": 0.001160452791073146,
+   "x_noise": 5.954842985195295,
+   "real": true
+  },
+  {
+   "scene": "shrub",
+   "metric": "lpips",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 0.05081561406453452,
+   "noise": 0.001414671026804235,
+   "x_noise": 35.92044588580274,
+   "real": true
+  },
+  {
+   "scene": "shrub",
+   "metric": "lpips",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 0.05772592822710674,
+   "noise": 0.000831869729308358,
+   "x_noise": 69.39299050477753,
+   "real": true
+  },
+  {
+   "scene": "shrub",
+   "metric": "lpips",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": -0.005162843068440763,
+   "noise": 0.0013348872550246812,
+   "x_noise": -3.867624811763826,
+   "real": true
+  },
+  {
+   "scene": "shrub",
+   "metric": "lpips",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.0017474710941314624,
+   "noise": 0.0009546608701479186,
+   "x_noise": 1.8304626792346719,
+   "real": false
+  },
+  {
+   "scene": "pooled",
+   "metric": "psnr_gtmean",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 2.1139369805653896,
+   "noise": 0.4012394323355662,
+   "x_noise": 5.268517523964228,
+   "real": true
+  },
+  {
+   "scene": "pooled",
+   "metric": "psnr_gtmean",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.28356432702806283,
+   "noise": 0.4012394323355662,
+   "x_noise": 0.7067209854661323,
+   "real": false
+  },
+  {
+   "scene": "pooled",
+   "metric": "psnr_gtmean",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": 0.05238005532158615,
+   "noise": 0.4012394323355662,
+   "x_noise": 0.13054563210970613,
+   "real": false
+  },
+  {
+   "scene": "pooled",
+   "metric": "psnr_gtmean",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 2.0877469529045967,
+   "noise": 0.5168919890081718,
+   "x_noise": 4.039039097724516,
+   "real": true
+  },
+  {
+   "scene": "pooled",
+   "metric": "psnr_gtmean",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 2.1401270082261825,
+   "noise": 0.2341128698322902,
+   "x_noise": 9.141432548152054,
+   "real": true
+  },
+  {
+   "scene": "pooled",
+   "metric": "psnr_gtmean",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.2573742993672698,
+   "noise": 0.5555225616419245,
+   "x_noise": 0.46330125387988585,
+   "real": false
+  },
+  {
+   "scene": "pooled",
+   "metric": "psnr_gtmean",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.3097543546888559,
+   "noise": 0.11567561380312216,
+   "x_noise": 2.6777844050696142,
+   "real": true
+  },
+  {
+   "scene": "pooled",
+   "metric": "psnr",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 1.3488784260219988,
+   "noise": 0.5902408511608268,
+   "x_noise": 2.285301709241506,
+   "real": true
+  },
+  {
+   "scene": "pooled",
+   "metric": "psnr",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.3799156443278002,
+   "noise": 0.5902408511608268,
+   "x_noise": 0.6436620636823426,
+   "real": false
+  },
+  {
+   "scene": "pooled",
+   "metric": "psnr",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.0563452953762494,
+   "noise": 0.5902408511608268,
+   "x_noise": -0.0954615311112999,
+   "real": false
+  },
+  {
+   "scene": "pooled",
+   "metric": "psnr",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 1.3770510737101234,
+   "noise": 0.812951715345863,
+   "x_noise": 1.6938903599265664,
+   "real": false
+  },
+  {
+   "scene": "pooled",
+   "metric": "psnr",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 1.320705778333874,
+   "noise": 0.18941497637286694,
+   "x_noise": 6.972552031651604,
+   "real": true
+  },
+  {
+   "scene": "pooled",
+   "metric": "psnr",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.40808829201592484,
+   "noise": 0.8291796906850012,
+   "x_noise": 0.49215905382197106,
+   "real": false
+  },
+  {
+   "scene": "pooled",
+   "metric": "psnr",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.35174299663967545,
+   "noise": 0.09607062669536652,
+   "x_noise": 3.661295952143924,
+   "real": true
+  },
+  {
+   "scene": "pooled",
+   "metric": "ssim",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 0.015455106231901458,
+   "noise": 0.006589644471625853,
+   "x_noise": 2.345362682076267,
+   "real": true
+  },
+  {
+   "scene": "pooled",
+   "metric": "ssim",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.0129112930430307,
+   "noise": 0.006589644471625853,
+   "x_noise": 1.9593307497278551,
+   "real": false
+  },
+  {
+   "scene": "pooled",
+   "metric": "ssim",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.009296648369895003,
+   "noise": 0.006589644471625853,
+   "x_noise": -1.4107966537383245,
+   "real": false
+  },
+  {
+   "scene": "pooled",
+   "metric": "ssim",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 0.02010343041684896,
+   "noise": 0.009190122260825637,
+   "x_noise": 2.187504131750569,
+   "real": true
+  },
+  {
+   "scene": "pooled",
+   "metric": "ssim",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 0.010806782046953956,
+   "noise": 0.0015454712407338529,
+   "x_noise": 6.992548138147465,
+   "real": true
+  },
+  {
+   "scene": "pooled",
+   "metric": "ssim",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.017559617227978202,
+   "noise": 0.009018943217996477,
+   "x_noise": 1.9469705932885342,
+   "real": false
+  },
+  {
+   "scene": "pooled",
+   "metric": "ssim",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.008262968858083197,
+   "noise": 0.002346378433973023,
+   "x_noise": 3.5215840456272276,
+   "real": true
+  },
+  {
+   "scene": "pooled",
+   "metric": "lpips",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": -0.024240079679422922,
+   "noise": 0.009665957806421956,
+   "x_noise": -2.5077783459098155,
+   "real": true
+  },
+  {
+   "scene": "pooled",
+   "metric": "lpips",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": -0.011828426693876579,
+   "noise": 0.009665957806421956,
+   "x_noise": -1.2237200834890778,
+   "real": false
+  },
+  {
+   "scene": "pooled",
+   "metric": "lpips",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": 0.012990524520476646,
+   "noise": 0.009665957806421956,
+   "x_noise": 1.3439459162387284,
+   "real": false
+  },
+  {
+   "scene": "pooled",
+   "metric": "lpips",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": -0.030735341939661247,
+   "noise": 0.012692089646425236,
+   "x_noise": -2.4216139970550827,
+   "real": true
+  },
+  {
+   "scene": "pooled",
+   "metric": "lpips",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": -0.0177448174191846,
+   "noise": 0.005076646633178687,
+   "x_noise": -3.4953816370066857,
+   "real": true
+  },
+  {
+   "scene": "pooled",
+   "metric": "lpips",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": -0.018323688954114903,
+   "noise": 0.012772226754661161,
+   "x_noise": -1.4346510836434816,
+   "real": false
+  },
+  {
+   "scene": "pooled",
+   "metric": "lpips",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": -0.005333164433638256,
+   "noise": 0.004871519717560098,
+   "x_noise": -1.0947640044263998,
+   "real": false
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "psnr_gtmean",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 2.233594898382823,
+   "noise": 0.501182849617511,
+   "x_noise": 4.45664671105055,
+   "real": true
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "psnr_gtmean",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.3383334093623696,
+   "noise": 0.501182849617511,
+   "x_noise": 0.6750698065996799,
+   "real": false
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "psnr_gtmean",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": 0.08696295685238316,
+   "noise": 0.501182849617511,
+   "x_noise": 0.17351542838856296,
+   "real": false
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "psnr_gtmean",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 2.1901134199566314,
+   "noise": 0.64746017258541,
+   "x_noise": 3.3826226116907936,
+   "real": true
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "psnr_gtmean",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 2.2770763768090148,
+   "noise": 0.2883813836174736,
+   "x_noise": 7.8960588518066945,
+   "real": true
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "psnr_gtmean",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.29485193093617806,
+   "noise": 0.6936876850250313,
+   "x_noise": 0.42504997176869086,
+   "real": false
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "psnr_gtmean",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.3818148877885612,
+   "noise": 0.14548502722297696,
+   "x_noise": 2.6244273728826704,
+   "real": true
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "psnr",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 1.11781919532352,
+   "noise": 0.7238988844374936,
+   "x_noise": 1.5441648265449703,
+   "real": false
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "psnr",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.48279883066813173,
+   "noise": 0.7238988844374936,
+   "x_noise": 0.6669423603868254,
+   "real": false
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "psnr",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.08911848598056338,
+   "noise": 0.7238988844374936,
+   "x_noise": -0.12310902516421612,
+   "real": false
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "psnr",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 1.1623784383138016,
+   "noise": 0.996697358298317,
+   "x_noise": 1.1662300784044974,
+   "real": false
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "psnr",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 1.0732599523332382,
+   "noise": 0.23378102091669448,
+   "x_noise": 4.590877172684106,
+   "real": true
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "psnr",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.5273580736584135,
+   "noise": 1.0172715667991619,
+   "x_noise": 0.5184044171388198,
+   "real": false
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "psnr",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.43823958767785004,
+   "noise": 0.11496847029370283,
+   "x_noise": 3.8118241162842867,
+   "real": true
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "ssim",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": 0.008547362850771992,
+   "noise": 0.008130663466632283,
+   "x_noise": 1.0512503543960239,
+   "real": false
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "ssim",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": 0.01526891282863089,
+   "noise": 0.008130663466632283,
+   "x_noise": 1.8779418052774564,
+   "real": false
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "ssim",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": -0.010899811817540073,
+   "noise": 0.008130663466632283,
+   "x_noise": -1.3405808593938484,
+   "real": false
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "ssim",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": 0.013997268759542028,
+   "noise": 0.011370362006664214,
+   "x_noise": 1.2310310570004872,
+   "real": false
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "ssim",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": 0.003097456942001956,
+   "noise": 0.0017117957391770643,
+   "x_noise": 1.80947812353537,
+   "real": false
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "ssim",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": 0.02071881873740093,
+   "noise": 0.011132607271516642,
+   "x_noise": 1.8610931143157372,
+   "real": false
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "ssim",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": 0.009819006919860854,
+   "noise": 0.002877574004857669,
+   "x_noise": 3.4122517451454817,
+   "real": true
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "lpips",
+   "effect": "curve model (H2): \u00bd[(rung2 \u2212 detach) + (rung2exp \u2212 detachexp)]",
+   "mean": -0.04386779238573379,
+   "noise": 0.012212107210867837,
+   "x_noise": -3.592155852242668,
+   "real": true
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "lpips",
+   "effect": "dark branch: \u00bd[(detachexp \u2212 detach) + (rung2exp \u2212 rung2)]",
+   "mean": -0.014358611870557064,
+   "noise": 0.012212107210867837,
+   "x_noise": -1.1757685731565641,
+   "real": false
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "lpips",
+   "effect": "interaction: (rung2exp \u2212 rung2) \u2212 (detachexp \u2212 detach)",
+   "mean": 0.014510577109952757,
+   "noise": 0.012212107210867837,
+   "x_noise": 1.1882123911456868,
+   "real": false
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "lpips",
+   "effect": "rung2 \u2212 detach (shared column)",
+   "mean": -0.051123080940710164,
+   "noise": 0.01609845182869039,
+   "x_noise": -3.175652012052455,
+   "real": true
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "lpips",
+   "effect": "rung2exp \u2212 detachexp (exp column)",
+   "mean": -0.036612503830757405,
+   "noise": 0.006253876699999408,
+   "x_noise": -5.85436931156012,
+   "real": true
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "lpips",
+   "effect": "detachexp \u2212 detach (detach row)",
+   "mean": -0.021613900425533444,
+   "noise": 0.016132161354722653,
+   "x_noise": -1.3398018994650103,
+   "real": false
+  },
+  {
+   "scene": "pooled_no_shrub",
+   "metric": "lpips",
+   "effect": "rung2exp \u2212 rung2 (rung2 row)",
+   "mean": -0.007103323315580686,
+   "noise": 0.006166400496614977,
+   "x_noise": -1.1519399882443622,
+   "real": false
+  }
+ ],
+ "R5a_leak_rung2_minus_detach": {
+  "buu": {
+   "diff": -0.6519100393701481,
+   "diff_sd": 0.0038336779694618816,
+   "noise": 0.002711768084767247,
+   "x_noise": -240.4003657363281,
+   "real": true
+  },
+  "chair": {
+   "diff": -0.4882480899488906,
+   "diff_sd": 0.0036548642633226942,
+   "noise": 0.002559356617439787,
+   "x_noise": -190.76985466656149,
+   "real": true
+  },
+  "sofa": {
+   "diff": -0.5497956304780499,
+   "diff_sd": 0.004725401902936389,
+   "noise": 0.003340491630238944,
+   "x_noise": -164.58524413028488,
+   "real": true
+  },
+  "bike": {
+   "diff": -0.47704487232039616,
+   "diff_sd": 0.007526174459524511,
+   "noise": 0.005313464944347016,
+   "x_noise": -89.78037444811284,
+   "real": true
+  },
+  "shrub": {
+   "diff": -0.33069406945402985,
+   "diff_sd": 0.005222822527104536,
+   "noise": 0.0037017570340287984,
+   "x_noise": -89.33435296106394,
+   "real": true
+  },
+  "pooled": {
+   "diff": -0.49953854031430295,
+   "diff_sd": 0.0010010089145337572,
+   "noise": 0.000693211199804432,
+   "x_noise": -720.6152186451001,
+   "real": true
+  }
+ },
+ "decisions": [
+  "- **H1 (LOM):** buu: meets; chair: meets; sofa: meets; bike: fails: bm PSNR -> **not supported** (all of buu, chair, sofa and bike must meet the rule).",
+  "- **H2 (pooled):** curve-model main effect on bm PSNR +2.11 dB (+5.3\u00d7, real); on LPIPS -0.0242 (-2.5\u00d7); positive in 4 of 4 non-shrub scenes (buu, chair, sofa, bike); exp-column simple effect +2.14 dB (+9.1\u00d7) -> **supported**.",
+  "- **H2 (pooled_no_shrub):** curve-model main effect on bm PSNR +2.23 dB (+4.5\u00d7, real); on LPIPS -0.0439 (-3.6\u00d7); positive in 4 of 4 non-shrub scenes (buu, chair, sofa, bike); exp-column simple effect +2.28 dB (+7.9\u00d7) -> **supported**.",
+  "- **Mechanism:** Rung 2's pooled paired leak minus detach's -0.500 (-720.6\u00d7) -> **supports H2** (needs below detach's by more than 2\u00d7 noise)."
+ ]
+}
