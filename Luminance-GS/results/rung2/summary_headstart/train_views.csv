@@ -1,0 +1,16 @@
+scene,"quantity (training views, seed 0)",rung2id,rung2,detach,rung2id − rung2,rung2id − detach
+buu,pseudo-target bm PSNR,27.570,26.719,26.798,+0.851,+0.771
+buu,render bm PSNR,28.046,27.276,27.204,+0.770,+0.842
+buu,render fit to pseudo-target,31.475,30.563,30.023,+0.912,+1.452
+chair,pseudo-target bm PSNR,23.759,23.484,23.430,+0.274,+0.328
+chair,render bm PSNR,24.071,23.952,23.766,+0.120,+0.305
+chair,render fit to pseudo-target,32.053,31.401,31.657,+0.653,+0.396
+sofa,pseudo-target bm PSNR,29.649,28.541,28.735,+1.108,+0.914
+sofa,render bm PSNR,30.478,29.285,29.718,+1.193,+0.760
+sofa,render fit to pseudo-target,33.348,32.489,31.889,+0.859,+1.459
+bike,pseudo-target bm PSNR,22.833,22.505,22.493,+0.328,+0.340
+bike,render bm PSNR,21.464,21.190,21.290,+0.274,+0.174
+bike,render fit to pseudo-target,24.109,23.687,23.595,+0.422,+0.514
+shrub,pseudo-target bm PSNR,17.726,17.738,17.376,-0.013,+0.349
+shrub,render bm PSNR,18.750,18.774,18.108,-0.024,+0.641
+shrub,render fit to pseudo-target,17.877,17.901,19.993,-0.024,-2.116
