@@ -685,6 +685,7 @@ Same rules as M1's report: direct answers first, every claim *measured* or *infe
 - [x] Conditional run (5.3): the head-start check for a borderline H1, approved by Bart and run on 2026-11-15 (`rung2id`, `rung2_headstart.py`, `results/rung2/summary_headstart/`).
   - Seed 0: +0.31 dB pooled and +0.25 dB on bike against `rung2`.
   - Exploratory; H1 verdict unchanged (research log).
+  - Confirmed with seeds 1–2 on 2026-11-16 (`summary_headstart_seeds012/`): +0.44 dB pooled (6.2×). With the identity init, the 12 H1 checks against `detach` all meet (exploratory).
 
 ---
 
