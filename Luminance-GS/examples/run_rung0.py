@@ -15,6 +15,8 @@ Run from Luminance-GS/examples:
     python run_rung0.py --data_root ../data/LOM_vexp --root ../results/vexp --variants rung2 rung2exp
     python run_rung0.py --root ../results/rung2 --variants rung2
                                               # M3: Rung 2 on the varying set and on LOM (never in results/rung0)
+    python run_rung0.py --root ../results/rung2 --variants rung2id --seeds 0
+                                              # M3 conditional (plan 5.3): Rung 2 with F initialised at the identity
 """
 
 import argparse
@@ -43,9 +45,11 @@ VARIANTS = {
     "rung2": ["--curve_model", "rung2"],
     "rung2exp": ["--curve_model", "rung2", "--dark_branch", "model"],
     "rung2att": ["--curve_model", "rung2", "--rung2_attach", "s"],
+    # M3 conditional run (M2_rung2_plan.md 5.3, risk 5): head-start check, F starts at the identity as detach's curve does
+    "rung2id": ["--curve_model", "rung2", "--rung2_F_init", "identity"],
 }
 # results/rung0 holds Rungs 0 and 0.5 only (CLAUDE.md rule 6): these variants must go to another root
-NOT_IN_RUNG0 = {"rung2", "rung2exp", "rung2att"}
+NOT_IN_RUNG0 = {"rung2", "rung2exp", "rung2att", "rung2id"}
 
 
 def run_name(scene: str, variant: str, seed: int) -> str:
