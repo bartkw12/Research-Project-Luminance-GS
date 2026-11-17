@@ -1,0 +1,13 @@
+scene,metric,rung2id − detach,"bar (2× noise, worse side)",check
+buu,bm PSNR,+0.516 (+2.3×) *,-0.451,meets
+buu,SSIM,+0.0058 (+1.6×),-0.0074,meets
+buu,LPIPS,-0.0451 (-6.4×) *,+0.0140,meets
+chair,bm PSNR,+0.412 (+2.4×) *,-0.348,meets
+chair,SSIM,+0.0165 (+16.3×) *,-0.0020,meets
+chair,LPIPS,-0.0264 (-16.6×) *,+0.0032,meets
+sofa,bm PSNR,+0.868 (+2.2×) *,-0.800,meets
+sofa,SSIM,+0.0087 (+2.2×) *,-0.0078,meets
+sofa,LPIPS,-0.0274 (-4.8×) *,+0.0115,meets
+bike,bm PSNR,+0.103 (+3.1×) *,-0.067,meets
+bike,SSIM,+0.0244 (+8.0×) *,-0.0061,meets
+bike,LPIPS,+0.0111 (+1.7×),+0.0128,meets
