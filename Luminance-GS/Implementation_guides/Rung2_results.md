@@ -22,7 +22,7 @@ Defaults (plan `M2_rung2_plan.md` section 2.2; decisions in the research log, 20
 - **LOM:** `rung2` on 5 scenes × seeds 0–2, 15 runs in `results/rung2/`. They are compared with `detach` and the official code ("official") from Rung 0 (`results/rung0/`).
 - **Varying-exposure set:** `rung2` and `rung2exp`, 30 runs in `results/vexp/`. With M1's `detach` and M2's `detachexp` they form a 2×2: curve model (`detach` or Rung 2) × dark branch (shared, or exposure-aware = "exp").
 - **When:** all 45 runs finished `ok` on 2026-11-14 (17:18–20:48, commit `c304662`). Each was re-scored with the LOM reference depth (`results/rung0/<scene>_baseline_seed0`).
-- **Follow-up:** the plan's pre-declared head-start check (`rung2id`, 5 runs, 2026-11-15) is reported under Q1. Its results are in [`summary_headstart/`](../results/rung2/summary_headstart/).
+- **Follow-up:** the plan's pre-declared head-start check (`rung2id`, 5 runs, 2026-11-15) is reported under Q1. Its results are in [`summary_headstart/`](../results/rung2/summary_headstart/). The 3-seed confirmation (10 more runs, 2026-11-16) is in [`summary_headstart_seeds012/`](../results/rung2/summary_headstart_seeds012/).
 
 **Where things are:**
 - **Outputs:** [`results/rung2/summary/`](../results/rung2/summary/), mainly [`tables.md`](../results/rung2/summary/tables.md) and `figures/`. Regenerate with `python rung2_analyze.py`, about 2 minutes on the CPU.
@@ -50,10 +50,11 @@ Defaults (plan `M2_rung2_plan.md` section 2.2; decisions in the research log, 20
   - **The one failure:** bike's bm PSNR is 0.155 dB below `detach`, which is −3.8× noise against a bar of −2×. Bike's noise is only 0.041 dB, so its bar is −0.082 dB.
   - **Pooled, the two models are indistinguishable:** bm PSNR −0.02 dB (−0.3×). Without shrub, LPIPS is better (−0.0095, 4.1×).
   - **Cost:** 55–76 curve parameters instead of about 255k, and 4.6 instead of 7.8 minutes per run.
-  - **Head-start check** (plan 5.3, seed 0): starting F at the identity instead of the `cdf` init changes the result by +0.25 dB on bike and +0.31 dB pooled. On that seed, Rung 2 is then above `detach` on bike.
+  - **Head-start check** (plan 5.3), confirmed with seeds 1–2: starting F at the identity instead of the `cdf` init raises bm PSNR by **+0.44 dB pooled (6.2×)** and +0.26 dB on bike (10.9×).
+    - With it, Rung 2 meets all 12 H1 checks and beats `detach` by +0.42 dB pooled (6.0×).
     - The identity-init F never converges to the `cdf` one; it stays less lifted at levels 1–2.
     - The training objective prefers the default.
-    - So this is an exploratory lead, not a new default, and it does not change the H1 verdict.
+    - So this is an exploratory (post-hoc) result, not a new default, and it does not change the H1 verdict.
 - **Q2. Dark branch:** the exposure-aware dark branch restores most of the dark-photo fit lost on the varying set, for both curve models. Rung 2 gains +7.63 dB (50.6×) and `detach` +5.77 dB (17.9×). Its effect on the image metrics is small: +0.28 dB bm PSNR pooled (0.7×), real only within the Rung 2 row (+0.31, 2.7×).
 - **Q3. H2 (varying set): supported.**
   - The curve-model main effect is **+2.11 dB bm PSNR (5.3×)**. LPIPS is better (−0.024, 2.5×).
@@ -187,7 +188,7 @@ One reading, untested:
 
 | Candidate | For | Against | How it is tested |
 |---|---|---|---|
-| Head start: the `cdf` init gives bright targets from step 0, while `detach`'s curve starts at the identity (plan risk 5) | Pre-declared risk. **Check result:** `rung2id` − `rung2` on bike = +0.25 dB, seed 0 | The identity init also changes the *final* F, so "head start" really means the init changes the curve | **Done** (below): a likely contributor, one seed |
+| Head start: the `cdf` init gives bright targets from step 0, while `detach`'s curve starts at the identity (plan risk 5) | Pre-declared risk. **Check result:** `rung2id` − `rung2` on bike = +0.26 dB (10.9×, 3 seeds) | The identity init also changes the *final* F, so "head start" really means the init changes the curve | **Done** (below): confirmed over 3 seeds; exploratory |
 | Black level: level 0 maps to 0 instead of about 84 | The mappings do differ | Only 0.8% of bike's pixels sit at level 0. Shrub has 14.1% there and is not worse on bm PSNR (+0.16, 0.5×). Bike's pseudo-target bm PSNR is equal. Both inits keep F(0) = 0, so the identity init's gain comes from levels 1–4 (*measured*) | Learnable black level, an M5 fallback only |
 | Colour of the shared F | Hue +6.75° (3.3×) and angle +0.05° (3.9×) on bike | Hue is *better* on buu (−0.88°, 3.7×) and chair (−0.40°, 2.1×). With the identity init, bike's hue error equals `detach`'s (33.7° against 33.7°, seed 0), so the hue gap goes with the dark end | Colour-preserving luminance variant (M5 ablation 2) |
 | Consistent errors do not average out | Pseudo-targets equal on average and more consistent, fit equal, render worse | Untested and hard to isolate | — |
@@ -231,9 +232,23 @@ Validation, seed 0 (*measured*). M3's 3-seed sd is in brackets.
 - Their CDF-matching term is higher in four of five scenes, and their smoothness term is lower in all five.
 
 *Inferred:*
-- **The `cdf` init starts F on the photos' equalisation CDF,** including its steep jump at the darkest levels.
-- **The identity init approaches that target from below** and, within 10k steps, stops short of the jump. In effect it is an early-stopped curve, smoother and less lifted in the deepest shadows.
-- **The ground truth prefers that less-fitted curve,** so the equalisation target itself over-lifts the deepest shadows. `CLAUDE.md`'s Rung 1 note ("keep F off the HE-CDF's steep dark-end jump") anticipated this.
+**Corrected on 2026-11-16.** The 2026-11-15 text here blamed the equalisation target for over-lifting the deepest shadows. The curves show otherwise (*measured*, bike and sofa, seed 0, `curves_step*.npz`, values × 255 at levels 1–4):
+- **The equalisation target is near 0 there:** 1, 8, 25, 52 on bike and 0, 0, 1, 3 on sofa.
+- **The shape prior x^γ is far above it:** γ is 0.075 on bike and 0.136 on sofa, giving 169–187 and 120–145.
+- **Both inits start F near 0 there:** `cdf` 0, 2, 12, 25 on bike; identity 1, 2, 3, 4.
+- **F rises during training toward the prior** and ends at a compromise:
+
+  | | Level 1 | Level 2 | Level 3 | Level 4 |
+  |---|---|---|---|---|
+  | Bike, `cdf` init | 79 | 87 | 96 | 106 |
+  | Bike, identity init | 66 | 85 | 101 | 117 |
+  | Sofa, `cdf` init | 56 | 64 | 69 | 74 |
+  | Sofa, identity init | 47 | 58 | 66 | 72 |
+
+*Inferred:*
+- **The lift in the deepest shadows comes from the official shape prior,** which Rung 2 kept (decision D1, 2026-11-13). It does not come from the equalisation target. `detach`'s curves lift those levels too (fig. 6, LOM panel; level 0 to about 84 on bike).
+- **The two inits end at different compromises** between the prior and the target. The identity init ends less lifted at level 1, closer to the target, and the ground truth prefers that.
+- **Neither curve is at the curve loss's optimum within 10k steps.** The identity init's curve is further from it.
 - **The dark end does matter for bike, but at levels 1–2, not at level 0.** This revises the "black level" row below.
 
 **What this does and does not change:**
@@ -246,12 +261,61 @@ Validation, seed 0 (*measured*). M3's 3-seed sd is in brackets.
   - Switching now would choose a setting on the ground truth, which P5 was barred from doing.
   - Any result with the identity init is therefore exploratory (post hoc) and must be labelled so.
 
+### Confirmation with seeds 1 and 2 (2026-11-16, exploratory)
+
+**What ran:** Bart approved `rung2id` with seeds 1 and 2 on LOM: 10 runs, all `ok`, 21:23–22:08, re-scored like M3. The analysis is `python rung2_headstart.py --seeds 0 1 2`, written to [`summary_headstart_seeds012/`](../results/rung2/summary_headstart_seeds012/).
+
+**The reading, fixed in the log before launch:**
+- The init effect is confirmed if three things hold: the pooled `rung2id` − `rung2` in bm PSNR is real and positive; LPIPS is not worse beyond 2× noise; and the mean over seeds 1–2 is positive. Seeds 1–2 are the clean replication, since seed 0 chose the question.
+- Bike is judged the same way.
+- `rung2id` − `detach` also goes through the 12 H1 checks, as exploratory only.
+
+**Testing:**
+- Before use, the script's seed-0 mode reproduced the committed `summary_headstart/` byte for byte.
+- Its 3-seed self-test gave 0 for every init effect. It also reproduced M3's R1b exactly.
+
+Paired by seed over seeds 0–2, with ×noise and **bold** for real (*measured*):
+
+| Scene | `rung2id` − `rung2`, bm PSNR | Seeds 1–2 only | SSIM | LPIPS | Hue err | `rung2id` − `detach`, bm PSNR |
+|---|---|---|---|---|---|---|
+| buu | **+0.63 (3.2×)** | +0.55 | **+0.0129 (4.9×)** | **−0.0249 (4.0×)** | −0.01° (0.0×) | **+0.52 (2.3×)** |
+| chair | +0.01 (0.1×) | +0.02 | **+0.0100 (9.1×)** | **−0.0099 (5.5×)** | **−1.25° (7.1×)** | **+0.41 (2.4×)** |
+| sofa | **+1.26 (3.7×)** | +1.64 | **+0.0089 (3.2×)** | **−0.0184 (2.6×)** | **−3.53° (7.7×)** | **+0.87 (2.2×)** |
+| bike | **+0.26 (10.9×)** | +0.26 | **+0.0249 (7.9×)** | +0.0035 (0.7×) | **−4.95° (3.2×)** | **+0.10 (3.1×)** |
+| shrub (reported only) | +0.01 (0.6×) | +0.02 | −0.0015 (1.2×) | +0.0034 (1.9×) | **+0.35° (7.4×)**, worse | +0.17 (0.5×) |
+| **pooled** | **+0.44 (6.2×)** | +0.50 | **+0.0110 (13.4×)** | **−0.0093 (4.5×)** | **−1.88° (8.4×)** | **+0.42 (6.0×)** |
+| pooled without shrub | **+0.54 (6.2×)** | +0.62 | **+0.0142 (15.4×)** | **−0.0124 (5.1×)** | **−2.44° (9.0×)** | **+0.48 (5.7×)** |
+
+**Decisions by the pre-declared reading:**
+- **The init effect is confirmed** pooled, pooled without shrub, and on bike. The three seeds agree with seed 0.
+- **Exploratory H1 check:** `rung2id` − `detach` **meets all 12 H1 checks.**
+  - Closest are bike LPIPS (+0.0111, 1.7×, worse) and buu SSIM (+0.0058, 1.6×, better).
+  - Bike's bm PSNR goes from −0.155 dB (−3.8×) with the default to **+0.103 dB (3.1×)**.
+  - Raw PSNR, outside the rule: buu −1.05 dB (2.3×, worse), bike +0.19 dB (2.5×, better), pooled +0.16 dB (1.9×).
+
+**Also measured:**
+- **F does not depend on the seed.** For both inits, the final F is the same in all three seeds to 0.1 of a level (`curves.csv`). So the init effect is a fixed shift of the curve, not seed noise.
+  - The identity-init F stays 8–13 levels from the `cdf` F in every seed. It never comes within 0.01.
+  - Because F is seed-independent, the pseudo-targets barely vary across seeds, and the ×noise values of the training-view pseudo-target rows are not informative.
+- **The curve loss is higher with the identity init in all 15 pairs,** by +0.3% to +1.6%.
+- **Training views:** pseudo-target bm PSNR is higher by +0.27 to +1.11 dB in four scenes (shrub −0.01). Render bm PSNR is higher by +0.12 to +1.13 dB.
+
+*Inferred:*
+- **The bike failure belongs to the default curve fit, not to the model.** On bike, the init effect (+0.26 dB) is larger than the H1 gap (−0.155 dB). With the identity init, the same model (one shared F plus one exposure per view, 55–76 parameters) meets every H1 check. What fails H1 is how the default F ends up in the deepest shadows (pulled up by the shape prior), not the shared-curve-plus-exposure model.
+- **The gain is an implicit regularisation, not a principled setting.** It comes from F *not* reaching the curve loss's optimum within 10k steps, so it is tied to the init, the learning rate and the step count. Training longer would probably erode it: bike's F gap is still shrinking (0.065 at 5k, 0.051 at 10k).
+- **A principled version would change the objective, chosen on training photos.** The natural lever is the shape prior: its weight, or the planned `--rung2_prior none` ablation in M5.
+- **Not tested:** whether the identity init changes H2 on the varying set.
+
+**For the final report, the two results side by side:**
+- *Pre-registered:* H1 not supported. With the default `cdf` init, Rung 2 is 0.155 dB below `detach` on bike.
+- *Exploratory, after a pre-declared check:* with F initialised at the identity, Rung 2 meets all 12 H1 checks and beats `detach` by +0.42 dB bm PSNR pooled (6.0×). The curve loss prefers the default, so the gain comes from a deep-shadow end that the shape prior has pulled up less far.
+
 ### What this means (*inferred*)
 
 - **By the rule:** H1 is not supported. Rung 2 does not match `detach` within noise in every decision scene. On bike it is 0.155 dB worse in bm PSNR, a small deficit that is consistent across seeds.
 - **In size:** the deficit is small next to what both detached models gain over the official code on bike (1.86 dB). It comes with about 3,700× fewer curve parameters on bike (69 vs 255,413) and 40% less training time.
-- **The bike deficit is not a fixed cost of the simple model.** The head-start check shows that F's initialisation moves Rung 2's result by about as much as the H1 gap, or more. On seed 0, the identity init puts Rung 2 above `detach` on bike (+0.14 dB) and pooled (+0.37 dB). That is one seed and a post-hoc setting, so it is a lead, not a result.
-- **Wording for the final report:** "Rung 2 matches `detach` pooled and in three of the four decision scenes. On bike it is 0.15 dB worse in brightness-matched PSNR, which fails the pre-registered H1 rule. A pre-declared follow-up shows the result is sensitive to the curve's initialisation: with F started at the identity, one seed gives +0.3 dB pooled and reverses the bike gap (exploratory)." The hypothesis is not reworded after the fact.
+- **The bike deficit is not a fixed cost of the simple model.** The head-start check, confirmed over three seeds, shows that F's initialisation moves Rung 2's result by more than the H1 gap. With the identity init, Rung 2 meets all 12 H1 checks: bike +0.10 dB, pooled +0.42 dB against `detach`. That setting was chosen after seeing results, so it is exploratory.
+- **Wording for the final report:** "Rung 2 matches `detach` pooled and in three of the four decision scenes. On bike it is 0.15 dB worse in brightness-matched PSNR, which fails the pre-registered H1 rule. A pre-declared follow-up shows the result depends on how the curve is initialised. With F started at the identity (3 seeds, exploratory), Rung 2 meets every H1 check and is 0.42 dB better than `detach` pooled. The training loss prefers the default, so the gain comes from deepest shadows that the shape prior has lifted less." The hypothesis is not reworded after the fact.
 
 ## Q2. Dark branch: how much of the varying-exposure cost is the dark branch?
 
@@ -366,8 +430,9 @@ Figures: [`fig3_leak.png`](../results/rung2/summary/figures/fig3_leak.png), [`fi
 *Inferred:*
 - **H3 (`rung2att`, attached s_k):** unchanged as the first ablation. It runs on LOM and on the varying set.
 - **F's dark end (new, from the head-start check):** the clearest lead.
-  - The identity init gave a less-lifted curve at levels 1–2 and +0.31 dB pooled on one seed.
-  - The pre-planned training-photo levers that act on that region are the smoothness weight λ (the step 6 fallback) and K and knot spacing.
+  - The identity init gave a less-lifted curve at levels 1–2 and +0.44 dB pooled (6.2×, 3 seeds).
+  - It is not yet tested on the varying set (H2).
+  - The lift there comes from the shape prior (corrected 2026-11-16), so the first lever is the already-planned no-prior ablation (`--rung2_prior none`) or a lower prior weight. After that come the smoothness weight λ (the step 6 fallback) and K and knot spacing.
   - A principled version would choose them on training photos alone. Any F-init ablation is labelled as suggested by validation results.
 - **Colour-preserving luminance variant (ablation 2):** still relevant to bike's hue. Note that the identity init already brought bike's hue error down to `detach`'s level, so part of the hue difference is the dark end too.
 - **Learnable black level:** stays a fallback. Both inits keep F(0) = 0, and the identity init's gain comes from levels 1–4, so level 0 looks like the wrong target for bike. Shrub's SSIM and LPIPS remain the better test case.
