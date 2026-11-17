@@ -632,3 +632,70 @@ Entries up to 2026-10-23 were backfilled from git history, the run folders and t
   - Bart decides on H1 follow-up. Plan 5.3 pre-declares only an identity-init head-start check for a borderline H1 (5 runs; about 25 min at Rung 2's speed). The learnable black level is an M5 fallback.
   - `Rung2_results.md` by hand (Q1–Q5); send Wei the results.
   - M5: H3 (`rung2att`).
+
+### 2026-11-15: H1 reported as not supported; head-start check launched, with its reading fixed before results
+
+- **Rung / type:** Rung 2 (M3) · decision + setup
+- **Decision** (Bart, 2026-11-15): options 1 and 2 of the H1 follow-up.
+  1. H1 is reported as **not supported**, as the pre-registered rule says.
+  2. The plan's pre-declared conditional run (plan 5.3, risk 5) is done.
+- **What was done:**
+  - **New variant:** `rung2id` in `run_rung0.py` = `--curve_model rung2 --rung2_F_init identity`, added to `NOT_IN_RUNG0`. Existing variants are unchanged.
+  - **Smoke run:** `results/rung2/smoke_m2/buu_rung2id_seed0`, 300 steps, 0.5 min. The log prints "F init identity". End checks: |mean s| = 2.7e-09, F strictly increasing, 55 curve parameters.
+  - **Launch:** Claude started the 5 runs at 12:43 in the background. Pre-flight: GPU free, sleep on AC 0. Console: `results/rung2/batch_console_rung2id.log` (git-ignored).
+- **Reproduce:** branch `main`, commit `3bf7477` plus the uncommitted `run_rung0.py` change. From `examples/`: `python run_rung0.py --root ../results/rung2 --variants rung2id --seeds 0`.
+- **Reading, fixed before any result** (plan 5.3 gives none):
+  - **Comparisons:** seed 0, `rung2id` − `rung2` and `rung2id` − `detach`, per scene and pooled, in bm PSNR, raw PSNR, SSIM and LPIPS. With one seed there is no "real": each difference sits next to the 3-seed sd of the M3 cells. Also reported: how far the identity-init F ends from the `cdf`-init F, and the s_k.
+  - **The check cannot change the H1 verdict:** the rule applies to the pre-registered default (`cdf` init).
+  - **If the head start explains bike:** `rung2id` − `rung2` is above 2× `rung2`'s bike sd (0.03 dB) and closes most of the −0.15 dB gap to `detach`. That would make the `cdf` head start a likely contributor (*inferred*, one seed).
+  - **If it doesn't:** the difference stays within about 2× that sd.
+  - **Caveat:** the curve-only preview never brought the identity init within 0.01 of the `cdf` F. A difference could therefore also come from a different final F, not only from the head start, so the F gap is reported alongside.
+- **Also measured while it runs** (existing runs, CPU only; for `Rung2_results.md`):
+  - **Bike margin:** bm PSNR −0.155 dB against a bar of −0.082 dB (2 × 0.041). All three seeds are negative (−0.11, −0.24, −0.11). The six runs separate fully (Mann-Whitney exact p = 0.10, the smallest possible with 3 vs 3).
+  - **Noise uncertainty:** from 4 degrees of freedom, the 95% interval for the noise is 0.025–0.118 dB.
+  - **Near miss:** buu's SSIM passes at −1.96× noise (bar −2×).
+  - **Bike, training views:** the pseudo-targets are as good as `detach`'s (bm +0.002 dB). The render fits them as well (+0.07 dB, 1.7×). The render's bm PSNR against GT is still −0.165 dB (−3.8×), the same gap as on validation, so it is not a generalisation effect.
+  - **Correction (rule 4):** the entry above names the dark end as a possible bike cause, and Claude's 2026-11-14 message called the black level the more likely lever. The evidence now weakens this (*inferred*):
+    - only 0.8% of bike's training pixels sit at level 0, against 14.1% on shrub, where Rung 2 is not worse (+0.16 dB);
+    - bike's pseudo-target bm PSNR is equal.
+
+    The 84-level figure is right: `detach`'s bike curve maps level 0 to 83–85 of 255; Rung 2 maps it to 0.
+- **Results:** pending.
+- **Next:** re-score with `--ref_root ../results/rung0`, compare as fixed above, then write `Rung2_results.md`.
+
+### 2026-11-15: Head-start check: the identity init of F changes Rung 2's LOM result (+0.31 dB pooled, one seed); H1 verdict unchanged
+
+- **Rung / type:** Rung 2 (M3, plan 5.3) · experiment + code (analysis)
+- **Why:** the conditional run of the entry above, with the reading fixed there before any result.
+- **What was done:**
+  - **Runs:** 5 runs `ok`, 12:45–13:08, 3.7–6.5 min each.
+  - **Re-score:** done with `--ref_root ../results/rung0`, 7–8 s per run.
+  - **New script `rung2_headstart.py`** (CPU only): it checks the inputs first. Each run must be `ok` and re-scored against `rung0/<scene>_baseline_seed0`, and its cfg must equal the `rung2` seed-0 run's except for `rung2_F_init`. It writes `results/rung2/summary_headstart/`. Its `--selftest` reads `rung2id` from `rung2` seed 0, and every difference came out exactly 0.
+  - **`Rung2_results.md` written** (Q1–Q5, with the long H1 section).
+- **Reproduce:** branch `main`, commit `3bf7477` plus the uncommitted `run_rung0.py` (variant `rung2id`) and the new `rung2_headstart.py`. From `examples/`:
+  - `python run_rung0.py --root ../results/rung2 --variants rung2id --seeds 0`
+  - `python rescore_runs.py --root ../results/rung2 --ref_root ../results/rung0`
+  - `python rung2_headstart.py`
+- **Results** (*measured*, seed 0; M3's 3-seed sd in brackets; source `results/rung2/summary_headstart/tables.md`):
+
+  | Scene | rung2id − rung2, bm PSNR | rung2id − detach, bm PSNR | rung2id − rung2, raw PSNR | SSIM | LPIPS |
+  |---|---|---|---|---|---|
+  | buu | +0.80 [0.20] | +0.38 [0.25] | +0.32 | +0.0120 | −0.0213 |
+  | chair | −0.01 [0.26] | +0.63 [0.12] | +0.07 | +0.0100 | −0.0114 |
+  | sofa | +0.49 [0.27] | +0.18 [0.40] | +0.11 | +0.0039 | −0.0029 |
+  | bike | +0.25 [0.03] | +0.14 [0.05] | −0.13 | +0.0297 | −0.0012 |
+  | shrub | +0.00 [0.03] | +0.54 [0.50] | +0.02 | −0.0038 | +0.0016 |
+  | pooled | +0.31 [0.07] | +0.37 [0.07] | +0.08 | +0.0104 | −0.0070 |
+
+  - **Hue error:** −1.84° pooled; on bike −3.84°, down to `detach`'s 33.7°.
+  - **Pseudo-targets on the training views** move by +0.85, +0.27, +1.11, +0.33 and −0.01 dB bm PSNR (buu, chair, sofa, bike, shrub).
+  - **F gap:** the identity-init F never comes within 0.01 of the `cdf`-init F. At 10k steps it is 8–13 levels away, mostly at levels 1–2 (bike: level 1 → 66 against 79), and still closing (bike 0.065 at 5k, 0.051 at 10k).
+  - **Training objective:** the curve loss ends 0.5–1.6% *higher* with the identity init in all five scenes.
+- **Takeaway:**
+  - **By the pre-declared reading:** the head start is a likely contributor to the bike gap (*inferred*, one seed). Bike's +0.253 dB exceeds both 2 × 0.034 and half the 0.155 dB gap.
+  - **The init changes where F ends up, not only how fast it gets there.** The identity-init curve stays less lifted at levels 1–2, and the ground truth prefers it.
+  - *Inferred:* the equalisation target over-lifts the deepest shadows. An early-stopped curve does better there, as `CLAUDE.md`'s Rung 1 note on the HE-CDF's dark-end jump anticipated.
+  - **H1 is still not supported** (pre-registered default).
+  - **The identity init is not adopted.** `cdf` was chosen by the plan's training-photo rule, the training objective still prefers it, and the identity init wins only on ground-truth metrics. Any identity-init result is exploratory and labelled post hoc.
+  - **Correction of the entry above:** the dark end does matter for bike, but at levels 1–2, not at level 0. Both inits keep F(0) = 0.
+- **Next:** Bart decides whether to confirm with seeds 1 and 2 (`rung2id` on LOM, 10 runs, about 45 min; exploratory). Send Wei M3 plus this check. In M5, the dark-end levers that use training photos only (smoothness λ, K and knot spacing) come before any F-init ablation.
