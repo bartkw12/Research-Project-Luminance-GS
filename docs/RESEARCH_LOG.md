@@ -699,3 +699,75 @@ Entries up to 2026-10-23 were backfilled from git history, the run folders and t
   - **The identity init is not adopted.** `cdf` was chosen by the plan's training-photo rule, the training objective still prefers it, and the identity init wins only on ground-truth metrics. Any identity-init result is exploratory and labelled post hoc.
   - **Correction of the entry above:** the dark end does matter for bike, but at levels 1–2, not at level 0. Both inits keep F(0) = 0.
 - **Next:** Bart decides whether to confirm with seeds 1 and 2 (`rung2id` on LOM, 10 runs, about 45 min; exploratory). Send Wei M3 plus this check. In M5, the dark-end levers that use training photos only (smoothness λ, K and knot spacing) come before any F-init ablation.
+
+### 2026-11-16: Identity-init confirmation (seeds 1 and 2) launched, with its reading fixed before results
+
+- **Rung / type:** Rung 2 (M3 follow-up) · decision + setup. **Exploratory:** the setting was picked after seeing seed-0 validation results.
+- **Decision** (Bart, 2026-11-16): confirm the identity init with seeds 1 and 2 on LOM. That is 10 runs, about 45 min.
+- **Setup:**
+  - `rung2id` with seeds 1 and 2, `results/rung2/`. The flag set is unchanged from the 2026-11-15 smoke run.
+  - Pre-flight: HEAD `993636e`, tree clean except `.vscode/`, GPU free, sleep on AC 0, 3.6 TB free. The dry run lists 10 runs.
+  - Claude started the batch in the background at 21:23. Console: `results/rung2/batch_console_rung2id_s12.log`.
+- **Reproduce:** from `examples/`, `python run_rung0.py --root ../results/rung2 --variants rung2id --seeds 1 2`, then `python rescore_runs.py --root ../results/rung2 --ref_root ../results/rung0`.
+- **Reading, fixed before any result:**
+  - **Comparisons:** paired by seed, seeds 0–2, `rung2id` − `rung2` (the init effect) and `rung2id` − `detach`. Per scene, pooled and pooled without shrub: bm PSNR, raw PSNR, SSIM, LPIPS and hue error. Noise is sqrt(mean of the two arms' seed variances), and an effect is real above 2× (protocol).
+  - **Clean replication:** seed 0 chose the question, so seeds 1 and 2 alone are also reported (mean of 2, next to the 3-seed noise).
+  - **Init effect confirmed:** pooled `rung2id` − `rung2` in bm PSNR is real and positive, LPIPS is not worse beyond 2× noise, and the seed 1–2 mean is positive. **Not confirmed:** the pooled effect is within 2× noise. Bike is judged separately by the same test.
+  - **Exploratory only:** `rung2id` − `detach` is put through the 12 H1 checks (plan 6.5). It cannot change the H1 verdict, which belongs to the pre-registered default. Any pass is labelled post hoc.
+  - **The identity init is still not adopted on this evidence:** the training objective preferred `cdf` (entry above). Whether a training-photo-only lever (smoothness λ, K and knot spacing) gives the same dark end is an M5 question.
+  - **Also reported:** the F gap and curve loss per seed.
+- **Results:** pending.
+
+### 2026-11-16: Identity init confirmed over 3 seeds (+0.44 dB pooled); exploratory H1 check meets 12 of 12; pre-registered H1 verdict unchanged
+
+- **Rung / type:** Rung 2 (M3 follow-up) · experiment + code (analysis). **Exploratory** (post hoc).
+- **Why:** the confirmation launched in the entry above, judged by the reading fixed there.
+- **What was done:**
+  - **Runs:** 10 runs `ok`, 21:23–22:08, 3.7–6.6 min each. Re-scored with `--ref_root ../results/rung0`, 8–11 s per run.
+  - **`rung2_headstart.py`:** gained `--seeds 0 1 2` (paired effects, the pre-declared decisions, the H1 rule applied to `rung2id` − `detach`, curve loss per seed) and `--out` for test outputs under `smoke_m2/`.
+  - **Tests, both before use:**
+    - the seed-0 mode reproduces the committed `summary_headstart/` byte for byte;
+    - the 3-seed `--selftest` gives 0 for every init effect, and its H1 table reproduces M3's R1b exactly (11 of 12, bike −0.155 dB at −3.8×).
+- **Reproduce:** branch `main`, commit `993636e` plus the uncommitted changes to `rung2_headstart.py`. From `examples/`:
+  - `python run_rung0.py --root ../results/rung2 --variants rung2id --seeds 1 2`
+  - `python rescore_runs.py --root ../results/rung2 --ref_root ../results/rung0`
+  - `python rung2_headstart.py --seeds 0 1 2`
+- **Results** (*measured*; paired by seed over seeds 0–2, ×noise, * = real; source `results/rung2/summary_headstart_seeds012/tables.md`):
+
+  | Scene | rung2id − rung2, bm PSNR | Seeds 1–2 | SSIM | LPIPS | rung2id − detach, bm PSNR |
+  |---|---|---|---|---|---|
+  | buu | +0.63 (3.2×) * | +0.55 | +0.0129 * | −0.0249 * | +0.52 (2.3×) * |
+  | chair | +0.01 (0.1×) | +0.02 | +0.0100 * | −0.0099 * | +0.41 (2.4×) * |
+  | sofa | +1.26 (3.7×) * | +1.64 | +0.0089 * | −0.0184 * | +0.87 (2.2×) * |
+  | bike | +0.26 (10.9×) * | +0.26 | +0.0249 * | +0.0035 | +0.10 (3.1×) * |
+  | shrub | +0.01 (0.6×) | +0.02 | −0.0015 | +0.0034 | +0.17 (0.5×) |
+  | pooled | +0.44 (6.2×) * | +0.50 | +0.0110 * | −0.0093 * | +0.42 (6.0×) * |
+
+  - **Hue error:** −1.88° pooled (8.4×), bike −4.95° (3.2×).
+  - **F:** identical across seeds to 0.1 of a level for both inits. The identity-init F stays 8–13 levels from the `cdf` F in every seed.
+  - **Curve loss:** higher with the identity init in all 15 pairs, by +0.3% to +1.6%.
+- **Takeaway:**
+  - **By the pre-declared reading:** the init effect is confirmed (pooled, pooled without shrub, bike).
+  - **Exploratory:** `rung2id` meets all 12 H1 checks against `detach` (closest: bike LPIPS +1.7×).
+  - **The pre-registered H1 verdict stands** (default `cdf` init: not supported).
+  - *Inferred:* the bike failure comes from fitting F fully to the equalisation target, not from the shared-curve-plus-exposure model. The gain is an implicit regularisation (an under-fitted dark end, tied to init, learning rate and step count). The identity init is not adopted as the default without Bart's decision. Untested on the varying set (H2).
+- **Next:** Bart and Wei decide:
+  - how to present this (the report gives both results side by side);
+  - whether to test `rung2id` on the varying set (15 runs, about 1.2 h, exploratory);
+  - whether M5 looks for a training-photo-only lever that gives the same dark end (smoothness λ, K and knot spacing).
+
+### 2026-11-16: Correction: the deep-shadow lift comes from the shape prior, not the equalisation target
+
+- **Rung / type:** Rung 2 (M3 follow-up) · correction (rule 4). Found while choosing figures for Wei.
+- **What was wrong:** two earlier entries (2026-11-15 head-start results, and the 3-seed entry above) and `Rung2_results.md` gave an *inferred* cause. They said the equalisation target over-lifts the deepest shadows and that the identity init fits it less fully. Figure 6 (`results/rung2/summary/figures/fig6_curves.png`, LOM panel) contradicts this. There the views' HE-CDFs are near 0 at the darkest levels, while both `detach`'s curves and Rung 2's F jump to about 0.22 at level 1.
+- **Measured** (seed 0, `curves_step*.npz`, × 255 at levels 1–4):
+  - **Equalisation target** (`cdf_target`, mean over views): bike 1, 8, 25, 52; sofa 0, 0, 1, 3.
+  - **Shape prior x^γ:** bike 169–187 (γ 0.075); sofa 120–145 (γ 0.136).
+  - **F at step 1:** `cdf` init 0, 2, 12, 25 and identity 1, 2, 3, 4 (bike), so both start near 0.
+  - **F at 10k:** bike `cdf` 79, 87, 96, 106 against identity 66, 85, 101, 117. Sofa `cdf` 56, 64, 69, 74 against identity 47, 58, 66, 72.
+- **Corrected reading** (*inferred*):
+  - The lift in the deepest shadows comes from the official shape prior, which Rung 2 kept (D1, 2026-11-13). `detach`'s curves have it too.
+  - The two inits end at different compromises between prior and target. The identity init ends less lifted at level 1, closer to the target, and the ground truth prefers that.
+  - The measured results are unchanged: the init effect, the curve loss preferring `cdf`, and the F gap.
+- **Consequence for M5:** the first principled lever is the shape prior. That means the already-planned `--rung2_prior none` ablation, or a lower prior weight. The smoothness weight λ and the knots come after it.
+- **Updated:** `Rung2_results.md`, Q1 head-start section and M5 section.
