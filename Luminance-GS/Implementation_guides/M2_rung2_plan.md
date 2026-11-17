@@ -543,7 +543,7 @@ python rescore_runs.py --root ../results/rung2 --ref_root ../results/rung0
 | The dark-branch effect differs between rows (real interaction) | `rung2` with `--dark_branch measured` (variant `rung2meas`), varying set, 3 seeds: both rows then use the same exposures | 15 runs, about 2 h |
 | `detachexp`'s dark fit stays more than 2 dB below LOM's | `detach` with `--dark_branch gains` (variant `detachgains`), varying set, 3 seeds: how much is exposure-estimation error | 15 runs, about 2 h |
 | Bart wants the switch in the final method | `detachexp` and `rung2exp` on LOM: the switch must not hurt evenly exposed scenes | 30 runs, about 4 h |
-| Rung 2's LOM result is borderline for H1 | `rung2` with `--rung2_F_init identity`, seed 0, LOM: head-start check (risk 5) | 5 runs, about 40 min |
+| Rung 2's LOM result is borderline for H1 | `rung2` with `--rung2_F_init identity`, seed 0, LOM: head-start check (risk 5) | 5 runs, about 40 min. *Run 2026-11-15 as variant `rung2id` (23 min); results in `Rung2_results.md` Q1.* |
 
 H3 (`rung2att` on LOM and the varying set) is M5.
 
@@ -681,7 +681,10 @@ Same rules as M1's report: direct answers first, every claim *measured* or *infe
 **M3**
 - [x] 45 runs `ok`, all re-scored with `--ref_root ../results/rung0` (2026-11-14).
 - [x] `rung2_analyze.py` written; `summary_seed0/` for the check-in, `summary/` once all seeds are done (2026-11-14: H2 supported; H1 not supported, bike bm PSNR −0.15 dB at −3.8×; research log).
-- [ ] `Rung2_results.md` answers Q1 to Q5. Research log, `CLAUDE.md` rung table and protocol updated.
+- [x] `Rung2_results.md` answers Q1 to Q5. Research log, `CLAUDE.md` rung table and protocol updated (2026-11-15).
+- [x] Conditional run (5.3): the head-start check for a borderline H1, approved by Bart and run on 2026-11-15 (`rung2id`, `rung2_headstart.py`, `results/rung2/summary_headstart/`).
+  - Seed 0: +0.31 dB pooled and +0.25 dB on bike against `rung2`.
+  - Exploratory; H1 verdict unchanged (research log).
 
 ---
 
