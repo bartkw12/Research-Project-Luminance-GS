@@ -118,12 +118,13 @@ def guard(out: Path) -> Path:
 
 
 # ------------------------------------------------------------------ data
-def load_set(scene: str, which: str) -> dict:
+def load_set(scene: str, which: str, exp_name: str = "low") -> dict:
     """The training views exactly as the trainer loads them, with their HE-CDFs, grey histograms (the weights of
-    fit_exposure_form), measured exposures (as Runner.measure_exposures) and 8-bit level counts."""
+    fit_exposure_form), measured exposures (as Runner.measure_exposures) and 8-bit level counts. exp_name picks the
+    input folder, as the trainer's --exp_name does (M5: "over_exp" for rung2_replay.py; this script uses "low")."""
     root = SETS[which][0]
     with contextlib.redirect_stdout(io.StringIO()):
-        p = Parser(data_dir=str(root / scene), exp_name="low", method="", factor=1, normalize=True, test_every=8)
+        p = Parser(data_dir=str(root / scene), exp_name=exp_name, method="", factor=1, normalize=True, test_every=8)
         ds = Dataset(p, split="train")
     hp = HistogramPriorLoss()
     names, idx, images, m, cdfs, hists = [], [], [], [], [], []
@@ -169,15 +170,17 @@ def build(d: dict, config: str, K: int, y_max_cache: dict):
 
 
 @torch.no_grad()
-def objective(model: ExposureCurve, targets: torch.Tensor, lam: float) -> float:
-    """The curve loss (with the model's shape prior, if any) over all views at the late-training weight."""
-    return float(model.loss(model.composed_curve(torch.arange(model.N)), targets, LATE_STEP, "low", lam)[0])
+def objective(model: ExposureCurve, targets: torch.Tensor, lam: float, exp_name: str = "low") -> float:
+    """The curve loss (with the model's shape prior, if any) over all views at the late-training weight (exp_name
+    sets that weight as rung2.curve_weight does: 0.5, or 0.1 for over_exp)."""
+    return float(model.loss(model.composed_curve(torch.arange(model.N)), targets, LATE_STEP, exp_name, lam)[0])
 
 
-def replay(model: ExposureCurve, targets: torch.Tensor, a, lr_F: float):
+def replay(model: ExposureCurve, targets: torch.Tensor, a, lr_F: float, exp_name: str = "low"):
     """The trainer's Rung 2 curve updates (simple_trainer_ours.Runner.train): one view per step, 10 * L_curve with
     the model's shape prior, Adam on F's side (theta, rho) at lr_F and on s at a.lr_s, ExponentialLR to 1% over
-    the run, then the gauge projection. Returns checkpoints (step, objective, F on the 255-bin grid)."""
+    the run, then the gauge projection. Returns checkpoints (step, objective, F on the 255-bin grid). exp_name
+    sets the curve weight as the trainer's --exp_name does (M5: "over_exp" for rung2_replay.py)."""
     opts = [torch.optim.Adam(model.f_params(), lr=lr_F, weight_decay=0.0),
             torch.optim.Adam([model.s], lr=a.lr_s, weight_decay=0.0)]
     scheds = [torch.optim.lr_scheduler.ExponentialLR(o, gamma=0.01 ** (1.0 / a.steps)) for o in opts]
@@ -185,11 +188,12 @@ def replay(model: ExposureCurve, targets: torch.Tensor, a, lr_F: float):
     order, traj = [], []
     for step in range(a.steps):
         if step % a.every == 0:
-            traj.append((step, objective(model, targets, a.smooth_lambda), model.F(model.grid).detach().numpy()))
+            traj.append((step, objective(model, targets, a.smooth_lambda, exp_name),
+                         model.F(model.grid).detach().numpy()))
         if not order:
             order = torch.randperm(model.N, generator=gen).tolist()
         k = order.pop(0)
-        loss, _ = model.loss(model.composed_curve(k), targets[k:k + 1], step, "low", a.smooth_lambda)
+        loss, _ = model.loss(model.composed_curve(k), targets[k:k + 1], step, exp_name, a.smooth_lambda)
         for o in opts:
             o.zero_grad(set_to_none=True)
         (10 * loss).backward()
@@ -198,7 +202,7 @@ def replay(model: ExposureCurve, targets: torch.Tensor, a, lr_F: float):
         for s in scheds:
             s.step()
         model.project_gauge()
-    traj.append((a.steps, objective(model, targets, a.smooth_lambda), model.F(model.grid).detach().numpy()))
+    traj.append((a.steps, objective(model, targets, a.smooth_lambda, exp_name), model.F(model.grid).detach().numpy()))
     return traj
 
 
