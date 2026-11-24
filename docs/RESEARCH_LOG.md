@@ -818,3 +818,31 @@ Entries up to 2026-10-23 were backfilled from git history, the run folders and t
     - stop rule before launch, from a curve-only preview: γ ≤ 1, or F below the identity at fewer than 80% of interior grid points, or a pooled fit residual above 2× the low-light preview's.
 - **Takeaway:** no setting is chosen and no default changes in M5. Every variant is labelled pre-registered or exploratory.
 - **Next:** step 2 (runner variants and `--exp_name`, the preview script, seven 300-step smoke runs and their re-scores, the `over_exp` preview), then Bart launches batches 1, 2 and E6 with `/run-batch`.
+
+### 2026-11-24: M5 step 2: runner variants and `--exp_name`, `rung2_replay.py`, smoke tests passed; E6 pre-launch preview passes its stop rule
+
+- **Rung / type:** Rung 2 (M5) · code + setup. No result here is used to decide anything except the E6 stop rule logged above.
+- **Code:**
+  - `run_rung0.py`: variants `rung2idexp` and `rung2noprior` (both refused in `results/rung0`); `--exp_name {low, over_exp}` (default `low`).
+    - Guards: `over_exp` only with a root inside `results/overexp/` (subtree test); `low` refused there; a data root without `<scene>/over_exp/` refused.
+    - Tests: five refusals, none creating a folder. Dry runs before and after: 0 differing lines over 156 (timestamps masked). The six launch commands list 45, 15, 30, 15, 45 and 15 jobs.
+  - `rung2_preview.py`: `exp_name` parameters in `load_set`, `objective` and `replay`, defaulting to `low` (its own outputs unchanged).
+  - New `rung2_replay.py`:
+    - `--mode overexp` (E6 pre-launch check) and `--mode long` (A1);
+    - its output guard refused three test paths, two of them rule-6 folders;
+    - code-tested on bike (long, 2k steps) and buu (overexp, 1k steps) in `smoke_m5/` folders.
+  - `rung2.curve_weight`: 0.1 for `over_exp` from step 3000, 0.5 for `low`, 1 before; unit-checked on the CPU.
+- **Reproduce:** branch `main`, commit `fb8f14d` plus uncommitted changes to `run_rung0.py` and `rung2_preview.py` and the new `rung2_replay.py`. From `examples/`:
+  - smoke: `run_rung0.py --data_root ../data/LOM_vexp --root ../results/vexp/smoke_m5 --scenes buu --variants rung2id rung2idexp --seeds 0 --max_steps 300`, likewise `--root ../results/rung2/smoke_m5 ... rung2att rung2noprior` and `--exp_name over_exp --root ../results/overexp/smoke_m5 ... baseline detach rung2`; then `rescore_runs.py --root <each> --ref_root ../results/rung0`;
+  - preview: `python rung2_replay.py --mode overexp`.
+- **Smoke results** (buu, seed 0, 300 steps; all 7 `ok`, 0.5–0.9 min; re-scores 7 s each, reference `rung0/buu_baseline_seed0`; re-score vs training PSNR within 1.3e-6; source: the runs' `diagnostics/` and `rescore/`):
+  - `rung2idexp` vs `rung2id` on the varying set: max |Δ s| = max |Δ F heights| = max |Δ log2 mean_pseudo| = 0.
+  - `rung2noprior`: 54 curve parameters (K 32 + N 22), prior `none`, γ NaN, F strictly increasing; its re-score works.
+  - `over_exp` smokes: `exp_name` `over_exp`; mean input 0.915 against 0.091 for the low-light smoke, so they train on `over_exp/`.
+- **E6 pre-launch preview** (`results/overexp/preview/tables.md`; training photos only, default configuration, 10k steps, 61 s):
+  - **passes the stop rule** in every scene: γ 12.77 (buu), 4.05 (chair), 5.26 (sofa), 4.44 (bike), 1.94 (shrub); F below the identity at 100% of interior grid points;
+  - pooled fit residual 18.44/255 against 45.01 in low light (ratio 0.41);
+  - mean CDF[253] at least 0.998 in every scene, so the pinned F(1) = 1 does not clash with the shifted target's top value.
+  - *Inferred:* F ends close to the shape prior x^γ in every scene, and the darkening is strong (buu maps level 127 to about 0.5/255). Expect very dark pseudo-targets on buu.
+- **A1 cost:** measured 8 s for 6k replay steps, so the full run (5 scenes, 2 × 50k + 2 × 10k steps each) is about 13 min of CPU. That is under the 30-minute threshold, so no ask is needed.
+- **Next:** Bart commits, then launches the six commands with `/run-batch` (about 15.3 h, or 16.5 h with E6's optional `rung2id`; sleep off). During the batches: the `rung2_analyze.py` changes, `rung2_ablation.py`, and the A1 run.
