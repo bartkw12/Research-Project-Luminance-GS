@@ -1,0 +1,157 @@
+{
+ "meta": {
+  "date": "2026-11-24 12:51",
+  "seconds": 61,
+  "torch": "1.13.1",
+  "args": {
+   "mode": "overexp",
+   "scenes": [
+    "buu",
+    "chair",
+    "sofa",
+    "bike",
+    "shrub"
+   ],
+   "steps": null,
+   "every": null,
+   "check_steps": 10000,
+   "seed": 0,
+   "threads": 2,
+   "out": null
+  },
+  "rung2_replay.py_sha256_16": "e0f28deb42522953",
+  "rung2_preview.py_sha256_16": "edc0d6d7c6d73642",
+  "rung2.py_sha256_16": "4b7c19f557b93fc0"
+ },
+ "rows": [
+  {
+   "scene": "buu",
+   "views": 22,
+   "mean_input": 0.914707132361152,
+   "gamma": 12.764894485473633,
+   "F_below_identity_frac": 1.0,
+   "mean_F_minus_x_x255": -108.66138607263565,
+   "min_F_minus_x_x255": -187.51169979572296,
+   "max_F_minus_x_x255": -0.9868219506461173,
+   "F_at_64_127_191_x255": [
+    0.1,
+    0.5,
+    9.6
+   ],
+   "resid255": 17.941571473187132,
+   "low_light_resid255": 40.404911697390254,
+   "s_move_rmse": 0.0060158363144192555,
+   "abs_mean_s": 3.968704153190959e-11,
+   "s_init_spread": 0.006861105076609503,
+   "share_level_255": 0.10133067950842538,
+   "mean_cdf253": 0.9985455870628357,
+   "min_cdf253": 0.9949705004692078,
+   "objective_final": 0.00018190174887422472,
+   "seconds": 11.5
+  },
+  {
+   "scene": "chair",
+   "views": 43,
+   "mean_input": 0.793553676716117,
+   "gamma": 4.052461624145508,
+   "F_below_identity_frac": 1.0,
+   "mean_F_minus_x_x255": -76.91833019256592,
+   "min_F_minus_x_x255": -119.66302692890167,
+   "max_F_minus_x_x255": -0.9451623517088592,
+   "F_at_64_127_191_x255": [
+    0.8,
+    16.7,
+    78.4
+   ],
+   "resid255": 16.563660039424306,
+   "low_light_resid255": 43.617397942758814,
+   "s_move_rmse": 0.007464385597444025,
+   "abs_mean_s": 1.042323230310928e-10,
+   "s_init_spread": 0.009751787645003321,
+   "share_level_255": 0.0003948534635078722,
+   "mean_cdf253": 1.0,
+   "min_cdf253": 1.0,
+   "objective_final": 0.0002717216848395765,
+   "seconds": 12.4
+  },
+  {
+   "scene": "sofa",
+   "views": 29,
+   "mean_input": 0.8390342839832964,
+   "gamma": 5.261969566345215,
+   "F_below_identity_frac": 1.0,
+   "mean_F_minus_x_x255": -87.20443144440651,
+   "min_F_minus_x_x255": -143.26558202505112,
+   "max_F_minus_x_x255": -0.9591427515260875,
+   "F_at_64_127_191_x255": [
+    0.4,
+    5.9,
+    54.6
+   ],
+   "resid255": 14.640577226552496,
+   "low_light_resid255": 42.04112336954933,
+   "s_move_rmse": 0.004376532906904879,
+   "abs_mean_s": 3.6128892980772875e-11,
+   "s_init_spread": 0.012090777170390051,
+   "share_level_255": 7.550906102573332e-05,
+   "mean_cdf253": 1.0,
+   "min_cdf253": 1.0,
+   "objective_final": 0.00019265798619017005,
+   "seconds": 12.6
+  },
+  {
+   "scene": "bike",
+   "views": 36,
+   "mean_input": 0.8110282868146896,
+   "gamma": 4.441039085388184,
+   "F_below_identity_frac": 1.0,
+   "mean_F_minus_x_x255": -80.73515698313713,
+   "min_F_minus_x_x255": -131.44940167665482,
+   "max_F_minus_x_x255": -0.9582543710712343,
+   "F_at_64_127_191_x255": [
+    0.5,
+    10.9,
+    68.2
+   ],
+   "resid255": 27.399988674805165,
+   "low_light_resid255": 53.215301656471524,
+   "s_move_rmse": 0.006350555766895724,
+   "abs_mean_s": 1.9402553637822468e-11,
+   "s_init_spread": 0.007522056751059696,
+   "share_level_255": 0.01062210576828047,
+   "mean_cdf253": 0.9980946779251099,
+   "min_cdf253": 0.9957509636878967,
+   "objective_final": 0.0005417718784883618,
+   "seconds": 12.1
+  },
+  {
+   "scene": "shrub",
+   "views": 30,
+   "mean_input": 0.656803023815155,
+   "gamma": 1.9380842447280884,
+   "F_below_identity_frac": 1.0,
+   "mean_F_minus_x_x255": -40.760716795921326,
+   "min_F_minus_x_x255": -62.88293972611427,
+   "max_F_minus_x_x255": -0.5941057205200195,
+   "F_at_64_127_191_x255": [
+    14.8,
+    65.3,
+    149.4
+   ],
+   "resid255": 15.668501414058696,
+   "low_light_resid255": 45.75504256721247,
+   "s_move_rmse": 0.004576562786796861,
+   "abs_mean_s": 1.2029583255449932e-10,
+   "s_init_spread": 0.02198707776124453,
+   "share_level_255": 0.00012836129775891652,
+   "mean_cdf253": 0.9999045729637146,
+   "min_cdf253": 0.9997398257255554,
+   "objective_final": 0.0003806287422776222,
+   "seconds": 12.5
+  }
+ ],
+ "pooled_resid255": 18.442859765605558,
+ "pooled_low_light_resid255": 45.00675544667648,
+ "stop_reasons": [],
+ "verdict": "pass: E6 can join the launch"
+}
