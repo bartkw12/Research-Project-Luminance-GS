@@ -31,7 +31,13 @@
       "Edit(/Luminance-GS/Implementation_guides/Rung0_results.md)",
       "Edit(/Luminance-GS/Implementation_guides/Rung0.5_results.md)",
       "Edit(/Luminance-GS/results/vexp/summary/**)",
-      "Edit(/Luminance-GS/Implementation_guides/M1_vexp_results.md)"
+      "Edit(/Luminance-GS/Implementation_guides/M1_vexp_results.md)",
+      "Edit(/Luminance-GS/results/rung2/summary/**)",
+      "Edit(/Luminance-GS/results/rung2/summary_seed0/**)",
+      "Edit(/Luminance-GS/results/rung2/summary_headstart/**)",
+      "Edit(/Luminance-GS/results/rung2/summary_headstart_seeds012/**)",
+      "Edit(/Luminance-GS/results/rung2/preview_final/**)",
+      "Edit(/Luminance-GS/Implementation_guides/Rung2_results.md)"
     ]
   },
   "hooks": {
