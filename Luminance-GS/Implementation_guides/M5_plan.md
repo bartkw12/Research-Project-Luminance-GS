@@ -219,6 +219,7 @@ General rules, unchanged: pair by seed; noise = sqrt(mean of the two arms' seed 
     - γ is NaN in its `rung2_state.json`;
     - its re-score works (there is no `rho` in the state).
 - Add the `results/h1b/` and `results/overexp/` roots to `CLAUDE.md`'s repo map.
+- **Overwrite guard (Bart, 2026-11-24):** every analysis script M5 writes or changes must refuse to write into a protected folder (rule 6), unless it is a git-ignored scratch folder. That covers `rung2_analyze.py`'s new `--out`, `rung2_ablation.py` and `rung2_replay.py`. The protected folders include M3's `results/rung2/summary/`, `summary_seed0/`, `summary_headstart/`, `summary_headstart_seeds012/` and `preview_final/`. Test each guard once with a refused path before use.
 - **E6 before the launch** (all GPU smoke tests must finish before the batch starts, because the GPU is busy afterwards):
   - `run_rung0.py`: `--exp_name` and the root guards (section 2). Its default commands must be unchanged (diff a dry run).
   - **Data (checked in step 0):**
