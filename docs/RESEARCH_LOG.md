@@ -771,3 +771,50 @@ Entries up to 2026-10-23 were backfilled from git history, the run folders and t
   - The measured results are unchanged: the init effect, the curve loss preferring `cdf`, and the F gap.
 - **Consequence for M5:** the first principled lever is the shape prior. That means the already-planned `--rung2_prior none` ablation, or a lower prior weight. The smoothness weight λ and the knots come after it.
 - **Updated:** `Rung2_results.md`, Q1 head-start section and M5 section.
+
+### 2026-11-24: M5 decisions and pre-registered readings (H1b, H2b, H3 restated, E4, A1, H1-over), before any M5 run
+
+- **Rung / type:** Rung 2 (M5) · decision. Plan: `Luminance-GS/Implementation_guides/M5_plan.md` (revised after step 0; commit `fb8f14d`).
+- **Why:** M3 left four questions open:
+  - H3 was never run;
+  - the identity init is untested on the varying set;
+  - the identity gain may only be early stopping;
+  - bike's hue on the varying set is still poor.
+- **Decisions (Bart, 2026-11-24):**
+  - option B: a fresh pre-registered H1b test of the identity variant on new seeds;
+  - M4 is done (M3 results emailed to Wei);
+  - Rung 3 stays, as M6;
+  - overexposure joins as E6, on Wei's general go-ahead.
+- **Step 0 review** (Claude Code; Bart approved the fixes):
+  - seven steps could not run as written, and are fixed in the plan;
+  - definitions were added to the readings below.
+- **H3 restated** (old text kept in `CLAUDE.md` with a dated note):
+  - Why: the default already meets the old criterion. Buu LPIPS on LOM is 0.1824 for `rung2`, against official 0.1862 and `detach` 0.2026 (`results/rung2/summary/tables.md`, R1a). So it cannot tell `rung2att` from `rung2`.
+  - New text: "Sending the image loss into the per-view exposures (F stays detached) changes quality on LOM or the varying set."
+- **Readings, fixed before any run.** Common rules: pair by seed; noise = sqrt(mean of the arms' seed variances); real above 2×; pooled = five-scene mean per seed, checked against pooled without shrub; shrub not deciding.
+  - **H1b (E3; `detach`, `rung2id`; LOM; seeds 3–5):**
+    - the H1 rule's 12 checks, with noise from seeds 3–5 only;
+    - pre-registered, but the variant was chosen from seed-0 results;
+    - it does not change H1;
+    - the 6-seed view is context only.
+  - **H2b (E1; `rung2id`, `rung2idexp`; varying set):**
+    - (a) the init main effect ½[(`rung2id` − `rung2`) + (`rung2idexp` − `rung2exp`)], noise over the four cells. Pooled bm PSNR real and positive with LPIPS not worse = confirmed; within 2× = not confirmed; real and negative = reversed; real and positive with LPIPS worse = mixed. Bike is judged alike;
+    - (b) the H2 rule with the identity cells, where 1×–2× reads "inconclusive", with no extra seeds;
+    - (c) report the leak and the s_k slope; a pooled leak above 0.1 is flagged.
+  - **H3 (E2; `rung2att` − `rung2`; LOM and the varying set's shared column; `cdf` init):**
+    - helps: on either set, pooled bm PSNR higher or pooled LPIPS lower beyond 2×;
+    - harm signals: a decision scene's bm PSNR below −2× on LOM; bike hue worse beyond 2× on either set; on the varying set, a pooled leak above 0.1 or a pooled s_k slope outside −0.9 to −1.1;
+    - verdicts: helps, hurts, mixed or no effect.
+  - **E4 (`rung2noprior` − `rung2`, LOM):**
+    - report only: every metric, plus F at grid b = 1–4, × 255;
+    - expected much worse pseudo-targets: 7.0–12.8 dB below `detach` on the four decision scenes (`results/rung2/preview_final/tables.md`, P5).
+  - **A1 (CPU replay, both inits, 50k steps):** gap(t) = max over the grid of |F_id − F_cdf| at the same step. Outcomes:
+    - gap(50k) < 0.01 = early stopping;
+    - gap(50k) ≥ 0.01 and gap(40k) − gap(50k) < 10% of gap(40k) = two end points;
+    - otherwise undecided.
+  - **H1-over (E6; `baseline`, `detach`, `rung2` with `--exp_name over_exp`):**
+    - the H1 rule for `rung2` − `detach`, with official alongside;
+    - reported next to the low-light verdict, never merged with it;
+    - stop rule before launch, from a curve-only preview: γ ≤ 1, or F below the identity at fewer than 80% of interior grid points, or a pooled fit residual above 2× the low-light preview's.
+- **Takeaway:** no setting is chosen and no default changes in M5. Every variant is labelled pre-registered or exploratory.
+- **Next:** step 2 (runner variants and `--exp_name`, the preview script, seven 300-step smoke runs and their re-scores, the `over_exp` preview), then Bart launches batches 1, 2 and E6 with `/run-batch`.
