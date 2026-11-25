@@ -1,0 +1,197 @@
+scene,metric,effect,mean,noise,x_noise,real
+buu,psnr_gtmean,curve model (H2): ½[(rung2id − detach) + (rung2idexp − detachexp)],2.4995996687147364,1.1336744311076346,2.204865524110437,True
+buu,psnr_gtmean,dark branch: ½[(detachexp − detach) + (rung2idexp − rung2id)],0.5566847059461804,1.1336744311076346,0.4910445985822247,False
+buu,psnr_gtmean,interaction: (rung2idexp − rung2id) − (detachexp − detach),1.6006842719184025,1.1336744311076346,1.4119435245218375,False
+buu,psnr_gtmean,rung2id − detach (shared column),1.699257532755535,1.0975380545240299,1.5482447517434403,False
+buu,psnr_gtmean,rung2idexp − detachexp (exp column),3.2999418046739373,1.1686939934670861,2.8236149266791566,True
+buu,psnr_gtmean,detachexp − detach (detach row),-0.24365743001302084,1.5724592443780008,-0.154953097121065,False
+buu,psnr_gtmean,rung2idexp − rung2id (rung2id row),1.3570268419053815,0.312741676571263,4.339130162577363,True
+buu,psnr,curve model (H2): ½[(rung2id − detach) + (rung2idexp − detachexp)],-1.8657967249552414,0.5817397073856194,-3.207270711054378,True
+buu,psnr,dark branch: ½[(detachexp − detach) + (rung2idexp − rung2id)],-0.02835750579833925,0.5817397073856194,-0.048746037855624376,False
+buu,psnr,interaction: (rung2idexp − rung2id) − (detachexp − detach),2.206451204087999,0.5817397073856194,3.7928495787298946,True
+buu,psnr,rung2id − detach (shared column),-2.969022326999241,0.7526020664991948,-3.945009533138742,True
+buu,psnr,rung2idexp − detachexp (exp column),-0.7625711229112421,0.332313562466767,-2.2947336763828377,True
+buu,psnr,detachexp − detach (detach row),-1.1315831078423386,0.5778960062227018,-1.9581085448897606,False
+buu,psnr,rung2idexp − rung2id (rung2id row),1.07486809624566,0.5855581783990924,1.8356298928047319,False
+buu,ssim,curve model (H2): ½[(rung2id − detach) + (rung2idexp − detachexp)],0.007207214832305908,0.0080151842666004,0.8991951516746367,False
+buu,ssim,dark branch: ½[(detachexp − detach) + (rung2idexp − rung2id)],0.021119919088151733,0.0080151842666004,2.6349885898642778,True
+buu,ssim,interaction: (rung2idexp − rung2id) − (detachexp − detach),-0.002259943220350502,0.0080151842666004,-0.28195773736204394,False
+buu,ssim,rung2id − detach (shared column),0.00833718644248116,0.010518779276741426,0.7926001889702078,False
+buu,ssim,rung2idexp − detachexp (exp column),0.006077243222130657,0.004223936574134641,1.4387628969963175,False
+buu,ssim,detachexp − detach (detach row),0.022249890698326984,0.010314991734163625,2.1570439678235074,True
+buu,ssim,rung2idexp − rung2id (rung2id row),0.019989947477976482,0.004699713095419043,4.25343995944376,True
+buu,lpips,curve model (H2): ½[(rung2id − detach) + (rung2idexp − detachexp)],-0.056400567293167114,0.012677770483507341,-4.448776491618875,True
+buu,lpips,dark branch: ½[(detachexp − detach) + (rung2idexp − rung2id)],-0.035785358813073896,0.012677770483507341,-2.822685491871578,True
+buu,lpips,interaction: (rung2idexp − rung2id) − (detachexp − detach),-0.0013265444172753382,0.012677770483507341,-0.10463546559712966,False
+buu,lpips,rung2id − detach (shared column),-0.05573729508452944,0.011396166005566108,-4.890881289137615,True
+buu,lpips,rung2idexp − detachexp (exp column),-0.057063839501804776,0.01384121126341764,-4.122748971589262,True
+buu,lpips,detachexp − detach (detach row),-0.03512208660443623,0.016934577223096957,-2.0739866216756475,True
+buu,lpips,rung2idexp − rung2id (rung2id row),-0.036448631021711565,0.005888278452989946,-6.190031825550591,True
+chair,psnr_gtmean,curve model (H2): ½[(rung2id − detach) + (rung2idexp − detachexp)],4.00997937520345,0.458639199944133,8.743211168369182,True
+chair,psnr_gtmean,dark branch: ½[(detachexp − detach) + (rung2idexp − rung2id)],0.3549413045247398,0.458639199944133,0.7739009325150911,False
+chair,psnr_gtmean,interaction: (rung2idexp − rung2id) − (detachexp − detach),-0.23463033040364442,0.458639199944133,-0.5115793208086549,False
+chair,psnr_gtmean,rung2id − detach (shared column),4.1272945404052725,0.6137576134550835,6.724632737622764,True
+chair,psnr_gtmean,rung2idexp − detachexp (exp column),3.892664210001628,0.20976516244769797,18.55724832750629,True
+chair,psnr_gtmean,detachexp − detach (detach row),0.47225646972656204,0.5996822533078028,0.7875111646570003,False
+chair,psnr_gtmean,rung2idexp − rung2id (rung2id row),0.23762613932291762,0.2471457596611058,0.9614817573595363,False
+chair,psnr,curve model (H2): ½[(rung2id − detach) + (rung2idexp − detachexp)],4.733638191223144,0.7568390398305617,6.25448469503224,True
+chair,psnr,dark branch: ½[(detachexp − detach) + (rung2idexp − rung2id)],0.44079380035400345,0.7568390398305617,0.5824141952992895,False
+chair,psnr,interaction: (rung2idexp − rung2id) − (detachexp − detach),-0.46013450622558594,0.7568390398305617,-0.6079687780490276,False
+chair,psnr,rung2id − detach (shared column),4.963705444335937,0.9970558754155997,4.978362363359958,True
+chair,psnr,rung2idexp − detachexp (exp column),4.503570938110351,0.3892174786960694,11.570834262628482,True
+chair,psnr,detachexp − detach (detach row),0.6708610534667964,1.0393859704923432,0.6454397812864633,False
+chair,psnr,rung2idexp − rung2id (rung2id row),0.21072654724121045,0.2555141263550471,0.8247158395790513,False
+chair,ssim,curve model (H2): ½[(rung2id − detach) + (rung2idexp − detachexp)],0.043943152825037655,0.012836318027112131,3.4233455989656427,True
+chair,ssim,dark branch: ½[(detachexp − detach) + (rung2idexp − rung2id)],0.013718618949254338,0.012836318027112131,1.068734735325088,False
+chair,ssim,interaction: (rung2idexp − rung2id) − (detachexp − detach),-0.015189103285471628,0.012836318027112131,-1.1832912875319916,False
+chair,ssim,rung2id − detach (shared column),0.05153770446777347,0.018053786431276857,2.8546756473472064,True
+chair,ssim,rung2idexp − detachexp (exp column),0.03634860118230184,0.0018981350005127184,19.14963960544612,True
+chair,ssim,detachexp − detach (detach row),0.021313170591990154,0.018009954417217425,1.1834105794079561,False
+chair,ssim,rung2idexp − rung2id (rung2id row),0.006124067306518525,0.0022767658808226774,2.689809856209581,True
+chair,lpips,curve model (H2): ½[(rung2id − detach) + (rung2idexp − detachexp)],-0.06984375218550364,0.026777432384820936,-2.6083065464146324,True
+chair,lpips,dark branch: ½[(detachexp − detach) + (rung2idexp − rung2id)],-0.02115146815776824,0.026777432384820936,-0.7898990408713782,False
+chair,lpips,interaction: (rung2idexp − rung2id) − (detachexp − detach),0.04517844716707866,0.026777432384820936,1.6871836895268768,False
+chair,lpips,rung2id − detach (shared column),-0.09243297576904297,0.03779026307538373,-2.4459468722051065,True
+chair,lpips,rung2idexp − detachexp (exp column),-0.04725452860196431,0.0024408578288387136,-19.359803772121616,True
+chair,lpips,detachexp − detach (detach row),-0.04374069174130757,0.03765717500499401,-1.1615500030341301,False
+chair,lpips,rung2idexp − rung2id (rung2id row),0.0014377554257710885,0.003999867609130152,0.359450753442251,False
+sofa,psnr_gtmean,curve model (H2): ½[(rung2id − detach) + (rung2idexp − detachexp)],4.616502682367961,0.9305310561460656,4.961148423662399,True
+sofa,psnr_gtmean,dark branch: ½[(detachexp − detach) + (rung2idexp − rung2id)],0.3336923122406006,0.9305310561460656,0.3586041648331841,False
+sofa,psnr_gtmean,interaction: (rung2idexp − rung2id) − (detachexp − detach),-0.4016149838765462,0.9305310561460656,-0.43159761431272925,False
+sofa,psnr_gtmean,rung2id − detach (shared column),4.817310174306233,0.9249802587820586,5.2080140398339845,True
+sofa,psnr_gtmean,rung2idexp − detachexp (exp column),4.4156951904296875,0.93604893769936,4.7173764240176075,True
+sofa,psnr_gtmean,detachexp − detach (detach row),0.5344998041788737,1.1706152434535662,0.4565973381672227,False
+sofa,psnr_gtmean,rung2idexp − rung2id (rung2id row),0.13288482030232748,0.601195512873119,0.22103428494878427,False
+sofa,psnr,curve model (H2): ½[(rung2id − detach) + (rung2idexp − detachexp)],1.605284333229065,1.542843930071341,1.0404709782633923,False
+sofa,psnr,dark branch: ½[(detachexp − detach) + (rung2idexp − rung2id)],1.105412443478902,1.542843930071341,0.7164771639784641,False
+sofa,psnr,interaction: (rung2idexp − rung2id) − (detachexp − detach),-1.5448877811431885,1.542843930071341,-1.0013247296320846,False
+sofa,psnr,rung2id − detach (shared column),2.377728223800659,1.8342872002325823,1.296268230786962,False
+sofa,psnr,rung2idexp − detachexp (exp column),0.8328404426574707,1.1815774423112844,0.7048547245691751,False
+sofa,psnr,detachexp − detach (detach row),1.8778563340504963,2.1727095313136022,0.8642923994148265,False
+sofa,psnr,rung2idexp − rung2id (rung2id row),0.3329685529073079,0.20017012178391805,1.6634278379804588,False
+sofa,ssim,curve model (H2): ½[(rung2id − detach) + (rung2idexp − detachexp)],0.01999788482983907,0.0076792398645865656,2.6041490020465345,True
+sofa,ssim,dark branch: ½[(detachexp − detach) + (rung2idexp − rung2id)],0.008931065599123636,0.0076792398645865656,1.1630142770132714,False
+sofa,ssim,interaction: (rung2idexp − rung2id) − (detachexp − detach),-0.00823750098546346,0.0076792398645865656,-1.072697445414013,False
+sofa,ssim,rung2id − detach (shared column),0.0241166353225708,0.009363701971217284,2.5755449497113405,True
+sofa,ssim,rung2idexp − detachexp (exp column),0.01587913433710734,0.005501139444690757,2.886517329138523,True
+sofa,ssim,detachexp − detach (detach row),0.013049816091855368,0.01077392864723292,1.2112402559123097,False
+sofa,ssim,rung2idexp − rung2id (rung2id row),0.004812315106391907,0.0013652513688126378,3.5248564596402403,True
+sofa,lpips,curve model (H2): ½[(rung2id − detach) + (rung2idexp − detachexp)],-0.0728555644551913,0.018038207097783334,-4.038958199129686,True
+sofa,lpips,dark branch: ½[(detachexp − detach) + (rung2idexp − rung2id)],0.003117694209019343,0.018038207097783334,0.17283836426306845,False
+sofa,lpips,interaction: (rung2idexp − rung2id) − (detachexp − detach),0.010945205887158712,0.018038207097783334,0.6067790345141196,False
+sofa,lpips,rung2id − detach (shared column),-0.07832816739877065,0.018534244558990654,-4.226132181943987,True
+sofa,lpips,rung2idexp − detachexp (exp column),-0.06738296151161194,0.01752813764301752,-3.844273868904407,True
+sofa,lpips,detachexp − detach (detach row),-0.002354908734560013,0.0239153859231099,-0.09846835598351851,False
+sofa,lpips,rung2idexp − rung2id (rung2id row),0.0085902971525987,0.008877395268532278,0.9676596448339688,False
+bike,psnr_gtmean,curve model (H2): ½[(rung2id − detach) + (rung2idexp − detachexp)],0.8431128660837809,0.20760234764822916,4.061191386488507,True
+bike,psnr_gtmean,dark branch: ½[(detachexp − detach) + (rung2idexp − rung2id)],0.1375571091969808,0.20760234764822916,0.6625990060096228,False
+bike,psnr_gtmean,interaction: (rung2idexp − rung2id) − (detachexp − detach),-0.5575035413106283,0.20760234764822916,-2.685439483831308,True
+bike,psnr_gtmean,rung2id − detach (shared column),1.121864636739095,0.25178884864910184,4.455577134404982,True
+bike,psnr_gtmean,rung2idexp − detachexp (exp column),0.5643610954284668,0.15099617609089336,3.737585348444487,True
+bike,psnr_gtmean,detachexp − detach (detach row),0.4163088798522949,0.2925582578020614,1.4229948010353566,False
+bike,psnr_gtmean,rung2idexp − rung2id (rung2id row),-0.14119466145833334,0.024640115461072472,-5.730275967310251,True
+bike,psnr,curve model (H2): ½[(rung2id − detach) + (rung2idexp − detachexp)],1.4578078190485637,0.6144664454268876,2.3724775045052016,True
+bike,psnr,dark branch: ½[(detachexp − detach) + (rung2idexp − rung2id)],0.3116533358891805,0.6144664454268876,0.5071934166765867,False
+bike,psnr,interaction: (rung2idexp − rung2id) − (detachexp − detach),-0.7612893581390381,0.6144664454268876,-1.238943743478374,False
+bike,psnr,rung2id − detach (shared column),1.8384524981180828,0.8387011742299033,2.1920232790971736,True
+bike,psnr,rung2idexp − detachexp (exp column),1.0771631399790447,0.22741672202476626,4.736516868191156,True
+bike,psnr,detachexp − detach (detach row),0.6922980149586996,0.8675006446895144,0.7980374645213996,False
+bike,psnr,rung2idexp − rung2id (rung2id row),-0.06899134318033855,0.05080016313345268,-1.3580929454714032,False
+bike,ssim,curve model (H2): ½[(rung2id − detach) + (rung2idexp − detachexp)],0.02710741509993871,0.011076407983910899,2.447311000038437,True
+bike,ssim,dark branch: ½[(detachexp − detach) + (rung2idexp − rung2id)],0.013605184853076935,0.011076407983910899,1.2283029726639922,False
+bike,ssim,interaction: (rung2idexp − rung2id) − (detachexp − detach),-0.025314425428708393,0.011076407983910899,-2.285436349534886,True
+bike,ssim,rung2id − detach (shared column),0.03976462781429291,0.015309613145852653,2.5973633321404384,True
+bike,ssim,rung2idexp − detachexp (exp column),0.014450202385584513,0.003315022319144444,4.359006062231849,True
+bike,ssim,detachexp − detach (detach row),0.026262397567431133,0.015609223411586569,1.682492259540396,False
+bike,ssim,rung2idexp − rung2id (rung2id row),0.0009479721387227377,0.0013136864691652675,0.7216121662005781,False
+bike,lpips,curve model (H2): ½[(rung2id − detach) + (rung2idexp − detachexp)],-0.03837154681483904,0.007795633871916088,-4.922184320773868,True
+bike,lpips,dark branch: ½[(detachexp − detach) + (rung2idexp − rung2id)],0.005708881964286168,0.007795633871916088,0.7323178663960245,False
+bike,lpips,interaction: (rung2idexp − rung2id) − (detachexp − detach),0.02189359317223231,0.007795633871916088,2.8084429735860708,True
+bike,lpips,rung2id − detach (shared column),-0.0493183434009552,0.008698959931785537,-5.669452875710876,True
+bike,lpips,rung2idexp − detachexp (exp column),-0.02742475022872289,0.006772880556684917,-4.049200336429132,True
+bike,lpips,detachexp − detach (detach row),-0.005237914621829987,0.010238838853336572,-0.5115731087146749,False
+bike,lpips,rung2idexp − rung2id (rung2id row),0.016655678550402325,0.0040877859368289166,4.074498715880142,True
+shrub,psnr_gtmean,curve model (H2): ½[(rung2id − detach) + (rung2idexp − detachexp)],1.6262811978658043,0.025336210949984537,64.18801931655044,True
+shrub,psnr_gtmean,dark branch: ½[(detachexp − detach) + (rung2idexp − rung2id)],0.06948353449503604,0.025336210949984537,2.7424595821451527,True
+shrub,psnr_gtmean,interaction: (rung2idexp − rung2id) − (detachexp − detach),-0.07596047719319661,0.025336210949984537,-2.998099334709043,True
+shrub,psnr_gtmean,rung2id − detach (shared column),1.6642614364624027,0.029979877107390102,55.51261702977958,True
+shrub,psnr_gtmean,rung2idexp − detachexp (exp column),1.588300959269206,0.019622796417178155,80.941621443862,True
+shrub,psnr_gtmean,detachexp − detach (detach row),0.10746377309163435,0.03146701343376454,3.4151246452999646,True
+shrub,psnr_gtmean,rung2idexp − rung2id (rung2id row),0.031503295898437735,0.01713692610019414,1.8383282809442025,False
+shrub,psnr,curve model (H2): ½[(rung2id − detach) + (rung2idexp − detachexp)],2.3230474154154463,0.10402383087204779,22.331877185650463,True
+shrub,psnr,dark branch: ½[(detachexp − detach) + (rung2idexp − rung2id)],-0.02208433151245141,0.10402383087204779,-0.21230069424779935,False
+shrub,psnr,interaction: (rung2idexp − rung2id) − (detachexp − detach),0.09381300608317152,0.10402383087204779,0.901841484751356,False
+shrub,psnr,rung2id − detach (shared column),2.2761409123738603,0.13516823553884771,16.839318078689363,True
+shrub,psnr,rung2idexp − detachexp (exp column),2.369953918457032,0.05806429952998137,40.816025296805854,True
+shrub,psnr,detachexp − detach (detach row),-0.06899083455403716,0.1451285529037722,-0.47537740281736074,False
+shrub,psnr,rung2idexp − rung2id (rung2id row),0.02482217152913435,0.024075255152330156,1.031024235135963,False
+shrub,ssim,curve model (H2): ½[(rung2id − detach) + (rung2idexp − detachexp)],0.0419019718964895,0.001428387750337773,29.3351520877863,True
+shrub,ssim,dark branch: ½[(detachexp − detach) + (rung2idexp − rung2id)],0.0037839293479919323,0.001428387750337773,2.6490911498625924,True
+shrub,ssim,interaction: (rung2idexp − rung2id) − (detachexp − detach),-0.00227776368459065,0.001428387750337773,-1.5946396096242241,False
+shrub,ssim,rung2id − detach (shared column),0.04304085373878482,0.0012340486755320346,34.87776016633108,True
+shrub,ssim,rung2idexp − detachexp (exp column),0.04076309005419417,0.001599283276048255,25.48834885269208,True
+shrub,ssim,detachexp − detach (detach row),0.004922811190287257,0.001357728334363476,3.6257703884445682,True
+shrub,ssim,rung2idexp − rung2id (rung2id row),0.002645047505696607,0.0014957128403194876,1.7684193345105061,False
+shrub,lpips,curve model (H2): ½[(rung2id − detach) + (rung2idexp − detachexp)],0.05753793219725292,0.001552253125790407,37.067364362983405,True
+shrub,lpips,dark branch: ½[(detachexp − detach) + (rung2idexp − rung2id)],-0.0029255241155624334,0.001552253125790407,-1.8846952645514934,False
+shrub,lpips,interaction: (rung2idexp − rung2id) − (detachexp − detach),0.004474637905756658,0.001552253125790407,2.882672826623025,True
+shrub,lpips,rung2id − detach (shared column),0.055300613244374595,0.00160215049032002,34.516491165151805,True
+shrub,lpips,rung2idexp − detachexp (exp column),0.05977525115013125,0.0015006976175830685,39.83164259726193,True
+shrub,lpips,detachexp − detach (detach row),-0.005162843068440763,0.0013348872550246812,-3.867624811763826,True
+shrub,lpips,rung2idexp − rung2id (rung2id row),-0.0006882051626841043,0.0017427149937453484,-0.39490402340835495,False
+pooled,psnr_gtmean,curve model (H2): ½[(rung2id − detach) + (rung2idexp − detachexp)],2.7190951580471463,0.4019767435790611,6.764309631043002,True
+pooled,psnr_gtmean,dark branch: ½[(detachexp − detach) + (rung2idexp − rung2id)],0.29047179328070766,0.4019767435790611,0.7226084541469933,False
+pooled,psnr_gtmean,interaction: (rung2idexp − rung2id) − (detachexp − detach),0.06619498782687572,0.4019767435790611,0.16467367549052359,False
+pooled,psnr_gtmean,rung2id − detach (shared column),2.6859976641337084,0.520414282864399,5.161268152268568,True
+pooled,psnr_gtmean,rung2idexp − detachexp (exp column),2.752192651960584,0.22877844948243223,12.029947130889719,True
+pooled,psnr_gtmean,detachexp − detach (detach row),0.2573742993672698,0.5555225616419245,0.46330125387988585,False
+pooled,psnr_gtmean,rung2idexp − rung2id (rung2id row),0.3235692871941455,0.12068673607172699,2.681067511858475,True
+pooled,psnr,curve model (H2): ½[(rung2id − detach) + (rung2idexp − detachexp)],1.6507962067921964,0.5893216653644049,2.801180244699527,True
+pooled,psnr,dark branch: ½[(detachexp − detach) + (rung2idexp − rung2id)],0.36148354848226,0.5893216653644049,0.6133892061455741,False
+pooled,psnr,interaction: (rung2idexp − rung2id) − (detachexp − detach),-0.09320948706732975,0.5893216653644049,-0.15816402576968555,False
+pooled,psnr,rung2id − detach (shared column),1.6974009503258614,0.8129402216119849,2.0879775722747156,True
+pooled,psnr,rung2idexp − detachexp (exp column),1.6041914632585315,0.18365251596754137,8.73492777818549,True
+pooled,psnr,detachexp − detach (detach row),0.40808829201592484,0.8291796906850012,0.49215905382197106,False
+pooled,psnr,rung2idexp − rung2id (rung2id row),0.3148788049485951,0.08403029865040888,3.747205591385375,True
+pooled,ssim,curve model (H2): ½[(rung2id − detach) + (rung2idexp − detachexp)],0.02803152789672216,0.006397118920172211,4.381898827662805,True
+pooled,ssim,dark branch: ½[(detachexp − detach) + (rung2idexp − rung2id)],0.012231743567519751,0.006397118920172211,1.9120706868445196,False
+pooled,ssim,interaction: (rung2idexp − rung2id) − (detachexp − detach),-0.010655747320916897,0.006397118920172211,-1.6657103696033906,False
+pooled,ssim,rung2id − detach (shared column),0.03335940155718061,0.008942542748983227,3.7304156651611864,True
+pooled,ssim,rung2idexp − detachexp (exp column),0.02270365423626371,0.0013701058865131725,16.570729649255785,True
+pooled,ssim,detachexp − detach (detach row),0.017559617227978202,0.009018943217996477,1.9469705932885342,False
+pooled,ssim,rung2idexp − rung2id (rung2id row),0.006903869907061304,0.000710580177183331,9.715821139885376,True
+pooled,lpips,curve model (H2): ½[(rung2id − detach) + (rung2idexp − detachexp)],-0.035986699710289664,0.009167952877128793,-3.9252710166154268,True
+pooled,lpips,dark branch: ½[(detachexp − detach) + (rung2idexp − rung2id)],-0.010207154982619824,0.009167952877128793,-1.1133515976160302,False
+pooled,lpips,interaction: (rung2idexp − rung2id) − (detachexp − detach),0.01623306794299016,0.009167952877128793,1.7706316950522991,False
+pooled,lpips,rung2id − detach (shared column),-0.04410323368178474,0.011926456583490256,-3.697932690488863,True
+pooled,lpips,rung2idexp − detachexp (exp column),-0.027870165738794583,0.005085504230322711,-5.480315122464469,True
+pooled,lpips,detachexp − detach (detach row),-0.018323688954114903,0.012772226754661161,-1.4346510836434816,False
+pooled,lpips,rung2idexp − rung2id (rung2id row),-0.0020906210111247456,0.0022300097851861364,-0.9374940975652463,False
+pooled_no_shrub,psnr_gtmean,curve model (H2): ½[(rung2id − detach) + (rung2idexp − detachexp)],2.9922986480924822,0.5015681733499799,5.965886208662091,True
+pooled_no_shrub,psnr_gtmean,dark branch: ½[(detachexp − detach) + (rung2idexp − rung2id)],0.3457188579771249,0.5015681733499799,0.6892759077356613,False
+pooled_no_shrub,psnr_gtmean,interaction: (rung2idexp − rung2id) − (detachexp − detach),0.1017338540818938,0.5015681733499799,0.2028315580759683,False
+pooled_no_shrub,psnr_gtmean,rung2id − detach (shared column),2.941431721051535,0.6510088664838957,4.518266758697516,True
+pooled_no_shrub,psnr_gtmean,rung2idexp − detachexp (exp column),3.043165575133429,0.2816535474561333,10.804641385201771,True
+pooled_no_shrub,psnr_gtmean,detachexp − detach (detach row),0.29485193093617806,0.6936876850250313,0.42504997176869086,False
+pooled_no_shrub,psnr_gtmean,rung2idexp − rung2id (rung2id row),0.39658578501807185,0.14811705060486485,2.6775160820346913,True
+pooled_no_shrub,psnr,curve model (H2): ½[(rung2id − detach) + (rung2idexp − detachexp)],1.4827334046363827,0.7233138774805682,2.049916987354105,True
+pooled_no_shrub,psnr,dark branch: ½[(detachexp − detach) + (rung2idexp − rung2id)],0.45737551848093655,0.7233138774805682,0.6323333931792618,False
+pooled_no_shrub,psnr,interaction: (rung2idexp − rung2id) − (detachexp − detach),-0.13996511035495374,0.7233138774805682,-0.19350535737331254,False
+pooled_no_shrub,psnr,rung2id − detach (shared column),1.5527159598138596,0.9973740363573366,1.5568040707022741,False
+pooled_no_shrub,psnr,rung2idexp − detachexp (exp column),1.4127508494589058,0.22718046199491487,6.218628296875848,True
+pooled_no_shrub,psnr,detachexp − detach (detach row),0.5273580736584135,1.0172715667991619,0.5184044171388198,False
+pooled_no_shrub,psnr,rung2idexp − rung2id (rung2id row),0.3873929633034597,0.10735217787230593,3.6086176450398497,True
+pooled_no_shrub,ssim,curve model (H2): ½[(rung2id − detach) + (rung2idexp − detachexp)],0.024563916896780297,0.00789513946149968,3.1112708035830425,True
+pooled_no_shrub,ssim,dark branch: ½[(detachexp − detach) + (rung2idexp − rung2id)],0.01434369712240167,0.00789513946149968,1.816775649416722,False
+pooled_no_shrub,ssim,interaction: (rung2idexp − rung2id) − (detachexp − detach),-0.012750243229998515,0.00789513946149968,-1.6149484492547026,False
+pooled_no_shrub,ssim,rung2id − detach (shared column),0.030939038511779555,0.011069194768643625,2.7950577398296788,True
+pooled_no_shrub,ssim,rung2idexp − detachexp (exp column),0.01818879528178104,0.0014626624377796472,12.435401916379298,True
+pooled_no_shrub,ssim,detachexp − detach (detach row),0.02071881873740093,0.011132607271516642,1.8610931143157372,False
+pooled_no_shrub,ssim,rung2idexp − rung2id (rung2id row),0.007968575507402412,0.0008552833280461513,9.316883944886653,True
+pooled_no_shrub,lpips,curve model (H2): ½[(rung2id − detach) + (rung2idexp − detachexp)],-0.059367857687175264,0.011578958039640569,-5.127219347710681,True
+pooled_no_shrub,lpips,dark branch: ½[(detachexp − detach) + (rung2idexp − rung2id)],-0.012027562699384159,0.011578958039640569,-1.0387430939992865,False
+pooled_no_shrub,lpips,interaction: (rung2idexp − rung2id) − (detachexp − detach),0.01917267545229857,0.011578958039640569,1.655820444867397,False
+pooled_no_shrub,lpips,rung2id − detach (shared column),-0.06895419541332455,0.015111576772665957,-4.5630046718916795,True
+pooled_no_shrub,lpips,rung2idexp − detachexp (exp column),-0.049781519961025984,0.006307518213317874,-7.892410022045733,True
+pooled_no_shrub,lpips,detachexp − detach (detach row),-0.021613900425533444,0.016132161354722653,-1.3398018994650103,False
+pooled_no_shrub,lpips,rung2idexp − rung2id (rung2id row),-0.0024412249732348734,0.002810321795223272,-0.8686638581333441,False

@@ -1,0 +1,142 @@
+check,value,tolerance,ok
+max |rescore − training eval| psnr over all loaded runs,2.54e-06,1e-03,True
+"detach vs detachexp (same seed, 15 pairs): max |Δ log2 mean_pseudo|",6.18e-06,1e-03,True
+"buu seed 0: rung2id vs rung2idexp, max |Δ s|",0.00e+00,1e-05,True
+"buu seed 0: rung2id vs rung2idexp, max |Δ F heights|",0.00e+00,1e-05,True
+"buu seed 1: rung2id vs rung2idexp, max |Δ s|",0.00e+00,1e-05,True
+"buu seed 1: rung2id vs rung2idexp, max |Δ F heights|",0.00e+00,1e-05,True
+"buu seed 2: rung2id vs rung2idexp, max |Δ s|",0.00e+00,1e-05,True
+"buu seed 2: rung2id vs rung2idexp, max |Δ F heights|",0.00e+00,1e-05,True
+"chair seed 0: rung2id vs rung2idexp, max |Δ s|",0.00e+00,1e-05,True
+"chair seed 0: rung2id vs rung2idexp, max |Δ F heights|",0.00e+00,1e-05,True
+"chair seed 1: rung2id vs rung2idexp, max |Δ s|",0.00e+00,1e-05,True
+"chair seed 1: rung2id vs rung2idexp, max |Δ F heights|",0.00e+00,1e-05,True
+"chair seed 2: rung2id vs rung2idexp, max |Δ s|",0.00e+00,1e-05,True
+"chair seed 2: rung2id vs rung2idexp, max |Δ F heights|",0.00e+00,1e-05,True
+"sofa seed 0: rung2id vs rung2idexp, max |Δ s|",0.00e+00,1e-05,True
+"sofa seed 0: rung2id vs rung2idexp, max |Δ F heights|",0.00e+00,1e-05,True
+"sofa seed 1: rung2id vs rung2idexp, max |Δ s|",0.00e+00,1e-05,True
+"sofa seed 1: rung2id vs rung2idexp, max |Δ F heights|",0.00e+00,1e-05,True
+"sofa seed 2: rung2id vs rung2idexp, max |Δ s|",0.00e+00,1e-05,True
+"sofa seed 2: rung2id vs rung2idexp, max |Δ F heights|",0.00e+00,1e-05,True
+"bike seed 0: rung2id vs rung2idexp, max |Δ s|",0.00e+00,1e-05,True
+"bike seed 0: rung2id vs rung2idexp, max |Δ F heights|",0.00e+00,1e-05,True
+"bike seed 1: rung2id vs rung2idexp, max |Δ s|",0.00e+00,1e-05,True
+"bike seed 1: rung2id vs rung2idexp, max |Δ F heights|",0.00e+00,1e-05,True
+"bike seed 2: rung2id vs rung2idexp, max |Δ s|",0.00e+00,1e-05,True
+"bike seed 2: rung2id vs rung2idexp, max |Δ F heights|",0.00e+00,1e-05,True
+"shrub seed 0: rung2id vs rung2idexp, max |Δ s|",0.00e+00,1e-05,True
+"shrub seed 0: rung2id vs rung2idexp, max |Δ F heights|",0.00e+00,1e-05,True
+"shrub seed 1: rung2id vs rung2idexp, max |Δ s|",0.00e+00,1e-05,True
+"shrub seed 1: rung2id vs rung2idexp, max |Δ F heights|",0.00e+00,1e-05,True
+"shrub seed 2: rung2id vs rung2idexp, max |Δ s|",0.00e+00,1e-05,True
+"shrub seed 2: rung2id vs rung2idexp, max |Δ F heights|",0.00e+00,1e-05,True
+"rung2id vs rung2idexp (same seed, 15 pairs): max |Δ log2 mean_pseudo|",0.00e+00,1e-05,True
+lom bike seed 0: rung2id |mean s|,1.66e-09,1e-05,True
+lom bike seed 0: fit_exposure_form(curve_adj) vs the run's s (stops),2.92e-03,1e-02,True
+lom bike seed 0: trainer s vs the preview's (report only; the view order differs),1.98e-02,5e-02,report
+lom bike seed 1: rung2id |mean s|,1.66e-09,1e-05,True
+lom bike seed 1: fit_exposure_form(curve_adj) vs the run's s (stops),3.08e-03,1e-02,True
+lom bike seed 1: trainer s vs the preview's (report only; the view order differs),2.30e-02,5e-02,report
+lom bike seed 2: rung2id |mean s|,1.66e-09,1e-05,True
+lom bike seed 2: fit_exposure_form(curve_adj) vs the run's s (stops),2.94e-03,1e-02,True
+lom bike seed 2: trainer s vs the preview's (report only; the view order differs),2.29e-02,5e-02,report
+lom buu seed 0: rung2id |mean s|,5.42e-09,1e-05,True
+lom buu seed 0: fit_exposure_form(curve_adj) vs the run's s (stops),1.01e-03,1e-02,True
+lom buu seed 0: trainer s vs the preview's (report only; the view order differs),1.85e-02,5e-02,report
+lom buu seed 1: rung2id |mean s|,0.00e+00,1e-05,True
+lom buu seed 1: fit_exposure_form(curve_adj) vs the run's s (stops),9.03e-04,1e-02,True
+lom buu seed 1: trainer s vs the preview's (report only; the view order differs),1.79e-02,5e-02,report
+lom buu seed 2: rung2id |mean s|,0.00e+00,1e-05,True
+lom buu seed 2: fit_exposure_form(curve_adj) vs the run's s (stops),8.61e-04,1e-02,True
+lom buu seed 2: trainer s vs the preview's (report only; the view order differs),1.85e-02,5e-02,report
+lom chair seed 0: rung2id |mean s|,2.43e-09,1e-05,True
+lom chair seed 0: fit_exposure_form(curve_adj) vs the run's s (stops),1.58e-03,1e-02,True
+lom chair seed 0: trainer s vs the preview's (report only; the view order differs),4.75e-02,5e-02,report
+lom chair seed 1: rung2id |mean s|,3.47e-10,1e-05,True
+lom chair seed 1: fit_exposure_form(curve_adj) vs the run's s (stops),1.40e-03,1e-02,True
+lom chair seed 1: trainer s vs the preview's (report only; the view order differs),4.80e-02,5e-02,report
+lom chair seed 2: rung2id |mean s|,0.00e+00,1e-05,True
+lom chair seed 2: fit_exposure_form(curve_adj) vs the run's s (stops),1.49e-03,1e-02,True
+lom chair seed 2: trainer s vs the preview's (report only; the view order differs),4.75e-02,5e-02,report
+lom shrub seed 0: rung2id |mean s|,9.93e-10,1e-05,True
+lom shrub seed 0: fit_exposure_form(curve_adj) vs the run's s (stops),7.41e-03,1e-02,True
+lom shrub seed 0: trainer s vs the preview's (report only; the view order differs),2.09e-02,5e-02,report
+lom shrub seed 1: rung2id |mean s|,4.97e-10,1e-05,True
+lom shrub seed 1: fit_exposure_form(curve_adj) vs the run's s (stops),7.68e-03,1e-02,True
+lom shrub seed 1: trainer s vs the preview's (report only; the view order differs),2.05e-02,5e-02,report
+lom shrub seed 2: rung2id |mean s|,9.93e-10,1e-05,True
+lom shrub seed 2: fit_exposure_form(curve_adj) vs the run's s (stops),7.70e-03,1e-02,True
+lom shrub seed 2: trainer s vs the preview's (report only; the view order differs),2.06e-02,5e-02,report
+lom sofa seed 0: rung2id |mean s|,1.28e-09,1e-05,True
+lom sofa seed 0: fit_exposure_form(curve_adj) vs the run's s (stops),8.47e-04,1e-02,True
+lom sofa seed 0: trainer s vs the preview's (report only; the view order differs),1.30e-02,5e-02,report
+lom sofa seed 1: rung2id |mean s|,0.00e+00,1e-05,True
+lom sofa seed 1: fit_exposure_form(curve_adj) vs the run's s (stops),9.51e-04,1e-02,True
+lom sofa seed 1: trainer s vs the preview's (report only; the view order differs),1.08e-02,5e-02,report
+lom sofa seed 2: rung2id |mean s|,1.03e-09,1e-05,True
+lom sofa seed 2: fit_exposure_form(curve_adj) vs the run's s (stops),9.12e-04,1e-02,True
+lom sofa seed 2: trainer s vs the preview's (report only; the view order differs),1.18e-02,5e-02,report
+vexp bike seed 0: rung2id s_init vs oracle.json s_init (stops),2.62e-08,1e-06,True
+vexp bike seed 0: rung2id |mean s|,0.00e+00,1e-05,True
+vexp bike seed 0: fit_exposure_form(curve_adj) vs the run's s (stops),7.07e-03,1e-02,True
+vexp bike seed 0: trainer s vs the preview's (report only; the view order differs),5.34e-02,5e-02,report (above)
+vexp bike seed 1: rung2id s_init vs oracle.json s_init (stops),2.62e-08,1e-06,True
+vexp bike seed 1: rung2id |mean s|,0.00e+00,1e-05,True
+vexp bike seed 1: fit_exposure_form(curve_adj) vs the run's s (stops),6.98e-03,1e-02,True
+vexp bike seed 1: trainer s vs the preview's (report only; the view order differs),5.30e-02,5e-02,report (above)
+vexp bike seed 2: rung2id s_init vs oracle.json s_init (stops),2.62e-08,1e-06,True
+vexp bike seed 2: rung2id |mean s|,0.00e+00,1e-05,True
+vexp bike seed 2: fit_exposure_form(curve_adj) vs the run's s (stops),6.98e-03,1e-02,True
+vexp bike seed 2: trainer s vs the preview's (report only; the view order differs),5.34e-02,5e-02,report (above)
+vexp buu seed 0: rung2id s_init vs oracle.json s_init (stops),2.72e-08,1e-06,True
+vexp buu seed 0: rung2id |mean s|,1.08e-08,1e-05,True
+vexp buu seed 0: fit_exposure_form(curve_adj) vs the run's s (stops),7.16e-04,1e-02,True
+vexp buu seed 0: trainer s vs the preview's (report only; the view order differs),2.63e-02,5e-02,report
+vexp buu seed 1: rung2id s_init vs oracle.json s_init (stops),2.72e-08,1e-06,True
+vexp buu seed 1: rung2id |mean s|,1.08e-08,1e-05,True
+vexp buu seed 1: fit_exposure_form(curve_adj) vs the run's s (stops),6.73e-04,1e-02,True
+vexp buu seed 1: trainer s vs the preview's (report only; the view order differs),2.57e-02,5e-02,report
+vexp buu seed 2: rung2id s_init vs oracle.json s_init (stops),2.72e-08,1e-06,True
+vexp buu seed 2: rung2id |mean s|,0.00e+00,1e-05,True
+vexp buu seed 2: fit_exposure_form(curve_adj) vs the run's s (stops),7.26e-04,1e-02,True
+vexp buu seed 2: trainer s vs the preview's (report only; the view order differs),2.64e-02,5e-02,report
+vexp chair seed 0: rung2id s_init vs oracle.json s_init (stops),3.60e-08,1e-06,True
+vexp chair seed 0: rung2id |mean s|,2.77e-09,1e-05,True
+vexp chair seed 0: fit_exposure_form(curve_adj) vs the run's s (stops),1.60e-03,1e-02,True
+vexp chair seed 0: trainer s vs the preview's (report only; the view order differs),5.67e-02,5e-02,report (above)
+vexp chair seed 1: rung2id s_init vs oracle.json s_init (stops),3.60e-08,1e-06,True
+vexp chair seed 1: rung2id |mean s|,8.32e-09,1e-05,True
+vexp chair seed 1: fit_exposure_form(curve_adj) vs the run's s (stops),1.82e-03,1e-02,True
+vexp chair seed 1: trainer s vs the preview's (report only; the view order differs),5.69e-02,5e-02,report (above)
+vexp chair seed 2: rung2id s_init vs oracle.json s_init (stops),3.60e-08,1e-06,True
+vexp chair seed 2: rung2id |mean s|,1.39e-08,1e-05,True
+vexp chair seed 2: fit_exposure_form(curve_adj) vs the run's s (stops),1.82e-03,1e-02,True
+vexp chair seed 2: trainer s vs the preview's (report only; the view order differs),5.45e-02,5e-02,report (above)
+vexp shrub seed 0: rung2id s_init vs oracle.json s_init (stops),4.18e-08,1e-06,True
+vexp shrub seed 0: rung2id |mean s|,4.97e-09,1e-05,True
+vexp shrub seed 0: fit_exposure_form(curve_adj) vs the run's s (stops),7.62e-03,1e-02,True
+vexp shrub seed 0: trainer s vs the preview's (report only; the view order differs),3.14e-02,5e-02,report
+vexp shrub seed 1: rung2id s_init vs oracle.json s_init (stops),4.18e-08,1e-06,True
+vexp shrub seed 1: rung2id |mean s|,9.93e-10,1e-05,True
+vexp shrub seed 1: fit_exposure_form(curve_adj) vs the run's s (stops),7.28e-03,1e-02,True
+vexp shrub seed 1: trainer s vs the preview's (report only; the view order differs),3.11e-02,5e-02,report
+vexp shrub seed 2: rung2id s_init vs oracle.json s_init (stops),4.18e-08,1e-06,True
+vexp shrub seed 2: rung2id |mean s|,8.94e-09,1e-05,True
+vexp shrub seed 2: fit_exposure_form(curve_adj) vs the run's s (stops),7.68e-03,1e-02,True
+vexp shrub seed 2: trainer s vs the preview's (report only; the view order differs),3.24e-02,5e-02,report
+vexp sofa seed 0: rung2id s_init vs oracle.json s_init (stops),2.97e-08,1e-06,True
+vexp sofa seed 0: rung2id |mean s|,8.22e-09,1e-05,True
+vexp sofa seed 0: fit_exposure_form(curve_adj) vs the run's s (stops),9.65e-04,1e-02,True
+vexp sofa seed 0: trainer s vs the preview's (report only; the view order differs),2.03e-02,5e-02,report
+vexp sofa seed 1: rung2id s_init vs oracle.json s_init (stops),2.97e-08,1e-06,True
+vexp sofa seed 1: rung2id |mean s|,0.00e+00,1e-05,True
+vexp sofa seed 1: fit_exposure_form(curve_adj) vs the run's s (stops),1.06e-03,1e-02,True
+vexp sofa seed 1: trainer s vs the preview's (report only; the view order differs),2.07e-02,5e-02,report
+vexp sofa seed 2: rung2id s_init vs oracle.json s_init (stops),2.97e-08,1e-06,True
+vexp sofa seed 2: rung2id |mean s|,0.00e+00,1e-05,True
+vexp sofa seed 2: fit_exposure_form(curve_adj) vs the run's s (stops),8.91e-04,1e-02,True
+vexp sofa seed 2: trainer s vs the preview's (report only; the view order differs),2.01e-02,5e-02,report
+"M1 reproduction: T1 validation means (official, detach)",0.00e+00,1e-09,True
+"M1 reproduction: paired pseudo-target leak (official, detach) vs T4_exposure.csv",0.00e+00,1e-09,True
+M1 reproduction: detach dark-fit change vs signed u (T5b),0.00e+00,1e-09,True
