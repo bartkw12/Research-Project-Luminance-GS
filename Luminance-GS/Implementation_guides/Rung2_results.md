@@ -1,5 +1,7 @@
 # Rung 2 results (M3): one shared monotone curve plus one exposure per view
 
+> M5 follow-up (H3, H1b, H2b, no prior, long replay, overexposure): see `M5_results.md` (2026-11-25).
+
 ## The model
 
 Rung 2 replaces the official per-view curve machinery with one explicit model:
