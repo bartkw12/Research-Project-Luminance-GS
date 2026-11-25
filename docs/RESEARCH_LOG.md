@@ -1047,3 +1047,43 @@ Entries up to 2026-10-23 were backfilled from git history, the run folders and t
   - **Buu:** `rung2`'s pseudo-targets are 5.65 dB below `detach`'s, with raw PSNR +1.68 dB and saturation ratio +0.36.
 - **Takeaway:** H1-over is **not supported**, and matching `detach` is a weaker bar on overexposure, because the detach gain is a low-light result. *Inferred:* the one-γ shape prior is a low-light default. On overexposure it becomes a strong power curve (the preview's buu γ = 12.8) that crushes mid-tones and, applied per channel, raises saturation. Nothing was tuned on overexposure validation (plan risk 6).
 - **Next:** report it next to the low-light H1 verdict, as a limitation of the one-γ prior.
+
+### 2026-11-25: Decisions after M5: M6 builds on the identity init; E5 runs before Rung 3; overexposure is reported as a limitation
+
+- **Rung / type:** Rung 2 / Rung 3 · decision. Bart, 2026-11-25, after Claude's review of his reasoning.
+- **1. M6 (Rung 3) builds on `rung2id`** (F initialised at the identity).
+  - **Reasons:**
+    - The official curve also starts at the identity (`curve_estimation.md` lines 39–40: the global curve starts as `linspace(0, 1, 255)`, and the bias network has Xavier gain 0.01). So the choice has a reason that does not depend on M5's results.
+    - H1b passed on fresh seeds (12/12, pre-registered), and H2b(a) is confirmed on the varying set.
+    - On the `cdf` base, Rung 3 could "win" just by fixing bike's known dark-end deficit.
+  - **Caveats:**
+    - The init was chosen after seeing seed 0.
+    - The varying set has the same scenes and ground truth, so E1 is not independent data.
+    - Fresh seeds re-test only the 3DGS randomness.
+    - A1 shows the gain is early stopping of F. So M6 keeps 10k steps and the same learning rates, and reports Rung 3's curve loss at 10k next to its base's.
+  - **Reporting is unchanged:** H1 (`cdf`, pre-registered) stays the H1 verdict, with H1b side by side.
+- **2. E5 runs before Rung 3, on the identity base.**
+  - The colour-preserving variant, `rung2idlum` − `rung2id`.
+  - Readings are logged before any run; design in `E5_luminance_plan.md`.
+  - The comparison runs already exist (`rung2id`: LOM seeds 0–2, E1, E6b), so 45 new runs, about 3.5 h (*inferred* from M5's per-run minutes).
+  - If E5 "fixes" by its pre-registered rule, M6 builds on `rung2idlum`.
+  - **Cutoff:** if E5 is not launched by Fri 27 Nov, Rung 3 goes ahead on `rung2id` without it.
+- **3. Overexposure is reported as a limitation.** The diagnosis is split into measured and inferred (`M5_results.md`, E6). An exploratory overexposure check (15 runs) joins E5's batch; it cannot change H1-over.
+- **Correction to Claude's earlier note.** "Whether F is fitted to a luminance histogram or to per-channel values" is not an open question: `losses.py` line 56 computes the HE-CDF on the channel-mean grey. A luminance variant that uses the same grey leaves F's training untouched.
+- **Measured, for E5's readings** (validation, mean over seeds 0–2, from `rescore/val_summary.json`):
+  - **Bike hue error:**
+
+    | Arm | LOM | Varying set |
+    |---|---|---|
+    | `detach` | 31.8° | 12.3° |
+    | `rung2id` | 33.6° | 27.0° |
+
+    The varying-set gap comes largely from `detach`'s own drop there; the cause is not established.
+  - **Overexposure saturation ratio** (prediction / GT; above 1 means oversaturated):
+
+    | Arm | buu | chair | sofa | bike |
+    |---|---|---|---|---|
+    | official | 0.90 | 1.39 | 1.44 | 1.15 |
+    | `detach` | 1.24 | 1.55 | 1.60 | 1.34 |
+    | `rung2` | 1.60 | 1.59 | 1.64 | 1.36 |
+- **Next:** the E5 plan for Bart's approval before any code, and a draft update to Wei.
