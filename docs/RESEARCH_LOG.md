@@ -954,3 +954,96 @@ Entries up to 2026-10-23 were backfilled from git history, the run folders and t
 - **What was done:** `rescore_runs.py --root ../results/<root> --ref_root ../results/rung0` for `vexp` (45 runs), `rung2` (30), `h1b` (30) and `overexp` (60). Run by Claude with Bart's OK, from 10:10:14 to 10:34:20, about 10 s per run. Console logs: `<root>/rescore_console_m5.log`.
 - **Result (measured):** every root ends with "all done", with no failed or missing reference. A dry run afterwards finds 0 runs left to re-score in all four roots (vexp 120/120, rung2 60/60, h1b 30/30, overexp 60/60).
 - **Next:** step 5 analyses.
+
+### 2026-11-25: M5 E1 (H2b): the identity init on the varying set; (a) confirmed, (b) supported
+
+- **Rung / type:** Rung 2 (M5) · experiment. Readings pre-registered on 2026-11-24 (M5_plan.md 3.2).
+- **Reproduce:** batch at commit `dbdcfdb`, analysis with the step 3 code (uncommitted at the time). From `examples/`:
+  - `python rung2_ablation.py --mode init` → `results/rung2/summary_h2b/`
+  - `python rung2_analyze.py --rung2_variant rung2id` → `results/rung2/summary_rung2id/`
+
+  `rung2id` and `rung2idexp` on `results/vexp`, seeds 0–2.
+- **Results (measured):**
+  - **(a) Init main effect, noise over four cells:** pooled +0.61 dB bm PSNR (+5.1×), LPIPS −0.0117 (−3.1×, better); without shrub +0.76 dB (+5.2×); bike +0.28 dB (+9.7×), LPIPS +0.3×. Positive in all four decision scenes (buu +0.66, chair +0.42, sofa +1.67).
+  - **(b) H2 rule with the identity cells:** curve-model main effect +2.72 dB (+6.8×) pooled, +2.99 dB (+6.0×) without shrub; LPIPS −0.0360 (−3.9×); positive in 4/4 decision scenes; exp-column simple effect +2.75 dB (+12.0×). For comparison, M3's `cdf` default gave +2.11 dB (+5.3×).
+  - **(c) Mechanism:** pooled paired leak 0.009 against `detach`'s 0.512; s_k slope −1.00; s moves 0.005 stops from its initialisation.
+  - **Bike hue on the varying set:** `rung2id` 27.0° ± 5.6, M3 `rung2` 35.4°, `detach` 12.3°.
+  - Integrity: `rung2id` and `rung2idexp` agree bit for bit in F and s.
+- **Takeaway:** by the pre-registered readings, H2b(a) is **confirmed** (pooled, without shrub, and bike) and H2b(b) is **supported**. The init gain carries over to new (gained) photos of the same scenes and is larger there than on LOM (+0.44 dB). *Inferred:* the exposure model carries H2 and the init adds on top. The bike hue gap shrinks by about a third but remains.
+- **Next:** `M5_results.md`; the E5 decision (Bart).
+
+### 2026-11-25: M5 E2 (H3, restated): attaching s_k has no effect
+
+- **Rung / type:** Rung 2 (M5) · experiment. Readings pre-registered on 2026-11-24 (M5_plan.md 3.3).
+- **Reproduce:** `python rung2_ablation.py --mode h3` → `results/rung2/summary_h3/`. `rung2att` (`--rung2_attach s`) against `rung2`, LOM and the varying set, seeds 0–2.
+- **Results (measured; `rung2att` − `rung2`):**
+
+  | Set | bm PSNR | LPIPS |
+  |---|---|---|
+  | LOM pooled | +0.08 dB (+1.5×) | +0.0004 (+0.2×) |
+  | Varying pooled | −0.01 dB (−0.1×) | +0.0015 (+0.2×) |
+
+  - Without shrub the result is the same.
+  - LOM decision scenes' bm PSNR: buu +0.06, chair +0.06, sofa +0.24, bike +0.00.
+  - Bike hue: LOM +0.23° (+0.1×), varying +0.82° (+0.6×).
+  - Pooled leak 0.006 (limit 0.1); pooled s_k slope −1.003 (range −1.1 to −0.9).
+  - The exposures move more: s drift 0.044 against 0.018 stops on the varying set, 0.049 against 0.012 on LOM.
+  - Small real side effects: LOM pseudo-target bm PSNR −0.06 dB and angle error +0.06°.
+- **Takeaway:** no help signal and no harm signal, so the verdict is **no effect**. *Inferred:* 3D feedback into s_k changes the exposures by hundredths of a stop and leaves quality unchanged, so the detached default loses nothing measurable.
+- **Next:** keep `--rung2_attach none` as the default (no default changes in M5).
+
+### 2026-11-25: M5 E3 (H1b): the identity variant meets the H1 rule on fresh seeds 3–5
+
+- **Rung / type:** Rung 2 (M5) · experiment. Reading pre-registered on 2026-11-24 (M5_plan.md 3.1).
+- **Reproduce:** from `examples/`:
+  - `python rung2_ablation.py --mode h1 --a rung2id --a_roots ../results/h1b --b detach --b_roots ../results/h1b --seeds 3 4 5 --out ../results/h1b/summary`
+  - Context: the same with `--seeds 0 1 2 3 4 5`, `--a_roots ../results/rung2 ../results/h1b` and `--b_roots ../results/rung0 ../results/h1b`, written to `results/h1b/summary_seeds012345/`.
+- **Results (measured; `rung2id` − `detach`, seeds 3–5):**
+
+  | Scene | bm PSNR | SSIM | LPIPS |
+  |---|---|---|---|
+  | buu | +0.62 (+4.7×) | +0.0046 | −0.0380 |
+  | chair | +0.48 (+1.8×) | +0.0154 | −0.0221 |
+  | sofa | +0.68 (+1.7×) | +0.0076 | −0.0144 |
+  | bike | +0.14 (+2.6×) | +0.0270 | +0.0062 (+0.9×) |
+  | pooled | +0.37 (+3.7×) | +0.0101 (+8.6×) | −0.0084 |
+
+  - 12 of 12 checks meet.
+  - Context, seeds 0–5: 12 of 12, pooled +0.39 dB (+4.3×). The two `detach` code versions are acceptable to pool because of M2's regression check.
+- **Takeaway:** H1b is **supported**. Report it side by side with H1 (not supported, `cdf` init), never in its place. The init was chosen after seed 0; E1 and A1 qualify it.
+- **Next:** `M5_results.md`, the "What the final report says" section.
+
+### 2026-11-25: M5 E4 (no shape prior): −6.5 dB pooled; the deep-shadow lift disappears
+
+- **Rung / type:** Rung 2 (M5) · experiment (ablation, reported only; M5_plan.md 3.4).
+- **Reproduce:** `python rung2_ablation.py --mode noprior` → `results/rung2/summary_noprior/`. `rung2noprior` (`--rung2_prior none`) against `rung2`, LOM, seeds 0–2.
+- **Results (measured; `rung2noprior` − `rung2`):**
+  - **bm PSNR:** buu −9.49, chair −6.91, sofa −10.88, bike −6.66, shrub +1.59; pooled −6.47 dB (−130×).
+  - **Pseudo-target bm PSNR:** −7.1 to −12.6 dB in the decision scenes. This matches `preview_final`'s expectation of 7 to 13 dB.
+  - **F at levels 1–4 (×255):** near 0 without the prior (for example sofa 0.04 to 0.96, buu 0.04 to 2.8), against 47 to 129 with it.
+  - **Bike hue on LOM:** −27.3° (−17.8×).
+  - One parameter fewer (no γ).
+- **Takeaway:** the prior is what lifts the deep shadows. This directly measures the 2026-11-16 correction. *Inferred:* bike's hue gap is tied to that lift, which fits M3's "the hue gap goes with the dark end". Dropping the prior is not a fix.
+- **Next:** feeds the E5 / M6 decision.
+
+### 2026-11-25: M5 E6 (H1-over): Rung 2 fails the H1 rule on overexposure, and `detach` trails the official code there
+
+- **Rung / type:** Rung 2 (M5) · experiment. Reading pre-registered on 2026-11-24 (M5_plan.md 3.6).
+- **Reproduce:** `python rung2_ablation.py --mode h1 --a rung2 --a_roots ../results/overexp --b detach --b_roots ../results/overexp --official_roots ../results/overexp --exp_name over_exp --extra rung2id --out ../results/overexp/summary`. Every run's `exp_name` is checked to be `over_exp`.
+- **Results (measured; `rung2` − `detach`):**
+
+  | Scene | bm PSNR | Checks |
+  |---|---|---|
+  | buu | −5.35 dB (−28.1×) | fails all three |
+  | chair | −0.40 (−3.1×) | fails all three |
+  | sofa | −0.35 (−3.3×) | fails all three |
+  | bike | −0.14 (−0.9×) | meets |
+  | pooled | −1.26 (−17.6×) | |
+
+  - 3 of 12 checks meet.
+  - **`detach` − official:** pooled −0.94 dB (−9.7×). Official is best on chair, sofa and bike; `detach` is best on buu.
+  - **Pooled bm PSNR:** official 21.69, `detach` 20.75, `rung2` 19.48, `rung2id` 19.55.
+  - **`rung2id` − `rung2` (exploratory):** +0.07 dB (+2.0×, not real).
+  - **Buu:** `rung2`'s pseudo-targets are 5.65 dB below `detach`'s, with raw PSNR +1.68 dB and saturation ratio +0.36.
+- **Takeaway:** H1-over is **not supported**, and matching `detach` is a weaker bar on overexposure, because the detach gain is a low-light result. *Inferred:* the one-γ shape prior is a low-light default. On overexposure it becomes a strong power curve (the preview's buu γ = 12.8) that crushes mid-tones and, applied per channel, raises saturation. Nothing was tuned on overexposure validation (plan risk 6).
+- **Next:** report it next to the low-light H1 verdict, as a limitation of the one-γ prior.
