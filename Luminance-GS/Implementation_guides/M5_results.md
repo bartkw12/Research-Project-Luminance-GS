@@ -166,7 +166,13 @@ Curve-only replay (no 3DGS) on the LOM training photos, both inits, 50k steps wi
 - **The shape prior is essential in low light** (E4: −6.5 dB pooled without it) and **wrong in overexposure** (E6). One sentence for the report: the one global γ that carries the official shape prior is what lifts the deep shadows; it is also what fails when the photos need darkening.
 - **Parameters:** `rung2` has K + N + 1 curve parameters (55 to 76 per scene) against the official code's about 255k.
 
-## Open after M5 (for Bart's decisions)
+## Decided 2026-11-25 (Bart; log entry of the same date)
+
+1. **M6 builds on `rung2id`.** It starts the way the official curve does (at the identity); its H1b and H2b(a) passed as pre-registered; and on the `cdf` base, Rung 3 could win by fixing bike's known dark-end deficit. M6 keeps 10k steps and the same learning rates, because the gain is early stopping (A1). H1 stays judged on `cdf`, with H1b side by side.
+2. **E5 runs before Rung 3, on the identity base** (`rung2idlum` − `rung2id`; `E5_luminance_plan.md`). If it "fixes" bike's hue by its pre-registered rule, M6 builds on `rung2idlum`.
+3. **Overexposure is reported as a limitation**, with the diagnosis above. An exploratory overexposure check joins E5's batch.
+
+## Open after M5 (as written before the decisions)
 
 1. **Which Rung 2 version Rung 3 (M6) builds on.** M5 supports: detached s_k (attaching does nothing); the `cdf` init stays the pre-registered default; the identity init is a pre-registered-on-fresh-seeds alternative whose gain is early stopping. Bart's call.
 2. **E5 (colour-preserving luminance variant).** Bike's hue gap on the varying set remains (27° against `detach`'s 12°), so E5 stays an M6 candidate (plan section 8). E4 suggests the hue gap is tied to the dark-end lift.
