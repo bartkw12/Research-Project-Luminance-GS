@@ -4,6 +4,8 @@ Written 2026-11-24 in the project thread, for Claude Code on Bart's PC, after Ba
 
 **Status: step 0 done (2026-11-24).** Bart confirms the pre-registered readings in section 3 before step 1 and any run.
 
+**Status 2026-11-25: steps 1–5 done.** 165 runs, all ok, all re-scored; results in `M5_results.md` and the log (2026-11-25). E5 not run (step 6, Bart's call).
+
 **Updated 2026-11-24, with Bart's notes:**
 - M4 is done: Bart emailed Wei the M3 results.
 - Rung 3 stays, as M6 (section 8).
