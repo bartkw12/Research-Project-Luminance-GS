@@ -846,3 +846,51 @@ Entries up to 2026-10-23 were backfilled from git history, the run folders and t
   - *Inferred:* F ends close to the shape prior x^γ in every scene, and the darkening is strong (buu maps level 127 to about 0.5/255). Expect very dark pseudo-targets on buu.
 - **A1 cost:** measured 8 s for 6k replay steps, so the full run (5 scenes, 2 × 50k + 2 × 10k steps each) is about 13 min of CPU. That is under the 30-minute threshold, so no ask is needed.
 - **Next:** Bart commits, then launches the six commands with `/run-batch` (about 15.3 h, or 16.5 h with E6's optional `rung2id`; sleep off). During the batches: the `rung2_analyze.py` changes, `rung2_ablation.py`, and the A1 run.
+
+### 2026-11-24: M5 batch launched (E1–E4 and E6, 150 runs), readings fixed before results
+
+- **Rung / type:** Rung 2 (M5) · setup. The readings are the 2026-11-24 decision entry above, logged before any run.
+- **Pre-flight:**
+  - commit `dbdcfdb`, clean tree (`.vscode/` only); GPU free; 3.6 TB free; sleep on AC already 0;
+  - an extra smoke run, `rung2id` on `over_exp` (`results/overexp/smoke_m5/`): `ok`, re-scored, 55 curve parameters.
+- **Launch:**
+  - Claude started the six commands of `M5_plan.md` steps 3, 4 and 4b at 13:09:44, in order, as a detached PowerShell process (option b, Bart's go-ahead);
+  - console logs `<root>/batch_console_m5_{e1e2,e2,e3,e4,e6,e6b}.log`.
+- **Reproduce:** from `examples/`:
+  - `run_rung0.py --data_root ../data/LOM_vexp --root ../results/vexp --variants rung2id rung2idexp rung2att --seeds 0 1 2`
+  - `run_rung0.py --root ../results/rung2 --variants rung2att --seeds 0 1 2`
+  - `run_rung0.py --root ../results/h1b --variants detach rung2id --seeds 3 4 5`
+  - `run_rung0.py --root ../results/rung2 --variants rung2noprior --seeds 0 1 2`
+  - `run_rung0.py --exp_name over_exp --root ../results/overexp --variants baseline detach rung2 --seeds 0 1 2`
+  - `run_rung0.py --exp_name over_exp --root ../results/overexp --variants rung2id --seeds 0 1 2`
+- **Expected time** (*inferred* from measured minutes per run: `baseline` 12.6, `detach` 7.9, Rung 2 4.5–4.7): about 16.3 h. E1–E4 should end about 22:00, everything about 05:30 on 25 Nov.
+- **Results:** pending.
+
+### 2026-11-25: M5 batch finished (165 runs, all ok), one sleep interruption
+
+- **Rung / type:** Rung 2 (M5) · setup. Completes the 2026-11-24 launch entry above. Correction to it: the six commands hold **165** runs (45 + 15 + 30 + 15 + 45 + 15), not 150; 150 left out E6b.
+- **Outcome (measured, `runs.csv` of each root):** 165 of 165 runs `ok`, none failed. Status file: E1+E2 (varying set) done 18:12:45, E2 LOM 19:18:26, E3 22:09:36, E4 23:16:35, E6 05:18:05, E6b 06:34:46 (ALL DONE). Wall time 17 h 25 min from 13:09:44.
+- **Sleep interruption:**
+  - The PC slept from 15:35:16 to 17:19:22 on 24 Nov (Kernel-Power 42, "System Idle"), although the AC sleep timeout was 0. A USB device woke it.
+  - `vexp/chair_rung2id_seed2` was suspended at step 4944. It resumed and finished `ok`, but its recorded 108.2 min is not a compute time. As with Rung 0's `sofa_detach_seed1`, its results are kept and its time is excluded. *Inferred:* the pause does not change training (no wall-clock dependence in the trainer).
+  - From 21:27:57, a helper (scratchpad `stay_awake.ps1`, `SetThreadExecutionState` ES_CONTINUOUS | ES_SYSTEM_REQUIRED, no power settings changed; Bart's OK) kept the PC awake while the launcher ran. It stopped by itself at 06:35:11 and cleared the request. There was no further sleep during the batch.
+- **Minutes per run** (mean, range; slept run excluded):
+
+  | Root | Variant | Mean min | Range |
+  |---|---|---|---|
+  | `vexp` | `rung2id` | 4.4 | 3.6–6.3 |
+  | `vexp` | `rung2idexp` | 4.3 | 3.5–6.2 |
+  | `vexp` | `rung2att` | 4.5 | 3.6–6.5 |
+  | `rung2` | `rung2att` | 4.4 | 3.6–6.3 |
+  | `rung2` | `rung2noprior` | 4.5 | 3.6–6.5 |
+  | `h1b` | `detach` | 7.1 | 6.3–9.1 |
+  | `h1b` | `rung2id` | 4.3 | 3.6–6.5 |
+  | `overexp` | `baseline` | 11.1 | 9.3–14.2 |
+  | `overexp` | `detach` | 7.9 | 6.8–11.2 |
+  | `overexp` | `rung2` | 5.1 | 4.0–8.6 |
+  | `overexp` | `rung2id` | 5.1 | 4.0–8.6 |
+
+  Shrub is the slow scene on `over_exp` (Rung 2 about 8.5 min).
+- **Also seen (measured):** Windows logged "WHEA-Logger event 1, fatal hardware error" at 15:15:53 (twice) and 18:10:47 on 24 Nov, and at 00:00:10 on 25 Nov. There was no crash or reboot (last boot 13 Nov), and every run active at those moments finished `ok`. There were 11 such events in 30 days, including 10 Nov, so this is not new. *Inferred:* recovered device errors, harmless to the runs.
+- **Re-scoring:** not done yet (it needs Bart's OK). E1–E4 and E6 runs have training-time metrics only.
+- **Next:** re-score all four roots with `rescore_runs.py --ref_root ../results/rung0`, then step 5: `rung2_analyze.py` / `rung2_ablation.py` changes and tests, the A1 replay, the analyses, `M5_results.md` and the update to Wei.
