@@ -316,6 +316,8 @@ The second line is the optional `rung2id`. Re-score with `--ref_root ../results/
 - Update `CLAUDE.md`'s rung table and the protocol. Propose the commits.
 
 ### Step 6: E5, only if section 5 allows
+
+*Superseded 2026-11-25 (Bart):* E5 runs before Rung 3, on the identity base (`rung2idlum` − `rung2id`), with an exploratory overexposure check. Design, readings and steps are in `E5_luminance_plan.md`; the text below is the original.
 - Design `--rung2_color luminance`: apply F to a luminance channel and scale RGB by the ratio, so hue is preserved. Default `rgb` reproduces the current code.
 - Smoke test, then 30 runs (LOM and the varying set, seeds 0–2).
 - Reading, logged before the runs:
