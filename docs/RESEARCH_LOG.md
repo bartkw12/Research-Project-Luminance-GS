@@ -894,3 +894,63 @@ Entries up to 2026-10-23 were backfilled from git history, the run folders and t
 - **Also seen (measured):** Windows logged "WHEA-Logger event 1, fatal hardware error" at 15:15:53 (twice) and 18:10:47 on 24 Nov, and at 00:00:10 on 25 Nov. There was no crash or reboot (last boot 13 Nov), and every run active at those moments finished `ok`. There were 11 such events in 30 days, including 10 Nov, so this is not new. *Inferred:* recovered device errors, harmless to the runs.
 - **Re-scoring:** not done yet (it needs Bart's OK). E1–E4 and E6 runs have training-time metrics only.
 - **Next:** re-score all four roots with `rescore_runs.py --ref_root ../results/rung0`, then step 5: `rung2_analyze.py` / `rung2_ablation.py` changes and tests, the A1 replay, the analyses, `M5_results.md` and the update to Wei.
+
+### 2026-11-25: M5 step 3 analysis code: rung2_analyze.py --rung2_variant, new rung2_ablation.py, all tests pass
+
+- **Rung / type:** Rung 2 (M5) · code. No run or reading changed. Bart's OK, 2026-11-25.
+- **Why:** M5_plan.md step 3. E1–E4 and E6 need these scripts before step 5's analysis.
+- **What was done:**
+  - **`rung2_analyze.py`** gained two flags.
+    - `--rung2_variant {rung2, rung2id}`: with `rung2id`, the Rung 2 cells are read from `rung2id` and `rung2idexp`, and the tables name them so. Default output `results/rung2/summary_rung2id/`.
+    - `--out`, behind a guard that refuses M3's rule-6 folders. So the bare default command, which writes `summary/`, is now refused.
+    - In `rung2id` mode, the LOM H1 verdict is labelled exploratory, and H2's "1×–2×: run seeds 3 and 4" outcome reads "inconclusive" (M5 3.2(b)).
+    - `EXPECTED` has `rung2id` and `rung2idexp` entries (F init identity).
+    - The analysis logic is unchanged: the internal cell names are kept, and only the labels and run sources change.
+  - **`rung2_ablation.py` (new)** has one mode per job, each following M5 3.1–3.6:
+    - `h3`: help and harm signals, leak, pooled s_k slope, s drift;
+    - `noprior`: every metric, plus F at grid levels 1–4;
+    - `h1`: the H1 rule, official alongside, arms spanning roots by seed, `exp_name` checked;
+    - `init`: the init × dark-branch 2×2, noise over the four cells.
+
+    It stops before any table if a run is missing, not ok, has the wrong flags, data, `exp_name`, seed or steps, or was re-scored against the wrong depth. Wall times leave out `vexp/chair_rung2id_seed2` (the run that slept).
+- **Tests (measured; scratch outputs in the git-ignored `results/rung2/smoke_m5/`):**
+  - **Guards:** `rung2_analyze.py` refused 6 bad paths and `rung2_ablation.py` refused 4, including `summary/`, `summary_headstart*/` and `preview_final/`. No folder was created.
+  - **Default `rung2_analyze.py` into `smoke_m5/analyze_default`:** all 12 CSVs are byte-identical to `results/rung2/summary/`, and `tables.md` and `numbers.json` match once the "Generated" line and `meta` are masked. Its `--selftest` gives all 84 curve-model effects and every R1 difference exactly 0.
+  - **`--rung2_variant rung2id`:** the LOM H1 table equals `summary_headstart_seeds012/`'s (36 values, max |d| 0). `rung2id` and `rung2idexp` agree bit for bit in s and F, and every integrity check passes.
+  - **`rung2_ablation.py --selftest`:** every effect under test is exactly 0 in all four modes (h3 189, noprior 84, h1 231, init 28 per effect).
+  - **`h1` reproductions:** `rung2` − `detach` (`results/rung2`, `results/rung0`) reproduces M3's R1b exactly (140 values, including bike failing on bm PSNR). `rung2id` − `detach` reproduces the head-start H1 table exactly (36 values, 12/12).
+- **Reproduce:** commit `dbdcfdb` plus uncommitted `examples/rung2_analyze.py` and the new `examples/rung2_ablation.py`; test commands in the script docstrings.
+- **Re-scoring** of the 165 M5 runs started at 10:10 (`rescore_runs.py --ref_root ../results/rung0`, four roots, about 10 s per run); `vexp` done 10:16:55. A1 (`rung2_replay.py --mode long`) started at about 10:20. Results: pending.
+- **Next:** step 5. Run `rung2_analyze.py --rung2_variant rung2id` and the four `rung2_ablation.py` jobs, then apply the readings, write `M5_results.md` and update Wei.
+
+### 2026-11-25: M5 A1 (long curve replay): the identity-init gap is early stopping in every scene
+
+- **Rung / type:** Rung 2 (M5) · experiment (CPU replay, no 3DGS). Reading pre-registered on 2026-11-24 (M5_plan.md 3.5).
+- **What was done:** `rung2_replay.py --mode long`.
+  - Curve-only replay on the LOM low-light training photos, both inits, 50,000 steps. The learning rate decays to 1% over the replay, so this models a 50k-step run, not the 10k run continued.
+  - Seed 0, 2 threads, 698 s.
+  - gap(t) = max over the 255-bin grid of |F_id(t) − F_cdf(t)|.
+- **Reproduce:** commit `dbdcfdb` (`rung2_replay.py` unchanged since), `python rung2_replay.py --mode long`, from `examples/`.
+- **Built-in check passes in all five scenes:** the 10k replay's final gap matches the trainer's 10k gap (seeds 0–2) within 0.01. Bike: 0.0511 against 0.0510.
+- **Results (measured; source `results/rung2/replay_long/tables.md`):**
+
+  | Scene | Gap at 1k | Gap at 10k | Gap at 40k | Gap at 50k | Step where the gap halves | Outcome |
+  |---|---|---|---|---|---|---|
+  | buu | 0.078 | 0.034 | 0.002 | 0.002 | 4000 | early stopping |
+  | chair | 0.126 | 0.031 | 0.000 | 0.000 | 3000 | early stopping |
+  | sofa | 0.095 | 0.035 | 0.001 | 0.001 | 4000 | early stopping |
+  | bike | 0.177 | 0.051 | 0.001 | 0.001 | 4000 | early stopping |
+  | shrub | 0.106 | 0.031 | 0.002 | 0.002 | 2000 | early stopping |
+
+  At 50k the two inits reach the same final curve objective (to 3 decimals) in every scene.
+- **Takeaway:** by the pre-registered reading, every scene's gap(50k) is below 0.01, so the outcome is "early stopping".
+  - *Inferred:* the identity init's gain at 10k (H1b, E3) comes from F not yet having converged at the dark end. With enough curve training, both inits reach the same F. This is a curve-only replay, so whether a 50k-step 3DGS run would lose the gain is not measured.
+  - *Inferred:* the curve loss is not flat at the dark end; it pulls both inits to one F, but slowly at the learning rate of 1e-2.
+- **Next:** report it next to H1b in `M5_results.md` (step 5).
+
+### 2026-11-25: M5 re-scoring done (165 runs, no failures)
+
+- **Rung / type:** Rung 2 (M5) · setup. Completes the re-scoring started in the step 3 code entry above.
+- **What was done:** `rescore_runs.py --root ../results/<root> --ref_root ../results/rung0` for `vexp` (45 runs), `rung2` (30), `h1b` (30) and `overexp` (60). Run by Claude with Bart's OK, from 10:10:14 to 10:34:20, about 10 s per run. Console logs: `<root>/rescore_console_m5.log`.
+- **Result (measured):** every root ends with "all done", with no failed or missing reference. A dry run afterwards finds 0 runs left to re-score in all four roots (vexp 120/120, rung2 60/60, h1b 30/30, overexp 60/60).
+- **Next:** step 5 analyses.
