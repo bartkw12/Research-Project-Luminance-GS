@@ -1,0 +1,6 @@
+﻿[rung2_replay] buu: gap 0.0782 at 1000 -> 0.0017 at 50000: early stopping; check 0.0344 vs trainer [0.03450980392156863, 0.03450980392156863, 0.03450980392156863] (143 s)
+[rung2_replay] chair: gap 0.1265 at 1000 -> 0.0004 at 50000: early stopping; check 0.0311 vs trainer [0.030980392156862747, 0.030980392156862747, 0.030980392156862747] (140 s)
+[rung2_replay] sofa: gap 0.0953 at 1000 -> 0.0009 at 50000: early stopping; check 0.0350 vs trainer [0.03490196078431373, 0.03490196078431373, 0.03490196078431373] (139 s)
+[rung2_replay] bike: gap 0.1767 at 1000 -> 0.0006 at 50000: early stopping; check 0.0511 vs trainer [0.050980392156862744, 0.050980392156862744, 0.050980392156862744] (140 s)
+[rung2_replay] shrub: gap 0.1057 at 1000 -> 0.0021 at 50000: early stopping; check 0.0312 vs trainer [0.030980392156862747, 0.030980392156862747, 0.030980392156862747] (137 s)
+[rung2_replay] wrote I:\Python\Research\3DGS\Luminance-GS\Luminance-GS\Luminance-GS\results\rung2\replay_long in 699 s

@@ -1,0 +1,21 @@
+{
+ "psnr": 14.966946983337403,
+ "ssim": 0.6590444684028626,
+ "lpips": 0.20642566680908203,
+ "psnr_gtmean": 19.804706192016603,
+ "psnr_png": 15.015506571709931,
+ "psnr_gtmean_png": 19.767141989597896,
+ "mean_render": 0.468235045671463,
+ "mean_gt": 0.36670559644699097,
+ "ang_err_deg": 7.393551063537598,
+ "ang_err_p95_deg": 16.864244079589845,
+ "sat_ratio": 1.0719406366348267,
+ "hue_err_sat_deg": 6.017147064208984,
+ "hue_px_frac": 0.9634949326515198,
+ "hue_excluded_frac": 0.026163554191589354,
+ "n_views": 5,
+ "run": "I:\\Python\\Research\\3DGS\\Luminance-GS\\Luminance-GS\\Luminance-GS\\results\\rung2\\shrub_rung2noprior_seed1",
+ "ckpt": "I:\\Python\\Research\\3DGS\\Luminance-GS\\Luminance-GS\\Luminance-GS\\results\\rung2\\shrub_rung2noprior_seed1\\ckpts\\ckpt_9999.pt",
+ "ref_depth_run": "I:\\Python\\Research\\3DGS\\Luminance-GS\\Luminance-GS\\Luminance-GS\\results\\rung0\\shrub_baseline_seed0",
+ "seconds": 5.544095039367676
+}

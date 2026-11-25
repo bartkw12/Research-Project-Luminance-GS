@@ -1,0 +1,128 @@
+{
+ "meta": {
+  "date": "2026-11-25 10:33",
+  "seconds": 698,
+  "torch": "1.13.1",
+  "args": {
+   "mode": "long",
+   "scenes": [
+    "buu",
+    "chair",
+    "sofa",
+    "bike",
+    "shrub"
+   ],
+   "steps": null,
+   "every": null,
+   "check_steps": 10000,
+   "seed": 0,
+   "threads": 2,
+   "out": null
+  },
+  "rung2_replay.py_sha256_16": "e0f28deb42522953",
+  "rung2_preview.py_sha256_16": "edc0d6d7c6d73642",
+  "rung2.py_sha256_16": "4b7c19f557b93fc0"
+ },
+ "rows": [
+  {
+   "scene": "buu",
+   "steps": 50000,
+   "gap_first": 0.07820340991020203,
+   "gap_at_ref": 0.0017380565404891968,
+   "ref_step": 40000,
+   "gap_final": 0.0017052441835403442,
+   "outcome": "early stopping",
+   "step_gap_halves": 4000,
+   "objective_cdf_final": 0.007458961568772793,
+   "objective_identity_final": 0.007459566928446293,
+   "check_gap_10000": 0.03444153070449829,
+   "trainer_gap_10k_seeds": [
+    0.0345,
+    0.0345,
+    0.0345
+   ],
+   "check_ok": true,
+   "seconds": 142.9
+  },
+  {
+   "scene": "chair",
+   "steps": 50000,
+   "gap_first": 0.12649792432785034,
+   "gap_at_ref": 0.0003834068775177002,
+   "ref_step": 40000,
+   "gap_final": 0.0003834068775177002,
+   "outcome": "early stopping",
+   "step_gap_halves": 3000,
+   "objective_cdf_final": 0.005709478631615639,
+   "objective_identity_final": 0.0057100518606603146,
+   "check_gap_10000": 0.031123876571655273,
+   "trainer_gap_10k_seeds": [
+    0.031,
+    0.031,
+    0.031
+   ],
+   "check_ok": true,
+   "seconds": 139.7
+  },
+  {
+   "scene": "sofa",
+   "steps": 50000,
+   "gap_first": 0.09531474113464355,
+   "gap_at_ref": 0.0009075403213500977,
+   "ref_step": 40000,
+   "gap_final": 0.0009075403213500977,
+   "outcome": "early stopping",
+   "step_gap_halves": 4000,
+   "objective_cdf_final": 0.006320060230791569,
+   "objective_identity_final": 0.006320904474705458,
+   "check_gap_10000": 0.03503192961215973,
+   "trainer_gap_10k_seeds": [
+    0.0349,
+    0.0349,
+    0.0349
+   ],
+   "check_ok": true,
+   "seconds": 139.0
+  },
+  {
+   "scene": "bike",
+   "steps": 50000,
+   "gap_first": 0.17668938636779785,
+   "gap_at_ref": 0.0006249547004699707,
+   "ref_step": 40000,
+   "gap_final": 0.0005702674388885498,
+   "outcome": "early stopping",
+   "step_gap_halves": 4000,
+   "objective_cdf_final": 0.004430199973285198,
+   "objective_identity_final": 0.004430452827364206,
+   "check_gap_10000": 0.05113178491592407,
+   "trainer_gap_10k_seeds": [
+    0.051,
+    0.051,
+    0.051
+   ],
+   "check_ok": true,
+   "seconds": 139.8
+  },
+  {
+   "scene": "shrub",
+   "steps": 50000,
+   "gap_first": 0.1056981086730957,
+   "gap_at_ref": 0.0022685229778289795,
+   "ref_step": 40000,
+   "gap_final": 0.002112358808517456,
+   "outcome": "early stopping",
+   "step_gap_halves": 2000,
+   "objective_cdf_final": 0.003629459533840418,
+   "objective_identity_final": 0.0036300846841186285,
+   "check_gap_10000": 0.031170785427093506,
+   "trainer_gap_10k_seeds": [
+    0.031,
+    0.031,
+    0.031
+   ],
+   "check_ok": true,
+   "seconds": 136.8
+  }
+ ]
+}
