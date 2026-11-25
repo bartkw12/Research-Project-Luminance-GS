@@ -17,6 +17,16 @@ Inputs (read only):
              and an ok row in the root's runs.csv
     other    results/vexp/dataset/{gains,oracle}.json; M1's results/vexp/summary/{T1_val_varying, T4_exposure,
              T5b_paired_vs_signed_u}.csv; results/rung2/preview_final/views.csv
+M5 (M5_plan.md step 3, E1 / H2b): --rung2_variant rung2id reads the Rung 2 cells from the identity-init runs
+(rung2id on LOM and the varying set, rung2idexp in the exp column) and names them so; the analysis logic is
+unchanged. Its H1 verdict on LOM is exploratory (H1 is judged on the cdf init), and the H2 rule's "between 1x and 2x:
+run seeds 3 and 4" outcome reads "inconclusive" (M5 3.2(b)). Default output results/rung2/summary_rung2id/.
+--out writes elsewhere. The guard refuses M3's finished folders (rule 6: summary/, summary_seed0/,
+summary_headstart*/, preview_final/) and anything outside results/rung2/summary*/ or a git-ignored results/**/smoke*/
+folder, so the default command (which would write summary/) now refuses:
+    python rung2_analyze.py --rung2_variant rung2id                         -> results/rung2/summary_rung2id/
+    python rung2_analyze.py --out ../results/rung2/smoke_m5/analyze_default  the M5 byte-for-byte test of M3's tables
+
 A cell (set, variant) enters the tables only when every scene has a usable run for every requested seed; otherwise
 it is listed as pending. The script stops before any table if a run has the wrong data, flags, step count or
 reference depth, or if rung2 and rung2exp (same seed) differ in F, s or pseudo-targets (plan 6.1). With seeds 0-2
@@ -83,7 +93,14 @@ EXPECTED = {  # plan 2.3; keys missing from older cfg.json files take the offici
     "detachexp": {"detach_pseudo_target": True, "curve_model": "official", "dark_branch": "measured"},
     "rung2": {"detach_pseudo_target": False, "dark_branch": "shared", **RUNG2_FLAGS},
     "rung2exp": {"detach_pseudo_target": False, "dark_branch": "model", **RUNG2_FLAGS},
+    # M5 E1: the identity-init variants (runner variants rung2id, rung2idexp)
+    "rung2id": {"detach_pseudo_target": False, "dark_branch": "shared", **RUNG2_FLAGS, "rung2_F_init": "identity"},
+    "rung2idexp": {"detach_pseudo_target": False, "dark_branch": "model", **RUNG2_FLAGS, "rung2_F_init": "identity"},
 }
+RUNG2_SOURCES = {"rung2": {"rung2": "rung2", "rung2exp": "rung2exp"},  # --rung2_variant -> run folders of the cells
+                 "rung2id": {"rung2": "rung2id", "rung2exp": "rung2idexp"}}
+PROTECTED = [RUNG2 / n for n in ("summary", "summary_seed0", "summary_headstart", "summary_headstart_seeds012",
+                                 "preview_final")]  # rule 6 (M3's finished outputs, since 2026-11-24)
 CFG_DEFAULTS = {"detach_pseudo_target": False, "curve_model": "official", "dark_branch": "shared",
                 "freeze_color_basis": False, "detach_curve_in_target": False}
 VAL = ["psnr_gtmean", "psnr", "ssim", "lpips"]
@@ -98,22 +115,36 @@ FIG_SCENE = "sofa"  # figure 6
 
 
 # ------------------------------------------------------------------ mode and output guard
+def guard_out(out: Path) -> Path:
+    """M5 overwrite guard: never M3's finished folders (rule 6); otherwise only results/rung2/summary*/ or a git-ignored
+    results/**/smoke*/ folder."""
+    out = out.resolve()
+    if any(out == p.resolve() or p.resolve() in out.parents for p in PROTECTED):
+        raise SystemExit(f"[rung2_analyze] refusing to write to {out}: a finished M3 folder (rule 6)")
+    in_smoke = any(p.name.startswith("smoke") and RESULTS.resolve() in p.parents for p in out.parents)
+    if not (in_smoke or (out.parent == RUNG2.resolve() and out.name.startswith("summary"))):
+        raise SystemExit(f"[rung2_analyze] refusing to write to {out}")
+    return out
+
+
 class Ctx:
     def __init__(self, a):
         self.smoke, self.selftest = a.smoke, a.selftest
+        self.rung2_variant = a.rung2_variant
         self.seeds = [0] if a.smoke else sorted(set(a.seeds))
         self.scenes = ["buu"] if a.smoke else [s for s in SCENES if s in a.scenes]
         self.one_seed = len(self.seeds) == 1
-        if a.smoke:
+        if a.out is not None:
+            self.out = a.out
+        elif a.smoke:
             self.out = SMOKE / "summary_test"
         elif a.selftest:
             self.out = SMOKE / "summary_selftest"
         else:
-            self.out = RUNG2 / ("summary" if self.seeds == ALL_SEEDS else "summary_seed" + "".join(map(str, self.seeds)))
-        out = self.out.resolve()
-        test_ok = (a.smoke or a.selftest) and SMOKE.resolve() in out.parents
-        if not (test_ok or (out.parent == RUNG2.resolve() and out.name.startswith("summary"))):
-            raise SystemExit(f"[rung2_analyze] refusing to write to {out}")
+            tag = "" if a.rung2_variant == "rung2" else "_" + a.rung2_variant
+            self.out = RUNG2 / ("summary" + tag + ("" if self.seeds == ALL_SEEDS
+                                                   else "_seed" + "".join(map(str, self.seeds))))
+        self.out = guard_out(self.out)
         self.fig = self.out / "figures"
         self.fig.mkdir(parents=True, exist_ok=True)
 
@@ -123,6 +154,9 @@ class Ctx:
             return (SMOKE if set_ == "lom" else VEXP / "smoke_m2"), v, 300
         if self.selftest and v in ("rung2", "rung2exp"):
             return (RUNG0 if set_ == "lom" else VEXP), {"rung2": "detach", "rung2exp": "detachexp"}[v], 10_000
+        if v in ("rung2", "rung2exp"):
+            v = RUNG2_SOURCES[self.rung2_variant][v]
+            return (RUNG2 if set_ == "lom" else VEXP), v, 10_000
         return ((RUNG2 if v == "rung2" else RUNG0) if set_ == "lom" else VEXP), v, 10_000
 
     def groups(self):
@@ -286,11 +320,12 @@ def factorial(cells: dict):
     """cells[variant] = per-seed arrays for detach, detachexp, rung2, rung2exp -> effects per seed and the noise over
     the four cells (rung05_analyze.effects); the simple effects are also judged with their two arms' noise."""
     D, DX, R, RX = (np.asarray(cells[k], float) for k in ("detach", "detachexp", "rung2", "rung2exp"))
-    main = {"curve model (H2): ½[(rung2 − detach) + (rung2exp − detachexp)]": 0.5 * ((R - D) + (RX - DX)),
-            "dark branch: ½[(detachexp − detach) + (rung2exp − rung2)]": 0.5 * ((DX - D) + (RX - R)),
-            "interaction: (rung2exp − rung2) − (detachexp − detach)": (RX - R) - (DX - D)}
-    simple = {"rung2 − detach (shared column)": (R, D), "rung2exp − detachexp (exp column)": (RX, DX),
-              "detachexp − detach (detach row)": (DX, D), "rung2exp − rung2 (rung2 row)": (RX, R)}
+    r, rx = LABEL["rung2"], LABEL["rung2exp"]  # M5: rung2id / rung2idexp with --rung2_variant rung2id
+    main = {f"curve model (H2): ½[({r} − detach) + ({rx} − detachexp)]": 0.5 * ((R - D) + (RX - DX)),
+            f"dark branch: ½[(detachexp − detach) + ({rx} − {r})]": 0.5 * ((DX - D) + (RX - R)),
+            f"interaction: ({rx} − {r}) − (detachexp − detach)": (RX - R) - (DX - D)}
+    simple = {f"{r} − detach (shared column)": (R, D), f"{rx} − detachexp (exp column)": (RX, DX),
+              "detachexp − detach (detach row)": (DX, D), f"{rx} − {r} ({r} row)": (RX, R)}
     noise = float(np.sqrt(np.mean([np.var(x, ddof=1) for x in (D, DX, R, RX)]))) if len(D) > 1 else float("nan")
     return main, simple, noise
 
@@ -302,9 +337,17 @@ def main():
     ap.add_argument("--scenes", nargs="+", default=SCENES, choices=SCENES)
     ap.add_argument("--smoke", action="store_true", help="code test on the 300-step smoke runs (buu, seed 0)")
     ap.add_argument("--selftest", action="store_true", help="code test: Rung 2 cells read from detach / detachexp")
+    ap.add_argument("--rung2_variant", choices=list(RUNG2_SOURCES), default="rung2",
+                    help="M5 E1: rung2id reads the Rung 2 cells from rung2id / rung2idexp")
+    ap.add_argument("--out", type=Path, default=None,
+                    help="output folder (guarded: results/rung2/summary*/ or a results/**/smoke*/ folder; never M3's)")
     a = ap.parse_args()
     if a.smoke and a.selftest:
         raise SystemExit("pick one of --smoke and --selftest")
+    if a.rung2_variant != "rung2" and (a.smoke or a.selftest):
+        raise SystemExit("--rung2_variant applies to the real runs only")
+    LABEL.update({k: v for k, v in RUNG2_SOURCES[a.rung2_variant].items()})
+    ident = a.rung2_variant == "rung2id"
     ctx = Ctx(a)
     t_start = time.time()
     G = ctx.groups()
@@ -385,9 +428,9 @@ def main():
                     n_pairs += 1
                     sa, sb = runs[ka]["state"], runs[kb]["state"]
                     if sa is not None and sb is not None:
-                        check(f"{sc} seed {s}: rung2 vs rung2exp, max |Δ s|", float(np.max(np.abs(
+                        check(f"{sc} seed {s}: {LABEL['rung2']} vs {LABEL['rung2exp']}, max |Δ s|", float(np.max(np.abs(
                             np.subtract(sa["s_final"], sb["s_final"])))), 1e-5)
-                        check(f"{sc} seed {s}: rung2 vs rung2exp, max |Δ F heights|", float(np.max(np.abs(
+                        check(f"{sc} seed {s}: {LABEL['rung2']} vs {LABEL['rung2exp']}, max |Δ F heights|", float(np.max(np.abs(
                             np.subtract(sa["heights"], sb["heights"])))), 1e-5)
         if n_pairs:
             check(f"{LABEL[row_v]} vs {LABEL[exp_v]} (same seed, {n_pairs} pairs): max |Δ log2 mean_pseudo|", worst,
@@ -403,9 +446,9 @@ def main():
         tag = f"{set_} {sc} seed {s}"
         if set_ == "vexp":
             want = dict(zip(oracle_json[sc]["view_names"], oracle_json[sc]["s_init"]))
-            check(f"{tag}: rung2 s_init vs oracle.json s_init (stops)",
+            check(f"{tag}: {LABEL['rung2']} s_init vs oracle.json s_init (stops)",
                   max(abs(x - want[n]) for n, x in zip(st["view_names"], st["s_init"])), 1e-6)
-        check(f"{tag}: rung2 |mean s|", abs(st["mean_s"]), 1e-5)
+        check(f"{tag}: {LABEL['rung2']} |mean s|", abs(st["mean_s"]), 1e-5)
         if r["npz"].exists():
             z = np.load(r["npz"])
             assert [str(x) for x in z["view_names"]] == st["view_names"], f"{tag}: npz view order differs"
@@ -458,9 +501,10 @@ def main():
     tables["R1a. H1 on LOM: validation per cell (mean ± sd over seeds; pooled = mean over scenes per seed). "
            "bm PSNR = brightness-matched PSNR"] = r1a
     if r1b:
-        tables["R1b. rung2 − detach on LOM, paired by seed (seeds 0-2: ×noise, * = real; one seed: the difference "
-               "next to detach's seed sd over seeds 0-2). H1 rule: bm PSNR not below −2× noise, SSIM and LPIPS not "
-               "worse beyond 2× noise, in each of buu, chair, sofa and bike; shrub reported only"] = r1b
+        tables[f"R1b. {LABEL['rung2']} − detach on LOM, paired by seed (seeds 0-2: ×noise, * = real; one seed: the "
+               "difference next to detach's seed sd over seeds 0-2). H1 rule: bm PSNR not below −2× noise, SSIM and "
+               "LPIPS not worse beyond 2× noise, in each of buu, chair, sofa and bike; shrub reported only"
+               + ("; exploratory for the identity init (H1 is judged on the cdf init)" if ident else "")] = r1b
 
     # ================================================================ R2 H1 extras (LOM) and R6 side effects (varying)
     def extras(set_, variants, keys, title, csv_name, diffs=()):
@@ -578,7 +622,7 @@ def main():
                                ddof=1)) if detach_leak_all else float("nan")
             txt, e = diff_str(per_seed(lambda sc, s: leak[("rung2", sc, s)]["pseudo_leak_paired"], g),
                               per_seed(lambda sc, s: leak[("detach", sc, s)]["pseudo_leak_paired"], g), 3, ref)
-            r5a.append({"scene": g, "curve row": "rung2 − detach", "pseudo_leak_paired": txt, "pseudo_leak": "",
+            r5a.append({"scene": g, "curve row": f"{LABEL['rung2']} − detach", "pseudo_leak_paired": txt, "pseudo_leak": "",
                         "input_leak_paired": "", "render_leak_paired": ""})
             numbers.setdefault("R5a_leak_rung2_minus_detach", {})[g] = e
     save("R5a_leak", r5a_csv)
@@ -673,7 +717,7 @@ def main():
         if rec:
             t4 = {(r["scene"], r["method"]): r for r in read_csv(M1_SUMMARY / "T4_exposure.csv")}
             for g in ctx.scenes + (["pooled"] if len(ctx.scenes) > 1 else []):
-                row = {"scene": g, "method": "rung2 (s_k)"}
+                row = {"scene": g, "method": f"{LABEL['rung2']} (s_k)"}
                 for k in keys:
                     x = per_seed(lambda sc, s, k=k: rec[(sc, s)][k], g)
                     row[k] = stat(x, 2 if k == "slope" else 3)
@@ -698,7 +742,9 @@ def main():
     decisions = []
     if not ctx.one_seed:
         if h1:
-            decisions.append(f"- **H1 (LOM):** {'; '.join(f'{k}: {v}' for k, v in h1.items())} -> "
+            h1_name = (f"H1 rule applied to {LABEL['rung2']} (LOM; exploratory, cannot change H1)" if ident
+                       else "H1 (LOM)")
+            decisions.append(f"- **{h1_name}:** {'; '.join(f'{k}: {v}' for k, v in h1.items())} -> "
                              f"**{'supported' if all(v == 'meets' for v in h1.values()) else 'not supported'}** "
                              f"(all of buu, chair, sofa and bike must meet the rule).")
         if four:
@@ -707,7 +753,7 @@ def main():
             pooled_groups = [g for g in ("pooled", "pooled_no_shrub") if g in G]
             for g in pooled_groups:
                 cm, cl = eff(g, "psnr_gtmean", "curve model"), eff(g, "lpips", "curve model")
-                ex = eff(g, "psnr_gtmean", "rung2exp − detachexp")
+                ex = eff(g, "psnr_gtmean", f"{LABEL['rung2exp']} − detachexp")
                 pos = [sc for sc in ctx.scenes if sc != "shrub" and eff(sc, "psnr_gtmean", "curve model")["mean"] > 0]
                 n_inf = len([sc for sc in ctx.scenes if sc != "shrub"])
                 if cm["real"] and cm["mean"] > 0 and not (cl["x_noise"] > REAL) and len(pos) > n_inf / 2:
@@ -715,11 +761,14 @@ def main():
                 elif ex["real"] and ex["mean"] > 0:
                     verdict = "supported only with the dark-branch fix"
                 elif 1.0 <= abs(cm["x_noise"]) < REAL:
-                    verdict = "between 1× and 2× noise: run seeds 3 and 4 (plan 5.3) before concluding"
+                    verdict = ("inconclusive (between 1× and 2× noise; no seeds-3-4 slot before the freeze, M5 3.2(b))"
+                               if ident else
+                               "between 1× and 2× noise: run seeds 3 and 4 (plan 5.3) before concluding")
                 else:
                     verdict = "not supported"
                 decisions.append(
-                    f"- **H2 ({g}):** curve-model main effect on bm PSNR {cm['mean']:+.2f} dB ({cm['x_noise']:+.1f}×, "
+                    f"- **{'H2b(b), H2 rule for ' + LABEL['rung2'] if ident else 'H2'} ({g}):** curve-model main effect "
+                    f"on bm PSNR {cm['mean']:+.2f} dB ({cm['x_noise']:+.1f}×, "
                     f"{'real' if cm['real'] else 'not real'}); on LPIPS {cl['mean']:+.4f} ({cl['x_noise']:+.1f}×); "
                     f"positive in {len(pos)} of {n_inf} non-shrub scenes ({', '.join(pos) or 'none'}); exp-column "
                     f"simple effect {ex['mean']:+.2f} dB ({ex['x_noise']:+.1f}×) -> **{verdict}**.")
@@ -743,6 +792,7 @@ def main():
     # ================================================================ outputs
     meta = {"date": time.strftime("%Y-%m-%d %H:%M"), "seconds": round(time.time() - t_start), "seeds": S,
             "scenes": ctx.scenes, "mode": "smoke" if ctx.smoke else "selftest" if ctx.selftest else "runs",
+            "rung2_variant": ctx.rung2_variant,
             "script_sha256_16": hashlib.sha256(Path(__file__).read_bytes()).hexdigest()[:16]}
     save("cells", status)
     save("integrity", integrity)
@@ -756,9 +806,17 @@ def main():
     if ctx.selftest:
         banner += (" **CODE TEST:** the Rung 2 cells are copies of detach and detachexp, so every curve-model effect "
                    "must be exactly 0.")
-    md = ["# Rung 2 results (M3): H1 on LOM and the 2×2 on the varying-exposure set\n",
+    if ident:
+        banner += (" **M5 E1 (H2b):** the Rung 2 cells are the identity-init runs `rung2id` (LOM, varying set) and "
+                   "`rung2idexp` (varying set, exp column). Their H1 verdict is exploratory; H2b(a), the init effect, "
+                   "is `rung2_ablation.py --mode init`.")
+    title = ("# Rung 2 with F initialised at the identity (M5 E1, H2b): H1 rule on LOM (exploratory) and the 2×2 on the "
+             "varying-exposure set\n" if ident else
+             "# Rung 2 results (M3): H1 on LOM and the 2×2 on the varying-exposure set\n")
+    md = [title,
           f"{banner} Generated {meta['date']} in {meta['seconds']} s by `rung2_analyze.py` ({meta['script_sha256_16']}); "
-          f"plan `M2_rung2_plan.md` section 6. Every number is *measured*; readings are the report's job.\n",
+          f"plan `M2_rung2_plan.md` section 6{', readings M5_plan.md 3.2' if ident else ''}. Every number is "
+          f"*measured*; readings are the report's job.\n",
           "## Cells\n", md_table(status), "\n## Integrity and input checks\n", md_table(integrity),
           "\n## Decision rules (plan 6.5)\n",
           "\n".join(decisions) if decisions else "_One seed: no verdicts._", "\n"]
@@ -883,7 +941,7 @@ def make_figures(ctx, runs, cells, u_by, oracle_json, by_step):
             ax.scatter(o["u"], o["s_init"], marker="x", s=30, color=INK2, linewidths=1.2, zorder=2, label="init")
             ax.scatter(o["u"], o["s_oracle"], marker="^", s=32, facecolors="none", edgecolors=SERIES[2], linewidths=1.2,
                        zorder=2, label="histogram oracle")
-            ax.scatter(u, st["s_final"], s=22, zorder=3, label="rung2 s_k", **style("rung2"))
+            ax.scatter(u, st["s_final"], s=22, zorder=3, label=f"{LABEL['rung2']} s_k", **style("rung2"))
             ax.set_title(sc)
             ax.set_xlabel("applied gain u_k (stops)")
         axes[0, 0].set_ylabel("exposure s_k (stops)")
@@ -918,8 +976,9 @@ def make_figures(ctx, runs, cells, u_by, oracle_json, by_step):
                 for k, cv in enumerate(zd["curve_adj"]):
                     ax.plot(x, cv, color=COLOR["detach"], lw=0.8, alpha=0.5, label="detach, per-view curves" if k == 0 else None)
             for k, cv in enumerate(z["curve_adj"]):
-                ax.plot(x, cv, color=COLOR["rung2"], lw=1.0, alpha=0.7, label="rung2, F(min(1, 2^s_k x))" if k == 0 else None)
-            ax.plot(x, z["curve_global"], color=INK, lw=2.2, label="rung2, shared F")
+                ax.plot(x, cv, color=COLOR["rung2"], lw=1.0, alpha=0.7,
+                        label=f"{LABEL['rung2']}, F(min(1, 2^s_k x))" if k == 0 else None)
+            ax.plot(x, z["curve_global"], color=INK, lw=2.2, label=f"{LABEL['rung2']}, shared F")
             xmax = min(1.0, 1.25 * float(np.argmax(cdf >= 0.995, axis=1).max()) / (len(x) - 1))
             ax.set_xlim(0, xmax)
             ax.set_ylim(0, 1.02)
