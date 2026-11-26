@@ -1,6 +1,6 @@
 # E5 plan: the colour-preserving variant on the identity base (before Rung 3)
 
-Written 2026-11-25 by Claude Code, after Bart's decisions of the same day (log: "Decisions after M5"). It replaces `M5_plan.md` step 6. **Status: draft for Bart's approval.** No code and no run before his OK; the readings in section 4 are logged before any run (rule 4).
+Written 2026-11-25 by Claude Code, after Bart's decisions of the same day (log: "Decisions after M5"). It replaces `M5_plan.md` step 6. **Status: approved by Bart 2026-11-25**, including the readings and the adoption rule in section 4 as written (log: "E5 plan approved; readings pre-registered"). The readings were logged before any code or run (rule 4). **Done 2026-11-25:** 45 runs, all ok; verdict "fixes at a cost", not adopted, so M6 builds on `rung2id`. Results: `E5_results.md`.
 
 ## 1. Question and why now
 
