@@ -63,6 +63,7 @@ MODEL_DEFAULTS = {
     "rung2_smooth_lambda": 0.1,
     "rung2_lr_F": 1e-2,
     "rung2_lr_s": 1e-3,
+    "rung2_color": "rgb",  # E5: Rung 2's colour handling (rgb = per channel, the M3 code)
 }
 
 
@@ -355,7 +356,7 @@ class Diagnostics:
                  "F_grid": r.F(r.grid).cpu().tolist(), "knot_spacing": cfg.rung2_knot_spacing,
                  "F_init": cfg.rung2_F_init, "s_init_mode": cfg.rung2_s_init, "attach": cfg.rung2_attach,
                  "smooth_lambda": cfg.rung2_smooth_lambda, "lr_F": cfg.rung2_lr_F, "lr_s": cfg.rung2_lr_s,
-                 "dark_branch": cfg.dark_branch}
+                 "dark_branch": cfg.dark_branch, "color": cfg.rung2_color}
         with open(self.out_dir / "rung2_state.json", "w") as f:
             json.dump(state, f, indent=1)
 
