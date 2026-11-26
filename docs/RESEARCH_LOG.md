@@ -1087,3 +1087,148 @@ Entries up to 2026-10-23 were backfilled from git history, the run folders and t
     | `detach` | 1.24 | 1.55 | 1.60 | 1.34 |
     | `rung2` | 1.60 | 1.59 | 1.64 | 1.36 |
 - **Next:** the E5 plan for Bart's approval before any code, and a draft update to Wei.
+
+### 2026-11-25: E5 plan approved; readings pre-registered before any code or run
+
+- **Rung / type:** Rung 2 (E5) · decision. Bart approved `E5_luminance_plan.md` on 2026-11-25, including its section 4 (readings and adoption rule) as written. No E5 code or run existed at this point.
+- **What is tested:** `--rung2_color luminance` (variant `rung2idlum`, on the identity base):
+  - Y = (R + G + B)/3, the same grey the HE-CDF target uses (`losses.py` line 56);
+  - out_c = clamp(x_c · F(min(1, 2^{s_k} Y)) / max(Y, 1e-6), 0, 1).
+  - The default `rgb` reproduces the current code.
+  - **Built-in check:** F, s and γ must equal `rung2id`'s at the same seed (max |Δ| ≤ 1e-5).
+- **Comparison:** `rung2idlum` − `rung2id`, paired by seed, seeds 0–2, on LOM, the varying set and `over_exp`. The `rung2id` arms already exist (LOM seeds 0–2, E1, E6b).
+- **General rules (as in M5):**
+  - noise = sqrt(mean of the arms' seed variances); an effect is real above 2× noise;
+  - pooled = the five-scene mean, checked against pooled without shrub;
+  - shrub never decides.
+- **Primary reading:**
+  - **"Fixes"** if both hold:
+    - bike's hue error on the varying set falls by more than 2× noise;
+    - no decision scene (buu, chair, sofa, bike) loses bm PSNR beyond 2× noise on LOM or on the varying set.
+  - **"Fixes at a cost"** if the hue falls beyond 2× noise but some decision scene loses bm PSNR beyond 2× noise.
+  - **"No fix"** otherwise, including a hue change within 2× noise.
+- **Adoption into M6's base:** `rung2idlum` replaces `rung2id` only if the verdict is "fixes" and pooled SSIM and LPIPS are not worse beyond 2× noise on either set. Otherwise M6 builds on `rung2id`, and E5 is reported as an ablation.
+- **Reported without a decision:**
+  - every metric on both sets, per scene and pooled;
+  - the hue error in every scene, the saturation ratio, the angle error and the pseudo-target bm PSNR;
+  - the share of clipped channel values;
+  - the H1 rule for `rung2idlum` − `detach` on LOM (exploratory; it changes neither H1 nor H1b).
+- **Overexposure (exploratory; it cannot change H1-over, and nothing is tuned on it):**
+  - "Colour accounts for part of the overexposure gap" if pooled bm PSNR of `rung2idlum` − `rung2id` rises beyond 2× noise.
+  - Report the fraction of `rung2id`'s −1.20 dB pooled gap to `detach` that it closes, and the saturation ratios.
+  - No direction is predicted.
+- **Limits stated before results:**
+  - Detection limit: 2× noise on bike's varying-set hue is about 8–11° (*inferred* from `rung2id`'s *measured* sd of 5.6°), against a 14.7° gap to `detach`.
+  - `detach`'s own bike hue error falls from 31.8° on LOM to 12.3° on the varying set (*measured*; cause not established), so E5 can remove only the part caused by per-channel application.
+  - Luminance scaling keeps the dark photos' colour noise, so LPIPS could get worse even if hue improves (*inferred*). The adoption rule checks this.
+- **Reproduce:** branch `main`, commit `01d43c5`; plan `Luminance-GS/Implementation_guides/E5_luminance_plan.md`.
+- **Next:**
+  - code behind `--rung2_color` (default `rgb`), then the unit, regression and smoke tests of plan section 3;
+  - ask Bart before the 45-run batch (about 3.5 h, *inferred*).
+
+### 2026-11-25: E5 code: `--rung2_color` and variant `rung2idlum`; unit, regression and smoke tests pass
+
+- **Rung / type:** Rung 2 (E5) · code. As planned in `E5_luminance_plan.md` section 3.
+- **What was done:**
+  - `rung2.py`:
+    - `map_pixels(..., color="rgb")` with the luminance branch;
+    - `clipped_share` (the share of channel values the pseudo-target clips at 1).
+  - `simple_trainer_ours.py`:
+    - `Config.rung2_color` (default `rgb`);
+    - `rung2_forward` passes it on, and `projected` = (Y, Y, Y) in luminance mode;
+    - refusal without `--curve_model rung2`;
+    - the colour mode in the start-up and grad-check prints.
+  - `diagnostics.py`: `MODEL_DEFAULTS["rung2_color"]`, and `"color"` in `rung2_state.json`.
+  - `rescore_runs.py`: `MODEL_FLAGS`.
+  - `run_rung0.py`: variant `rung2idlum` (also in `NOT_IN_RUNG0`).
+  - `test_rung2.py`: tests 15–16.
+  - `rung2_ablation.py`:
+    - `--mode lum` (→ `results/rung2/summary_e5/`), with `detach` alongside as context, the F/s/γ identity check, the clipped share and the readings of the previous entry;
+    - `EXPECTED_ALL` entries for `rung2idlum`, and for `rung2id` with `rung2_color: rgb` (`cfg.json` files without the key count as `rgb`).
+  - Docs: `curve_estimation.md` and `CLAUDE.md`.
+- **Tests (all *measured*):**
+  - **Unit tests: 16/16 pass.**
+    - The 14 existing tests are unchanged.
+    - `rgb` equals the M3 formula bit for bit (`torch.equal`) under `none`, `s` and `all`.
+    - **Grey pixels:** luminance vs `rgb` max |Δ| is 1.2e-7. That is above the plan's 1e-7, from float32 rounding of the channel mean; the test tolerance is 1e-6.
+    - **Ratios:** channel ratios are kept to 1.8e-7 (relative), and the output's channel mean equals L_k(Y) to 1.2e-7.
+    - **Gradients:** they follow `--rung2_attach`, and d/ds_k matches central differences (rel. 1e-5).
+  - **Regression:** a 300-step `rung2id` smoke on the varying set (buu, seed 0) against M5's `results/vexp/smoke_m5/buu_rung2id_seed0`.
+    - F, s, heights, γ, `exposures_by_step.csv` and every pseudo-target column are identical (max |Δ| 0).
+    - The 3DGS side differs: validation PSNR by 2.0e-4 dB, render columns by up to 2.5e-3 dB, the loss log by 1.8e-5.
+    - A repeat of the same new-code run differs from the first by the same order (1.1e-4 dB, 4.3e-3, 1.2e-5).
+    - So the 3DGS training is not bit-reproducible run to run on this GPU, and this is not the code change. The curve, the exposures and the pseudo-targets are bit-reproducible.
+  - **Smokes:** 300 steps, buu, seed 0: `rung2id` and `rung2idlum` on LOM, the varying set and `over_exp` (`smoke_e5/` under `rung2/`, `vexp/`, `overexp/`).
+    - **Runs:** all ok, about 0.5 min each, and all re-scored (7 s each).
+    - **The pair, on every set:**
+      - F, s and γ are identical (max |Δ| 0.0);
+      - the pseudo-targets differ (pseudo bm PSNR by 0.64, 0.57 and 0.32 dB);
+      - `cfg.json` and `rung2_state.json` carry the right colour.
+    - **`over_exp` reads `over_exp/`:** mean training input 0.915, against 0.091 on LOM.
+  - **Ablation selftest:** `rung2_ablation.py --mode lum --selftest` (the luminance arm read from `rung2id`):
+    - all 273 `rung2idlum` − `rung2id` effect rows are exactly 0, and the F/s check gives 0;
+    - it reproduces the `over_exp` `rung2id` − `detach` gap: −1.20 dB (16.0×);
+    - `rung2id`'s clipped share is 0 on LOM and the varying set, and 1.3% pooled on `over_exp` (input saturation).
+  - **Refusal:** `--rung2_color luminance` without `--curve_model rung2` exits with the message.
+- **Reproduce:**
+  - branch `main`, commit `01d43c5`, plus uncommitted changes to the seven `examples/` files above;
+  - `python test_rung2.py`;
+  - `python run_rung0.py --root ../results/rung2/smoke_e5 --variants rung2id rung2idlum --scenes buu --seeds 0 --max_steps 300`, the same with `--data_root ../data/LOM_vexp --root ../results/vexp/smoke_e5`, and with `--exp_name over_exp --root ../results/overexp/smoke_e5`;
+  - then `rescore_runs.py --root <smoke root> --ref_root ../results/rung0`.
+- **Next:** Bart's OK for the 45-run batch (about 3.5 h, *inferred* from M5's per-run minutes), with the PC kept awake.
+
+### 2026-11-25: E5 batch: 45 `rung2idlum` runs, all ok and re-scored
+
+- **Rung / type:** Rung 2 (E5) · experiment (batch). Launched on Bart's OK.
+- **What was done:**
+  - `rung2idlum` on LOM, the varying set and `over_exp`, seeds 0–2, 15 runs each, then re-scoring of the three roots.
+  - A stay-awake helper (`SetThreadExecutionState`, ES_CONTINUOUS | ES_SYSTEM_REQUIRED) watched the launcher. No power setting was changed.
+- **Reproduce:** branch `main`, commit `01d43c5`, plus uncommitted changes to the seven `examples/` files of the previous entry. From `examples/`:
+  - `python run_rung0.py --root ../results/rung2 --variants rung2idlum --seeds 0 1 2`
+  - `python run_rung0.py --data_root ../data/LOM_vexp --root ../results/vexp --variants rung2idlum --seeds 0 1 2`
+  - `python run_rung0.py --exp_name over_exp --root ../results/overexp --variants rung2idlum --seeds 0 1 2`
+  - then `python rescore_runs.py --root ../results/<root> --ref_root ../results/rung0` for `rung2`, `vexp` and `overexp`.
+- **Results (measured, from each root's `runs.csv`):**
+  - 45 of 45 `ok` (return code 0), and all 45 re-scored (7–8 s each).
+  - **Minutes per run:**
+    - LOM 3.4–5.8 (mean 4.1);
+    - varying 3.5–6.1 (mean 4.3);
+    - `over_exp` 3.7–8.2 (mean 4.8; shrub 8.1–8.2).
+  - **Timeline:** training ran 13:53–17:12 and re-scoring finished 17:18, so the batch took 3 h 25 min.
+  - No run was above 15 min, so the PC did not sleep. The helper log ends "stopped 17:19:25: launcher 45628 exited; sleep request cleared".
+- **Next:** `rung2_ablation.py --mode lum` and the exploratory H1 checks (next entry).
+
+### 2026-11-25: E5 results: luminance fixes bike's hue but costs buu and sofa; not adopted, so M6 builds on `rung2id`
+
+- **Rung / type:** Rung 2 (E5) · experiment. The readings were pre-registered on 2026-11-25, before any code or run ("E5 plan approved").
+- **Reproduce:** from `examples/`:
+  - `python rung2_ablation.py --mode lum` → `results/rung2/summary_e5/`.
+  - `python rung2_ablation.py --mode h1 --a rung2idlum --a_roots ../results/rung2 --b detach --b_roots ../results/rung0 --official_roots ../results/rung0 --extra rung2id --title "E5, exploratory" --out ../results/rung2/summary_e5_h1`
+  - The same with `--a_roots`, `--b_roots` and `--official_roots ../results/overexp --exp_name over_exp --out ../results/overexp/summary_e5`.
+- **Built-in check:** F, s and γ are identical to `rung2id`'s in all 45 pairs (max |Δ| 0.0). Any difference is the colour handling alone.
+- **Results (measured; `rung2idlum` − `rung2id`; ×noise; * = real):**
+
+  | Scene | bm PSNR, LOM | bm PSNR, varying | hue err (°), LOM | hue err (°), varying |
+  |---|---|---|---|---|
+  | buu | −2.24 (−9.4×) * | −1.64 (−5.8×) * | −2.6 * | −3.6 * |
+  | chair | +1.16 (+5.8×) * | +0.84 (+3.8×) * | +2.4 * | +2.5 * |
+  | sofa | −1.10 (−1.4×) | −1.91 (−3.1×) * | −0.5 | −0.5 |
+  | bike | +2.50 (+38.6×) * | +2.24 (+11.3×) * | 33.6 → 9.6 * | 27.0 → 9.3 (−4.4×) * |
+  | pooled | +0.12 (+0.7×) | −0.03 (−0.3×) | −5.7 * | −4.5 * |
+
+  - **Pooled, LOM / varying:**
+    - SSIM −0.0131 (−6.7×) * / −0.0135 (−9.8×) *; without shrub still real (−2.4×, −4.8×);
+    - LPIPS +0.0006 / −0.0046 (−2.2×, better);
+    - raw PSNR −0.74 * / −0.83 *.
+  - **Saturation ratio:** rises by +0.29 to +0.49 in every scene. LOM, `rung2id` → `rung2idlum`: chair 0.47 → 0.76, bike 0.52 → 0.88, buu 0.87 → 1.26, sofa 0.86 → 1.34.
+  - **Clipped share** (LOM): buu 8.3%, shrub 12.4%, sofa 0.01%.
+- **Readings:**
+  - **Primary: "fixes at a cost".** Bike's hue falls beyond 2×, but buu (both sets) and sofa (varying) lose bm PSNR beyond 2×.
+  - **Adoption: not adopted.** The verdict is not "fixes", and pooled SSIM is worse on both sets. M6 builds on `rung2id`; E5 is reported as an ablation.
+  - **H1 rule for `rung2idlum` − `detach` on LOM (exploratory):** 11 of 12 checks meet; buu bm PSNR fails (−1.72, −6.6×). Pooled +0.54 dB (+3.2×).
+  - **Overexposure (exploratory):** pooled −1.56 dB (−19.2×; without shrub −1.34), so not "colour accounts for part of the gap". It widens `rung2id`'s −1.20 dB gap to `detach` to −2.75 (fraction closed −1.30). Saturation ratio: `rung2idlum` 0.44, `rung2id` 1.37, `detach` 1.31. H1 rule against `detach`: 1 of 12.
+- **Takeaway:**
+  - *Measured, and isolated by the built-in check:* applying F per channel causes bike's hue error, since luminance mode removes it, below even `detach`'s 31.8° and 12.3°.
+  - *Inferred:* luminance mode keeps the photo's own saturation. That is right only where the input's saturation matches the GT (chair, bike), and too much for buu and sofa. Sofa barely clips, so clipping does not explain sofa's loss. Per-channel F desaturates every scene instead, so neither handling is right everywhere.
+  - On overexposure, per-channel F's re-saturation of the washed-out photos was helping.
+- **Next:** `E5_results.md`; `M6_rung3_plan.md` on `rung2id`.
