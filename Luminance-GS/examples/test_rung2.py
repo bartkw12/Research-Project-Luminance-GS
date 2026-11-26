@@ -5,6 +5,7 @@
 Tests 1 to 10 are the plan's. 11 to 13 were added with the code: the target shift and the initialisation round
 trip (11), used_range_max (12), and the one-bin alignment against the official LUT (13; decided 2026-11-11).
 14 (added 2026-11-13): the shape prior with one global gamma (decided 2026-11-13).
+15 and 16 (added 2026-11-25, E5): the colour modes of map_pixels (rgb unchanged; luminance) and clipped_share.
 """
 
 import math
@@ -343,10 +344,97 @@ def test_14_shape_prior():
             f"prior {prior}: total is not the curve loss plus 0.5 pseudo"
 
 
+def test_15_color_modes():
+    """E5 (E5_luminance_plan.md section 3): rgb is the M3 code bit for bit; luminance gives grey pixels the rgb
+    value, keeps channel ratios where nothing clips, puts the output's channel mean at L_k(Y), keeps black black and
+    stays in [0, 1]."""
+    m = _model(N=5, seed=9, s_scale=0.8)
+    g = _gen(10)
+    px = torch.rand(1, 40, 50, 3, generator=g)
+    px[0, 0, :3] = torch.tensor([[1.0, 0.2, 0.1], [0.0, 0.0, 0.0], [0.95, 0.95, 0.0]])  # saturated, black, yellow
+    for k in range(m.N):
+        old = interp(torch.clamp(m.gain(k).view(-1, 1, 1, 1) * px, max=1.0), m.knots, m.heights()).detach()
+        for attach in ("none", "s", "all"):
+            assert torch.equal(m.map_pixels(px, k, attach).detach(), old), f"view {k}, {attach}: default changed"
+            assert torch.equal(m.map_pixels(px, k, attach, "rgb").detach(), old), f"view {k}, {attach}: rgb changed"
+    assert _raises(lambda: m.map_pixels(px, 0, "none", "hsv")), "unknown colour mode accepted"
+    assert _raises(lambda: m.clipped_share(px, 0, "hsv")), "unknown colour mode accepted by clipped_share"
+
+    grey = torch.rand(1, 30, 30, 1, generator=g).expand(1, 30, 30, 3).contiguous()
+    err_grey = max(float((m.map_pixels(grey, k, "none", "luminance") - m.map_pixels(grey, k, "none")).abs().max())
+                   for k in range(m.N))
+    assert err_grey <= 1e-6, f"grey pixels: luminance and rgb differ by {err_grey:.2e}"
+
+    dark = px * 0.2  # a low-light photo's range (levels 0-51), where most pixels do not clip
+    err_ratio = err_mean = 0.0
+    for k in range(m.N):
+        out = m.map_pixels(px, k, "none", "luminance")
+        assert float(out.min()) >= 0.0 and float(out.max()) <= 1.0, f"view {k}: output leaves [0, 1]"
+        assert float(out[0, 0, 1].abs().max()) == 0.0, f"view {k}: black is not black"
+        out = m.map_pixels(dark, k, "none", "luminance")
+        Y = dark.mean(-1, keepdim=True)
+        LY = m.F(torch.clamp(m.gain(k).view(-1, 1, 1, 1) * Y, max=1.0)).detach()  # L_k(Y), [1, H, W, 1]
+        free = (Y[..., 0] > 0.004) & (dark * LY / Y < 1 - 1e-4).all(-1)  # pixels the clamp leaves alone
+        assert int(free.sum()) > 1000, f"view {k}: only {int(free.sum())} unclipped test pixels"
+        r = (out / dark.clamp_min(1e-4))[free & (dark > 0.01).all(-1)]
+        err_ratio = max(err_ratio, float(((r - r.mean(-1, keepdim=True)).abs() / r.mean(-1, keepdim=True)).max()))
+        err_mean = max(err_mean, float((out.mean(-1) - LY[..., 0])[free].abs().max()))
+    assert err_ratio <= 1e-5, f"channel ratios change by up to {err_ratio:.2e} (relative)"
+    assert err_mean <= 1e-6, f"unclipped output's channel mean misses L_k(Y) by {err_mean:.2e}"
+    print(f"    grey: |lum - rgb| max {err_grey:.1e}; ratio change max {err_ratio:.1e}; |mean - L_k(Y)| max {err_mean:.1e}")
+
+    # clipped share, on an identity F: s = 0 clips nothing; s = 0.6 (gain 1.52) clips R of (0.9, 0.3, 0.3) only
+    knots = make_knots(K, "uniform")
+    mi = ExposureCurve(knots, init_heights("identity", knots), torch.tensor([0.0, 0.6]))
+    red = torch.tensor([0.9, 0.3, 0.3]).view(1, 1, 1, 3).expand(1, 4, 4, 3).contiguous()
+    assert mi.clipped_share(red, 0, "luminance") == 0.0 and mi.clipped_share(red, 0, "rgb") == 0.0
+    assert abs(mi.clipped_share(red, 1, "luminance") - 1 / 3) <= 1e-7, "luminance: R alone should clip"
+    assert abs(mi.clipped_share(red, 1, "rgb") - 1 / 3) <= 1e-7, "rgb: 1.52 * 0.9 alone exceeds 1"
+    lum = mi.map_pixels(red, 1, "none", "luminance")[0, 0, 0]
+    assert float(lum[0]) == 1.0 and abs(float(lum[1]) - 0.3 * 2 ** 0.6) <= 1e-6, f"clipped pixel is {lum.tolist()}"
+
+
+def test_16_color_gradients():
+    """E5: the luminance mode's gradients follow --rung2_attach as rgb's do (none: none; s: s_k only; all: theta and
+    s_k), and d/ds_k matches central differences away from knots and clipping."""
+    m = _model(N=4, seed=11, dtype=torch.float64)
+    k = 1
+    with torch.no_grad():
+        m.s[k] = 0.3
+    px = torch.rand(1, 8, 8, 3, generator=_gen(12), dtype=torch.float64) * 0.2
+
+    assert not m.map_pixels(px, k, "none", "luminance").requires_grad, "attach none: the output carries gradient"
+    m.zero_grad(set_to_none=True)
+    m.map_pixels(px, k, "s", "luminance").sum().backward()
+    assert m.theta.grad is None or float(m.theta.grad.abs().max()) == 0.0, "attach s: theta gets gradient"
+    others = [i for i in range(m.N) if i != k]
+    assert float(m.s.grad[k]) != 0.0 and float(m.s.grad[others].abs().max()) == 0.0, "attach s: wrong s gradient"
+    grad_s = float(m.s.grad[k])
+    m.zero_grad(set_to_none=True)
+    m.map_pixels(px, k, "all", "luminance").sum().backward()
+    assert m.theta.grad is not None and float(m.theta.grad.abs().max()) > 0, "attach all: no gradient to theta"
+    assert float(m.s.grad[k]) != 0.0, "attach all: no gradient to s_k"
+
+    y = torch.clamp(2.0 ** 0.3 * px.mean(-1), max=1.0)
+    keep = ((y[..., None] - m.knots).abs().min(-1).values > 1e-7).all()  # 1e-7 is ~10x the step in y below
+    out = m.map_pixels(px, k, "none", "luminance")
+    assert bool(keep) and float(out.max()) < 1.0, "test pixels touch a knot or clip; change the seed"
+    s0, eps = 0.3, 1e-7
+
+    def total(s):
+        with torch.no_grad():
+            m.s[k] = s
+        return float(m.map_pixels(px, k, "none", "luminance").sum())
+
+    fd = (total(s0 + eps) - total(s0 - eps)) / (2 * eps)
+    total(s0)
+    assert math.isclose(grad_s, fd, rel_tol=1e-5), f"autograd d/ds_k {grad_s:.8g} vs central differences {fd:.8g}"
+
+
 TESTS = [test_1_knots, test_2_heights, test_3_interp, test_4_identity, test_5_gradients, test_6_composed_vs_map,
          test_7_gauge, test_8_n_params, test_9_synthetic_recovery, test_10_curve_loss,
          test_11_target_and_roundtrip, test_12_used_range_max, test_13_alignment_matches_official_lut,
-         test_14_shape_prior]
+         test_14_shape_prior, test_15_color_modes, test_16_color_gradients]
 
 
 def main():
