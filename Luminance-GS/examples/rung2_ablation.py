@@ -11,6 +11,10 @@ scenes per seed, checked against pooled without shrub; shrub never decides):
              (--exp_name over_exp), with --extra rung2id                                   -> --out
     init     E1 H2b(a): the init x dark-branch 2x2 on the varying set (rung2, rung2exp, rung2id, rung2idexp), noise over
              the four cells (rung05_analyze.effects)                                       -> results/rung2/summary_h2b/
+    lum      E5 (E5_luminance_plan.md; readings in the log, 2026-11-25): rung2idlum - rung2id on LOM (results/rung2),
+             the varying set (results/vexp) and over_exp (results/overexp, exploratory), detach alongside; the built-in
+             F/s/gamma identity check; the clipped share from each run's final F and s and its training photos (CPU)
+                                                                                           -> results/rung2/summary_e5/
 
 Every run must exist, have an ok row in its root's runs.csv, be re-scored against results/rung0/<scene>_baseline_seed0,
 and match its variant's flags, data set, exp_name, seed and step count; otherwise the script stops before any table.
@@ -25,6 +29,9 @@ Run from Luminance-GS/examples:
         --seeds 3 4 5 --out ../results/h1b/summary                                         (E3, H1b)
     python rung2_ablation.py --mode h1 --a rung2 --a_roots ../results/overexp --b detach --b_roots ../results/overexp
         --official_roots ../results/overexp --exp_name over_exp --extra rung2id --out ../results/overexp/summary   (E6)
+    python rung2_ablation.py --mode lum                                                    (E5)
+    python rung2_ablation.py --mode h1 --a rung2idlum --a_roots ../results/rung2 --b detach --b_roots ../results/rung0
+        --official_roots ../results/rung0 --out ../results/rung2/summary_e5_h1             (E5, exploratory H1 rule)
     python rung2_ablation.py --mode <mode> --selftest [...]
 """
 
@@ -54,12 +61,20 @@ STEPS = 10_000
 EXPECTED_ALL = {**EXPECTED,
                 "rung2att": {"detach_pseudo_target": False, "dark_branch": "shared", **RUNG2_FLAGS, "rung2_attach": "s"},
                 "rung2noprior": {"detach_pseudo_target": False, "dark_branch": "shared", **RUNG2_FLAGS,
-                                 "rung2_prior": "none"}}
+                                 "rung2_prior": "none"},
+                # E5: the colour mode is checked for the identity pair (cfg.json files before E5 have no key: rgb)
+                "rung2id": {**EXPECTED["rung2id"], "rung2_color": "rgb"},
+                "rung2idlum": {**EXPECTED["rung2id"], "rung2_color": "luminance"}}
+CFG_DEFAULTS_ALL = {**CFG_DEFAULTS, "rung2_color": "rgb"}
+NAME = {**NAME, "clip_share": "clipped share"}
+ND = {**ND, "clip_share": 4}
 M5_TIMING_EXCLUDE = {("vexp", "chair_rung2id_seed2")}  # the PC slept during it (log, 2026-11-25)
 EXTRA = ["hue_err_sat_deg", "ang_err_deg", "sat_ratio", "pseudo_bm", "dark_fit", "num_GS", "params", "minutes"]
 WORSE = {"psnr_gtmean": -1, "ssim": -1, "lpips": +1}  # the H1 rule's worse side per metric (plan 6.5)
 LEAK_MAX, SLOPE_RANGE = 0.1, (-1.1, -0.9)  # M5 3.3 harm signals (varying set, pooled)
-DEFAULT_OUT = {"h3": RUNG2 / "summary_h3", "noprior": RUNG2 / "summary_noprior", "init": RUNG2 / "summary_h2b"}
+FS_TOL = 1e-5  # E5 built-in check: F, s and gamma of rung2idlum equal rung2id's at the same seed (M3's tolerance)
+DEFAULT_OUT = {"h3": RUNG2 / "summary_h3", "noprior": RUNG2 / "summary_noprior", "init": RUNG2 / "summary_h2b",
+               "lum": RUNG2 / "summary_e5"}
 
 
 # ------------------------------------------------------------------ output guard
@@ -131,7 +146,7 @@ def check_run(r, a, sc, s, problems):
     if c.get("exp_name", "low") != a["exp_name"]:
         problems.append(f"{tag}: exp_name {c.get('exp_name')!r}, expected {a['exp_name']!r}")
     for k, x in {"freeze_color_basis": False, "detach_curve_in_target": False, **EXPECTED_ALL[a["expect"]]}.items():
-        got = c.get(k, CFG_DEFAULTS.get(k))
+        got = c.get(k, CFG_DEFAULTS_ALL.get(k))
         if (abs(got - x) > 1e-12) if isinstance(x, float) else got != x:
             problems.append(f"{tag}: {k} = {got!r}, expected {x!r} for {a['expect']}")
     if int(c["max_steps"]) != STEPS:
@@ -166,6 +181,8 @@ def value(r, key):
         return float(r["stats"]["num_GS"])
     if key == "params":
         return float(r["state"]["n_params"]) if r["state"] is not None else float("nan")
+    if key == "clip_share":
+        return float(r.get("clip_share", float("nan")))
     if key == "minutes":
         root, name = r["dir"].parent, r["dir"].name
         if (root.name, name) in M5_TIMING_EXCLUDE or (root == RUNG0 and name in TIMING_EXCLUDE):
@@ -464,10 +481,124 @@ def mode_h3(a, book_args):
     return book, dec
 
 
+def add_clip_shares(runs, arms, scenes, seeds):
+    """E5: each Rung 2 run's clipped share (rung2.ExposureCurve.clipped_share), the mean over its training views of the
+    share of channel values its pseudo-target clips, from the run's final F and s and the training photos loaded as
+    the trainer loads them (rung2_preview.load_set, factor 1 as the runs). The colour mode is the run's own cfg value,
+    so --selftest stays exact. CPU."""
+    import torch
+    from rung2 import ExposureCurve
+    from rung2_preview import load_set
+    photos = {}
+    for a in arms:
+        for sc in scenes:
+            for s in seeds:
+                r = runs[a["name"]][(sc, s)]
+                if r["state"] is None:
+                    continue
+                key = (a["set"], a["exp_name"], sc)
+                if key not in photos:
+                    d = load_set(sc, a["set"], a["exp_name"])
+                    photos[key] = (d["names"], d["images"])
+                names, images = photos[key]
+                st = r["state"]
+                assert names == st["view_names"], f"{r['dir'].name}: training views differ from rung2_state.json"
+                m = ExposureCurve(torch.tensor(st["knots"]), torch.tensor(st["heights"]), torch.tensor(st["s_final"]))
+                color = r["cfg"].get("rung2_color", "rgb")
+                r["clip_share"] = float(np.mean([m.clipped_share(img, k, color) for k, img in enumerate(images)]))
+
+
+def mode_lum(a, book_args):
+    scenes, seeds = book_args
+    sets = [("LOM", "lom", "low", RUNG2), ("varying", "vexp", "low", VEXP), ("over_exp", "lom", "over_exp", OVEREXP)]
+    arms, ctx = [], []
+    for tag, set_, exp, root in sets:
+        arms += [arm(f"{tag} rung2idlum", "rung2idlum", [root], set_, exp, ref=("rung2id", [root])),
+                 arm(f"{tag} rung2id", "rung2id", [root], set_, exp)]
+        ctx.append(arm(f"{tag} detach", "detach", [RUNG0 if tag == "LOM" else root], set_, exp))
+    if a.selftest:
+        arms = [as_selftest(x) for x in arms]
+    runs = load_all(arms + ctx, *book_args)
+    add_clip_shares(runs, arms, scenes, seeds)
+    book = Book(runs, *book_args)
+    keys = VAL + EXTRA + ["clip_share"]
+    book.cell_rows("Validation and extras per arm (detach: context only)", [x["name"] for x in arms + ctx], keys)
+    lab = {tag: f"{tag}: rung2idlum − rung2id" + (" (exploratory)" if tag == "over_exp" else "") for tag, *_ in sets}
+    book.diff_rows("rung2idlum − rung2id, paired by seed (×noise, * = real above 2×)",
+                   [(lab[tag], f"{tag} rung2idlum", f"{tag} rung2id") for tag, *_ in sets], keys)
+    book.diff_rows("Against detach, paired by seed (context, reported only)",
+                   [(f"{tag}: {v} − detach", f"{tag} {v}", f"{tag} detach") for tag, *_ in sets
+                    for v in ("rung2idlum", "rung2id")], keys)
+
+    # built-in check: the curve loss never sees the pseudo-target, so F, s and gamma must equal rung2id's (plan 2)
+    fs_rows, worst = [], 0.0
+    for tag, *_ in sets:
+        for sc in scenes:
+            d = {"F": [], "s": [], "gamma": []}
+            for s in seeds:
+                sl, si = runs[f"{tag} rung2idlum"][(sc, s)]["state"], runs[f"{tag} rung2id"][(sc, s)]["state"]
+                assert sl["view_names"] == si["view_names"], f"{tag} {sc} seed {s}: view order differs"
+                d["F"].append(float(np.max(np.abs(np.subtract(sl["F_grid"], si["F_grid"])))))
+                d["s"].append(float(np.max(np.abs(np.subtract(sl["s_final"], si["s_final"])))))
+                d["gamma"].append(abs(fnum(sl["gamma"]) - fnum(si["gamma"])))
+            row = {"set": tag, "scene": sc, **{f"max |Δ{k}| over seeds": f"{max(v):.1e}" for k, v in d.items()}}
+            worst = max(worst, *(max(v) for v in d.values()))
+            fs_rows.append(row)
+            book.numbers.setdefault("fs_check", {}).setdefault(tag, {})[sc] = d
+    fs_ok = worst <= FS_TOL
+    book.numbers["fs_check_max"], book.numbers["fs_check_ok"] = worst, fs_ok
+    book.tables[f"Built-in check: F on the 255-bin grid, s_final and γ of rung2idlum against rung2id, same seed "
+                f"(tolerance {FS_TOL:g})"] = fs_rows
+
+    # readings (log 2026-11-25, "E5 plan approved"; E5_luminance_plan.md section 4)
+    lom, var, over = lab["LOM"], lab["varying"], lab["over_exp"]
+    hue = book.eff(var, "bike", "hue_err_sat_deg")
+    hue_fix = bool(hue["real"] and hue["diff"] < 0)
+    costs = []
+    for lb, setname in ((lom, "LOM"), (var, "varying")):
+        for sc in H1_SCENES:
+            e = book.eff(lb, sc, "psnr_gtmean")
+            if e["x_noise"] < -REAL:
+                costs.append(f"{setname} {sc} bm PSNR {fx(e, 2)}")
+    verdict = "fixes" if hue_fix and not costs else "fixes at a cost" if hue_fix else "no fix"
+    worse = {g: [] for g in ("pooled", "pooled_no_shrub")}
+    for lb, setname in ((lom, "LOM"), (var, "varying")):
+        for g in worse:
+            ss, lp = book.eff(lb, g, "ssim"), book.eff(lb, g, "lpips")
+            if ss["x_noise"] < -REAL:
+                worse[g].append(f"{setname} SSIM {fx(ss, 4)}")
+            if lp["x_noise"] > REAL:
+                worse[g].append(f"{setname} LPIPS {fx(lp, 4)}")
+    adopt = verdict == "fixes" and not worse["pooled"]
+    ob, obn = book.eff(over, "pooled", "psnr_gtmean"), book.eff(over, "pooled_no_shrub", "psnr_gtmean")
+    gap = book.eff("over_exp: rung2id − detach", "pooled", "psnr_gtmean")
+    part = bool(ob["real"] and ob["diff"] > 0)
+    frac = ob["diff"] / -gap["diff"] if gap["diff"] < 0 else float("nan")
+    sat = {v: stat(book.vals(f"over_exp {v}", "sat_ratio", "pooled"), 3) for v in ("rung2idlum", "rung2id", "detach")}
+    book.numbers["e5"] = {"verdict": verdict, "bike_hue_varying": hue, "costs": costs, "adopt": adopt,
+                          "adoption_worse": worse, "fs_check_ok": fs_ok, "overexp_part": part,
+                          "overexp_gap_closed_fraction": frac}
+    dec = [f"- **Built-in check** (F, s, γ identical to rung2id): max |Δ| {worst:.1e} -> "
+           f"**{'passes' if fs_ok else 'FAILS: the colour mode changed the curve training; stop and investigate'}**.",
+           f"- **Bike hue error on the varying set** (rung2idlum − rung2id): {fx(hue, 2)} -> "
+           f"{'falls beyond 2× noise' if hue_fix else 'no fall beyond 2× noise'}.",
+           f"- **bm PSNR cost in a decision scene** (below −2× noise, LOM or varying): {'; '.join(costs) or 'none'}.",
+           f"- **Primary reading:** **{verdict}** (fixes: hue falls beyond 2× and no cost; fixes at a cost: hue falls, "
+           f"some cost; no fix: otherwise).",
+           f"- **Adoption into M6's base:** pooled SSIM/LPIPS worse beyond 2×: {'; '.join(worse['pooled']) or 'none'} "
+           f"(without shrub: {'; '.join(worse['pooled_no_shrub']) or 'none'}) -> "
+           f"**{'rung2idlum becomes the base' if adopt else 'M6 builds on rung2id; E5 is reported as an ablation'}**.",
+           f"- **Overexposure (exploratory):** pooled bm PSNR {fx(ob, 2)} (without shrub {fx(obn, 2)}) -> "
+           f"{'**colour accounts for part of the overexposure gap**' if part else 'no rise beyond 2× noise'}; "
+           f"rung2id − detach there {fx(gap, 2)}, fraction of that gap closed {frac:+.2f}; pooled saturation ratio "
+           f"rung2idlum {sat['rung2idlum']}, rung2id {sat['rung2id']}, detach {sat['detach']}. It cannot change H1-over."]
+    return book, dec
+
+
 # ------------------------------------------------------------------ main
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--mode", required=True, choices=["h3", "noprior", "h1", "init"])
+    ap.add_argument("--mode", required=True, choices=["h3", "noprior", "h1", "init", "lum"])
     ap.add_argument("--seeds", nargs="+", type=int, default=[0, 1, 2])
     ap.add_argument("--scenes", nargs="+", default=SCENES, choices=SCENES)
     ap.add_argument("--selftest", action="store_true", help="read the arm under test from its reference arm's runs")
@@ -495,7 +626,8 @@ def main():
     t0 = time.time()
     scenes = [s for s in SCENES if s in a.scenes]
     seeds = sorted(set(a.seeds))
-    book, dec = {"h1": mode_h1, "noprior": mode_noprior, "init": mode_init, "h3": mode_h3}[a.mode](a, (scenes, seeds))
+    book, dec = {"h1": mode_h1, "noprior": mode_noprior, "init": mode_init, "h3": mode_h3,
+                 "lum": mode_lum}[a.mode](a, (scenes, seeds))
 
     out.mkdir(parents=True, exist_ok=True)
     meta = {"date": time.strftime("%Y-%m-%d %H:%M"), "seconds": round(time.time() - t0), "mode": a.mode,
@@ -512,13 +644,16 @@ def main():
     heading = {"h3": "H3 (restated): rung2att − rung2 on LOM and the varying set (M5 E2)",
                "noprior": "No shape prior: rung2noprior − rung2 on LOM (M5 E4)",
                "init": "H2b(a): the identity init on the varying set, init × dark-branch 2×2 (M5 E1)",
+               "lum": "E5: the colour-preserving variant, rung2idlum − rung2id on LOM, the varying set and over_exp",
                "h1": f"H1 rule: {a.a} − {a.b}, LOM {a.exp_name} (M5 E3/E6){' — ' + a.title if a.title else ''}"}[a.mode]
+    prereg = ("docs/RESEARCH_LOG.md (2026-11-25, \"E5 plan approved\"), E5_luminance_plan.md section 4" if a.mode == "lum"
+              else "docs/RESEARCH_LOG.md (2026-11-24), M5_plan.md 3.1–3.6")
     md = [f"# {heading}\n",
           ("**SELFTEST:** the arm under test is read from its reference arm's runs; every effect must be 0. " if a.selftest
            else "") +
           f"Seeds {', '.join(map(str, seeds))}. Paired by seed; noise = sqrt(mean of the arms' seed variances); ×noise; "
           f"* = real (above 2×). Pooled = mean over the five scenes per seed. Readings pre-registered in "
-          f"docs/RESEARCH_LOG.md (2026-11-24), M5_plan.md 3.1–3.6. Generated {meta['date']} in {meta['seconds']} s by "
+          f"{prereg}. Generated {meta['date']} in {meta['seconds']} s by "
           f"`rung2_ablation.py` ({meta['script_sha256_16']}). Every number is *measured*.\n",
           "## Readings\n", "\n".join(dec), ""]
     for title, rows in book.tables.items():
