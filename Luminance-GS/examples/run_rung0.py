@@ -21,6 +21,8 @@ Run from Luminance-GS/examples:
     python run_rung0.py --root ../results/h1b --variants detach rung2id --seeds 3 4 5
     python run_rung0.py --exp_name over_exp --root ../results/overexp --variants baseline detach rung2
                                               # M5 (Implementation_guides/M5_plan.md): E1/E2, E3 and E6
+    python run_rung0.py --root ../results/rung2 --variants rung2idlum
+                                              # E5 (E5_luminance_plan.md); also on the varying set and over_exp
 --exp_name over_exp trains on <scene>/over_exp/ and is accepted only with a root inside results/overexp/ (run names
 do not include the exposure type, so another root would skip the runs as already done); --exp_name low is refused
 inside results/overexp/.
@@ -60,9 +62,11 @@ VARIANTS = {
     # without the shape prior (LOM)
     "rung2idexp": ["--curve_model", "rung2", "--rung2_F_init", "identity", "--dark_branch", "model"],
     "rung2noprior": ["--curve_model", "rung2", "--rung2_prior", "none"],
+    # E5 (E5_luminance_plan.md): the identity init with F applied to the channel-mean grey, RGB scaled by the ratio
+    "rung2idlum": ["--curve_model", "rung2", "--rung2_F_init", "identity", "--rung2_color", "luminance"],
 }
 # results/rung0 holds Rungs 0 and 0.5 only (CLAUDE.md rule 6): these variants must go to another root
-NOT_IN_RUNG0 = {"rung2", "rung2exp", "rung2att", "rung2id", "rung2idexp", "rung2noprior"}
+NOT_IN_RUNG0 = {"rung2", "rung2exp", "rung2att", "rung2id", "rung2idexp", "rung2noprior", "rung2idlum"}
 
 
 def run_name(scene: str, variant: str, seed: int) -> str:
