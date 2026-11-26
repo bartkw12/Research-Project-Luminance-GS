@@ -207,6 +207,10 @@ class Config:
     # Rung 2: Adam learning rates of F (with the prior's gamma) and of the s_k; no weight decay; decayed to 1%
     rung2_lr_F: float = 1e-2
     rung2_lr_s: float = 1e-3
+    # E5 (Implementation_guides/E5_luminance_plan.md): how Rung 2's curve maps a pixel. "rgb": on R, G and B
+    # separately (default). "luminance": on the channel-mean grey Y, each channel scaled by L_k(Y) / Y (keeps hue and
+    # saturation); F, s_k and the curve loss are unchanged. Needs --curve_model rung2
+    rung2_color: Literal["rgb", "luminance"] = "rgb"
 
     def adjust_steps(self, factor: float):
         self.eval_steps = [int(i * factor) for i in self.eval_steps]
@@ -346,6 +350,8 @@ class Runner:
         # guards come first, so nothing is written before an exit.
         if cfg.dark_branch == "model" and cfg.curve_model != "rung2":
             raise SystemExit("--dark_branch model needs --curve_model rung2")
+        if cfg.rung2_color != "rgb" and cfg.curve_model != "rung2":
+            raise SystemExit(f"--rung2_color {cfg.rung2_color} needs --curve_model rung2")
         if cfg.curve_model == "rung2":
             clash = [f for f in ("detach_pseudo_target", "detach_curve_in_target", "freeze_color_basis") if getattr(cfg, f)]
             if clash:
@@ -603,14 +609,20 @@ class Runner:
         r = self.rung2
         curve_adj = r.composed_curve(image_ids)  # [1, 255] F(min(1, 2^{s_k} x_b)); attached, for the curve loss
         nan = torch.full((1,), float("nan"), device=self.device)
+        if self.cfg.rung2_color == "rgb":
+            projected = (pixels[..., 0], pixels[..., 1], pixels[..., 2])  # F acts on R, G and B: the fixed basis
+        else:
+            grey = pixels.mean(dim=-1)  # E5 luminance: F acts on the channel-mean grey only
+            projected = (grey, grey, grey)
         return {
             "curve_bias": torch.zeros_like(curve_adj),
             "curve_preclamp": curve_adj,
             "curve_adj": curve_adj,
             "gamma": r.gamma().reshape(1), "alpha": nan, "beta": nan,
             "pesdo_curve": r.prior_curve() if r.prior != "none" else torch.full_like(curve_adj, float("nan")),
-            "pixels_enh": r.map_pixels(pixels, image_ids, self.cfg.rung2_attach),  # gradient as --rung2_attach says
-            "projected": (pixels[..., 0], pixels[..., 1], pixels[..., 2]),  # F acts on R, G and B: the fixed basis
+            # gradient as --rung2_attach says; colour handling as --rung2_color says
+            "pixels_enh": r.map_pixels(pixels, image_ids, self.cfg.rung2_attach, self.cfg.rung2_color),
+            "projected": projected,  # F's inputs before the gain, [1, H, W] each
             "s_k": r.s[image_ids],
         }
 
@@ -980,7 +992,7 @@ class Runner:
             groups["rung2 rho (prior gamma)"] = [r.rho]
         flat = [p for ps in groups.values() for p in ps]
         print(f"[grad_check] Rung 2 (rung2_attach={cfg.rung2_attach}, dark_branch={cfg.dark_branch}, "
-              f"rung2_prior={cfg.rung2_prior})")
+              f"rung2_prior={cfg.rung2_prior}, rung2_color={cfg.rung2_color})")
         for lname, loss in losses.items():
             if loss is None:
                 continue
@@ -1017,7 +1029,7 @@ class Runner:
               f"{', 1 prior gamma' if model.prior != 'none' else ''}); knots {cfg.rung2_knot_spacing}"
               f"{f' (y_max {y_max:.4f})' if y_max is not None else ''}, F init {cfg.rung2_F_init}, s init "
               f"{cfg.rung2_s_init}, prior {cfg.rung2_prior}, attach {cfg.rung2_attach}, lr F {cfg.rung2_lr_F:g}, "
-              f"lr s {cfg.rung2_lr_s:g}")
+              f"lr s {cfg.rung2_lr_s:g}, colour {cfg.rung2_color}")
         return model
 
     # ------------------------------------------------------------------ M2: exposure-aware dark branch
