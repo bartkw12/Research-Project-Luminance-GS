@@ -33,7 +33,8 @@ REF_VARIANT, REF_SEED = "baseline", 0
 # M2: flags that change the model or the dark branch, passed on from the run's cfg.json so the re-score rebuilds
 # it (diagnostics.MODEL_DEFAULTS asserts they match). Part C added curve_model and the rung2_* flags.
 MODEL_FLAGS = ["dark_branch", "curve_model", "rung2_knots", "rung2_knot_spacing", "rung2_F_init", "rung2_s_init",
-               "rung2_attach", "rung2_prior", "rung2_smooth_lambda", "rung2_lr_F", "rung2_lr_s"]
+               "rung2_attach", "rung2_prior", "rung2_smooth_lambda", "rung2_lr_F", "rung2_lr_s",
+               "rung2_color"]  # E5
 
 
 def final_ckpt(run_dir: Path) -> Path:
