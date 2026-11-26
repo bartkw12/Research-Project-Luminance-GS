@@ -146,6 +146,7 @@ L_hist becomes L_curve: the MSE between F(min(1, 2^{s_k} x_b)) and CDF_k on the 
 | `--rung2_prior` | `F` | the shape-prior term (below): `F`, `composed` (the official form), `none` (the first draft; M5 ablation) |
 | `--rung2_smooth_lambda` | 0.1 | first-difference smoothness of the composed curve |
 | `--rung2_lr_F`, `--rung2_lr_s` | 1e-2, 1e-3 | Adam on (θ, ρ) and on s; no weight decay; ExponentialLR to 1% |
+| `--rung2_color` | `rgb` | E5 (2026-11-25): how L_k maps a pixel. `rgb`: on R, G and B separately. `luminance`: on the channel-mean grey Y = (R+G+B)/3, out_c = clamp(x_c · L_k(Y) / max(Y, 1e-6), 0, 1) (variant `rung2idlum`, with the identity init). Refused without `--curve_model rung2` |
 
 - **Curve loss (decided by Bart, 2026-11-13):** L_curve = w(t)·mse(L_k, T_k) + 0.1·mean(L_k[b+1] − L_k[b])² + 0.5·[mse(p, F) + 0.01·mse(p, T_k)], with p = clamp(x_b, 1e-3, 1)^γ (`losses.gamma_curve`; the clamp only touches b = 0) and one learned global γ = exp(ρ), starting at 1. The total loss uses 10·L_curve, as the official uses 10·L_hist.
   - This is the official L_hist with the shape network replaced by one γ, and the prior moved from each view's curve to the shared F. So the prior never trains s_k.
@@ -153,7 +154,8 @@ L_hist becomes L_curve: the MSE between F(min(1, 2^{s_k} x_b)) and CDF_k on the 
   - Learning rate 1e-2 for F and γ: plan step 6's rule, applied with the prior on (log, 2026-11-13).
 - **Code:**
   - `Runner.build_rung2`: the init. It reads `trainset[i]` (no random numbers) and prints the parameter count, K + N + 1.
-  - `Runner.rung2_forward`: `curve_forward`'s Rung 2 branch, with the same keys. `curve_adj` = the composed curve, `pixels_enh` = `map_pixels` under `--rung2_attach`, `pesdo_curve` = p, `gamma` = γ, `projected` = (R, G, B); official-only keys are zeros or NaN.
+  - `Runner.rung2_forward`: `curve_forward`'s Rung 2 branch, with the same keys. `curve_adj` = the composed curve, `pixels_enh` = `map_pixels` under `--rung2_attach` and `--rung2_color`, `pesdo_curve` = p, `gamma` = γ, `projected` = (R, G, B), or (Y, Y, Y) with `--rung2_color luminance`; official-only keys are zeros or NaN.
+  - `--rung2_color luminance` (E5) changes only the pseudo-target: Y is the grey the HE-CDF target is built on (`losses.py` line 56), so F, s and γ train exactly as with `rgb` (the curve loss never sees the pseudo-target in the detached default). `ExposureCurve.clipped_share` gives the share of channel values the pseudo-target clips. Design and readings: `E5_luminance_plan.md`.
   - `train()`: target = `hist_target` of the step's HE-CDF, then `ExposureCurve.loss`; the gauge projection after the optimiser step; end-of-run asserts on mean s and a monotone F.
   - `grad_check_rung2`: gradient norms from L_enh and L_low into θ, s and ρ.
 - **Not built in Rung 2 mode:** `self.curve`, the bias and shape networks, `pesdo_curve`, the colour basis and their optimisers. Refused with `--detach_pseudo_target`, `--detach_curve_in_target`, `--freeze_color_basis`, `--patch_size`, or a batch size other than 1.
