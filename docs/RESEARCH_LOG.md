@@ -1232,3 +1232,48 @@ Entries up to 2026-10-23 were backfilled from git history, the run folders and t
   - *Inferred:* luminance mode keeps the photo's own saturation. That is right only where the input's saturation matches the GT (chair, bike), and too much for buu and sofa. Sofa barely clips, so clipping does not explain sofa's loss. Per-channel F desaturates every scene instead, so neither handling is right everywhere.
   - On overexposure, per-channel F's re-saturation of the washed-out photos was helping.
 - **Next:** `E5_results.md`; `M6_rung3_plan.md` on `rung2id`.
+
+### 2026-11-26: M6 step 0: plan checked against the code; zone weights fixed at s_init; harm 3 on the decision scenes
+
+- **Rung / type:** Rung 3 (M6) · decision (step 0 of `M6_rung3_plan.md`). No code, no runs.
+- **Why:** the plan's step 0 checks its claims against the code before Bart settles the design and confirms the readings.
+- **What was done:**
+  - Read every code path the plan names.
+  - Recomputed section 1.4's photo statistics with the trainer's loader (`rung2_preview.load_set`, training photos only).
+  - Read the `rung2id` run files.
+  - Applied the corrections in `M6_rung3_plan.md`; its status now reads "step 0 done".
+- **Reproduce:** branch `main`, commit `89b5061`, `examples/` clean (the M6 plan is untracked). The checks were read-only; nothing was saved.
+- **Results (measured):**
+  - **Confirmed:**
+    - every code hook the plan names;
+    - its numbers: `rung2id` LOM pooled bm PSNR 23.67 ± 0.07, the detection-limit table, 87–108 curve parameters, `rel_l1_pseudo` 0.0848 pooled;
+    - section 1.4: the percentiles match exactly, lit shares and CDF gaps within 0.02, bike's zone targets at level 8 are 230/94/160 (plan 228/94/159).
+  - **Discrepancies (rule 8; corrected in the plan):**
+    - E5 was already committed; the plan said it was not.
+    - F and s depend on the seed through the DataLoader's view order. Across seeds 0–2, `rung2id`'s F differs by up to 7.4e-5 on LOM and 2.0e-4 on the varying set. s differs by up to 5.3e-3 stops, the same size as s's drift from s_init (RMS 0.0014–0.0059). The seed sd of `rel_l1_pseudo` is at most 4.8e-5. Source: `results/{rung2,vexp}/*_rung2id_seed*/diagnostics/rung2_state.json` and `rescore/consistency.csv`.
+    - The base's γ is 0.074–0.165. A view with s_k < 0 maps input 1 below 1.
+    - The "chromatic in lit zones" shares are a hard w_lit > 0.5 split. The soft shares are 0.76, 0.19 and 0.73 (chair, sofa, bike), and 42–57% of those pixels sit in the ramp.
+    - Bike's LOM bm PSNR seed sd is 0.002 dB (`rescore/val_summary.json`), so its 2× bar is about 0.005 dB.
+  - **Gaps added to the plan:**
+    - refusals for `--rung2_F_init cdf` and `--rung2_s_init zero`;
+    - per-zone arrays under new keys only, because `rung2_headstart.py:124` and `rung2_ablation.py:326` and `:541` would broadcast a [2, 255] array without an error;
+    - the loss parts keys that `log_losses` reads;
+    - `rung3_zones: 1` in `EXPECTED_ALL["rung2id"]`;
+    - both PROTECTED lists, since today `rung2_replay.py --mode long` or `--mode overexp` would overwrite A1's and E6's outputs;
+    - the exact guide specification;
+    - a hash on the preview's predictions, and protection for them.
+- **Decisions (Bart, 2026-11-26):**
+  - **D6:** the zone weights, targets and shares are fixed per view at s_init and built once on the CPU.
+    - s_k's drift is under 1% of the zone width (0.62–1.34 stops).
+    - The curve side stays deterministic; a CUDA weighted `bincount` would not be.
+    - The preview takes about 2–3 min and A2 about 10 min (*inferred*).
+  - **D5:** harm 3 fires if the mean per-scene relative change in `rel_l1_pseudo` over buu, chair, sofa and bike exceeds +20%. Shrub and the pooled value are reported only.
+    - Shrub is about 40% of the pooled value.
+    - E5's luminance mode moved the pooled value by +8.0%, but buu +12.7%, chair +30.0%, sofa +18.7%, bike +14.3% and shrub −6.4%: a four-scene mean of +18.9%.
+- **Takeaway:**
+  - The plan is sound. Before any code, the corrections remove a crash at step 0, silent misreads and an unprotected file of pre-registered predictions.
+  - *Inferred:* bike's very small noise means harm 1 and 4.2's cost test fire on almost any bike drop. The rule is kept as in M5, E5 and H1.
+- **Next:**
+  - Bart decides D1–D4 and gives his OK on section 4, by Fri 27 Nov.
+  - Then step 1: the decision entry, H4 and the Rung 3 row in `CLAUDE.md`, and the protection lists.
+  - Bart commits the plan together with that entry before any M6 code.
