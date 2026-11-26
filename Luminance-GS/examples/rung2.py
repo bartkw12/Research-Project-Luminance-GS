@@ -28,6 +28,11 @@ Conventions
   no prior ("none", the plan's first draft; an M5 ablation). Parameters: K + N, plus 1 with a prior.
 - 2^s is computed as exp(ln 2 * s), never torch.exp2: torch 1.13 compiles exp2's CUDA kernel at run time
   (NVRTC), which fails in this env (nvrtc-builtins64_117.dll missing).
+- Colour mode (E5, Implementation_guides/E5_luminance_plan.md; map_pixels(color=...)): "rgb" (the default) applies
+  L_k to R, G and B separately. "luminance" applies it to the channel-mean grey Y = (R + G + B) / 3, the grey the
+  HE-CDF target is built on (losses.py), and scales each channel by L_k(Y) / max(Y, 1e-6), clipped to [0, 1] per
+  channel: hue and saturation are kept where nothing clips, and a grey pixel gets the rgb value. Only the
+  pseudo-target changes; F, s_k, the curve loss and its gradients do not.
 """
 
 import math
@@ -46,6 +51,8 @@ F_INITS = ("cdf", "identity")
 ATTACH = ("none", "s", "all")
 ALIGNS = ("shift", "none")
 PRIORS = ("F", "composed", "none")
+COLORS = ("rgb", "luminance")  # E5: how map_pixels applies L_k to a pixel
+LUM_EPS = 1e-6            # luminance mode: floor on the grey level Y in the ratio L_k(Y) / Y
 PRIOR_WEIGHT = 0.5        # the official HistogramPriorLoss: total = w cdf + lambda smooth + 0.5 pseudo
 PRIOR_TARGET_WEIGHT = 0.01  # pseudo = mse(p, curve) + 0.01 mse(p, target)
 GAMMA_X_FLOOR = 1e-3      # losses.gamma_curve clamps x to [1e-3, 1] before the power
@@ -204,23 +211,44 @@ class ExposureCurve(torch.nn.Module):
         y = torch.clamp(self.gain(k)[:, None] * self.grid[None], max=1.0)
         return interp(y, self.knots, self.heights())
 
-    def map_pixels(self, pixels: Tensor, k: Index, attach: str = "none") -> Tensor:
-        """[B, H, W, 3] pseudo-target L_k(pixels), per channel. attach:
+    def map_pixels(self, pixels: Tensor, k: Index, attach: str = "none", color: str = "rgb") -> Tensor:
+        """[B, H, W, 3] pseudo-target L_k(pixels). attach:
         none: no gradient (the default, detached mode);
         s:    gradient to s_k only; F's heights are detached, y = 2^{s_k} x stays differentiable, so
               d L / d s_k = F'(y) y ln 2 (0 where 2^{s_k} x >= 1);
-        all:  gradient to theta and s."""
+        all:  gradient to theta and s.
+        color (E5): "rgb" (default), L_k on each channel; "luminance", each channel x_c scaled by
+        L_k(Y) / max(Y, 1e-6) with Y the channel mean, then clipped to [0, 1] (see the module docstring)."""
         if attach not in ATTACH:
             raise ValueError(f"unknown attach {attach!r}; expected one of {ATTACH}")
+        if color not in COLORS:
+            raise ValueError(f"unknown colour mode {color!r}; expected one of {COLORS}")
         if attach == "none":
             with torch.no_grad():
-                return self._map(pixels, k, self.heights())
+                return self._map(pixels, k, self.heights(), color)
         h = self.heights()
-        return self._map(pixels, k, h if attach == "all" else h.detach())
+        return self._map(pixels, k, h if attach == "all" else h.detach(), color)
 
-    def _map(self, pixels: Tensor, k: Index, h: Tensor) -> Tensor:
-        y = torch.clamp(self.gain(k).view(-1, 1, 1, 1) * pixels, max=1.0)
-        return interp(y, self.knots, h)
+    def _map(self, pixels: Tensor, k: Index, h: Tensor, color: str = "rgb") -> Tensor:
+        if color == "rgb":
+            y = torch.clamp(self.gain(k).view(-1, 1, 1, 1) * pixels, max=1.0)
+            return interp(y, self.knots, h)
+        Y = pixels.mean(dim=-1, keepdim=True)  # [B, H, W, 1]
+        FY = interp(torch.clamp(self.gain(k).view(-1, 1, 1, 1) * Y, max=1.0), self.knots, h)
+        return torch.clamp(pixels * (FY / torch.clamp(Y, min=LUM_EPS)), 0.0, 1.0)
+
+    @torch.no_grad()
+    def clipped_share(self, pixels: Tensor, k: Index, color: str = "rgb") -> float:
+        """Share of the channel values of pixels [B, H, W, 3] that exceed 1 before the clamp in map_pixels, i.e. that
+        the pseudo-target clips: rgb, 2^{s_k} x_c > 1 (F(1) = 1); luminance, x_c L_k(Y) / max(Y, 1e-6) > 1."""
+        if color not in COLORS:
+            raise ValueError(f"unknown colour mode {color!r}; expected one of {COLORS}")
+        g = self.gain(k).view(-1, 1, 1, 1)
+        if color == "rgb":
+            return float((g * pixels > 1.0).float().mean())
+        Y = pixels.mean(dim=-1, keepdim=True)
+        FY = self.F(torch.clamp(g * Y, max=1.0))
+        return float((pixels * (FY / torch.clamp(Y, min=LUM_EPS)) > 1.0).float().mean())
 
     @torch.no_grad()
     def project_gauge(self):
