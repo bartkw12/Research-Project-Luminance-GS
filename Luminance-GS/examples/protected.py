@@ -21,6 +21,8 @@ FINISHED = [RESULTS / p for p in (
     "rung2/summary_e5_h1", "rung2/replay_long",
     "h1b/summary", "h1b/summary_seeds012345",
     "overexp/summary", "overexp/summary_e5", "overexp/preview",
+    # M6: the preview holding plan 4.3's pre-registered predictions (logged 2026-11-27 with its sha256)
+    "rung3/preview",
 )]
 
 
