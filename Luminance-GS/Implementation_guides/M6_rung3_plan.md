@@ -7,7 +7,11 @@ Written on the evening of 2026-11-25 in the project thread, for Claude Code on B
 - Bart decided D5 and D6 at step 0: harm signal 3 is judged on the decision scenes at +20% (section 4.1), and the zone weights are fixed at each view's initial exposure s_init (section 2.1).
 - On 2026-11-26 Bart also chose D1–D4 as recommended and approved section 4 as written.
 - Step 2 done 2026-11-26 (log: "M6 step 2"): the code of section 3's table, apart from `rung2_replay.py --mode rung3`, which is the preview of step 3, and `rung2_ablation.py --mode rung3`, which is step 4. Tests 1 and 2 pass.
-- Next: step 3 (regression, smokes, preview).
+- Step 3 done 2026-11-27 (log: "M6 step 3, tests 3 and 4" and "M6 step 3, test 5"):
+  - the regression is bit-identical on the curve side, and the smokes pass;
+  - the preview passes its stop rule;
+  - plan 4.3's predicted directions are logged with the sha256 of `results/rung3/preview/numbers.json`, now protected.
+- Next: step 4, the batch, launched by Bart with `/run-batch`.
 
 **Labels:** every number is *measured* unless marked *inferred*. Sources are named. Numbers from the quick photo check of section 1.4 are *measured* on the training photos only, with a quick script, and step 3's preview recomputes them with the trainer's loader.
 
@@ -447,8 +451,14 @@ On `over_exp` (if run): `--a_roots ../results/overexp`, `--b_roots ../results/ov
 - `rung2_replay.py --mode rung3` (the preview) comes with step 3, and `rung2_ablation.py --mode rung3` with step 4.
 - Tests 1 and 2 pass; results are in the log.
 
-### Step 3: regression, smokes, preview (tests 3–5); ask Bart before the batch
+### Step 3: regression, smokes, preview (tests 3–5); ask Bart before the batch (done 2026-11-27)
 Log the preview, its stop rule and the predicted directions of section 4.3 in one entry before the batch starts.
+- **Done:** tests 3 and 4 pass, and the preview passes its stop rule.
+- **Predictions:**
+  - saturation goes up in buu, chair, sofa and bike;
+  - bike gets no hue prediction, because its drift change of −0.72° is under the 1° minimum.
+- **Hash:** `numbers.json` sha256 `991f45a9…3974f` is in the log, and the folder is protected.
+- **Two details:** the preview also ran on the varying set, for the exposure check only. Fixing the weights at s_init changes them by up to 0.06 in buu (log, test 5).
 
 ### Step 4: batch (section 6), launched by Bart with `/run-batch`
 While it runs (CPU only; do not edit any file the trainer imports): `--mode rung3` and its selftest (test 6).
