@@ -2,7 +2,11 @@
 
 Written on the evening of 2026-11-25 in the project thread, for Claude Code on Bart's PC, after Bart's decisions of 2026-11-25 (log: "Decisions after M5") and E5's result (log: "E5 results"; `E5_results.md`). It continues `M5_plan.md` section 8 and `E5_luminance_plan.md`.
 
-**Status: step 0 done (2026-11-26).** Claude Code checked this plan against the code, and the corrections are applied below (log: "M6 step 0"). Bart decided two design points on 2026-11-26: the zone weights are fixed at each view's initial exposure s_init (section 2.1; D6), and harm signal 3 is judged on the decision scenes at +20% (section 4.1; D5). Still open: D1–D4 (section 11) by **Fri 27 Nov**, and Bart's OK on the readings in section 4 before step 1 and any run.
+**Status: design settled and readings pre-registered (2026-11-26; log: "M6 step 1").**
+- Step 0 checked this plan against the code; the corrections are applied below (log: "M6 step 0").
+- Bart decided D5 and D6 at step 0: harm signal 3 is judged on the decision scenes at +20% (section 4.1), and the zone weights are fixed at each view's initial exposure s_init (section 2.1).
+- On 2026-11-26 Bart also chose D1–D4 as recommended and approved section 4 as written.
+- Next: Bart commits this plan with the step-1 entry; then step 2 (code and unit tests).
 
 **Labels:** every number is *measured* unless marked *inferred*. Sources are named. Numbers from the quick photo check of section 1.4 are *measured* on the training photos only, with a quick script, and step 3's preview recomputes them with the trainer's loader.
 
@@ -217,7 +221,7 @@ Added to `NOT_IN_RUNG0`. On the varying set it is the shared column, like `rung2
 | `rescore_runs.py` | `MODEL_FLAGS` |
 | `run_rung0.py` | variant `rung3`, `NOT_IN_RUNG0` (its message also names `results/rung3`), a docstring example |
 | `test_rung3.py` (new) | unit tests (below), CPU |
-| `rung2_replay.py` | `--mode rung3`: the preview (test 5), writing `results/rung3/preview/`. Optional `--mode rung3long` (A2, step 6), writing `results/rung3/replay_long/`. Both go into `OUT`. `PROTECTED` gains M5's `results/rung2/replay_long/` and `results/overexp/preview/`, which a re-run of `--mode long` or `--mode overexp` would overwrite today, and `results/rung3/preview/` once the preview is logged (step 1). |
+| `rung2_replay.py` | `--mode rung3`: the preview (test 5), writing `results/rung3/preview/`. Optional `--mode rung3long` (A2, step 6), writing `results/rung3/replay_long/`. Both go into `OUT`. Its guard uses `protected.py` since step 1, which already covers M5's `replay_long/` and `overexp/preview/`. `results/rung3/preview/` is added to `protected.FINISHED` once the preview is logged (step 3). |
 | `rung2_ablation.py` | `EXPECTED_ALL["rung3"]` (`rung3_zones` 2, `rung3_blur` 16). `"rung3_zones": 1` added to `EXPECTED_ALL["rung2id"]`, as E5 added `rung2_color`, so a zone run cannot pass as the base. `rung3_zones: 1` and `rung3_blur: 16` in `CFG_DEFAULTS_ALL` (older `cfg.json` files lack them). `--mode rung3` (section 7). `results/rung3` added to `guard_out`'s roots. |
 | `docs/curve_estimation.md`, `CLAUDE.md` | "Rung 3 as built"; the flags, variant, roots and repo map; H4 |
 
@@ -261,7 +265,7 @@ Added to `NOT_IN_RUNG0`. On the varying set it is the shared column, like `rung2
      - in every decision scene, max over the grid of |F_sh − F_lit| is below 0.01 (Rung 3 would collapse to Rung 2, so the batch would test nothing);
      - in any scene, the replay's s differ from the `rung2id` replay's by more than 0.05 stops RMS (the exposure model is disturbed).
    - Nothing in the design changes after the preview. Its numbers go in the log either way.
-   - **Protecting the predictions:** the preview's log entry records the sha256 of `results/rung3/preview/numbers.json`, and `--mode rung3` checks it (section 7). After that entry, the folder is protected (step 1), so a later re-run cannot replace the pre-registered directions.
+   - **Protecting the predictions:** the preview's log entry records the sha256 of `results/rung3/preview/numbers.json`, and `--mode rung3` checks it (section 7). After that entry, the folder is added to `protected.FINISHED`, rule 6 and the `ask` list (step 1), so a later re-run cannot replace the pre-registered directions.
 6. **`rung2_ablation.py --mode rung3 --selftest`** (the `rung3` arms read from `rung2id`'s runs): every effect exactly 0. The zone-curve tables are skipped in selftest.
 
 ---
@@ -426,18 +430,15 @@ On `over_exp` (if run): `--a_roots ../results/overexp`, `--b_roots ../results/ov
   - E5 was already committed (HEAD `89b5061`).
 - **Before any M6 code:** Bart commits this plan together with the step-1 log entry, so the pre-registration has a git timestamp.
 
-### Step 1: log the decisions and readings (before any code or run)
-- One `/log-experiment` decision entry: the design (section 2, with Bart's choices on section 11) and the readings of section 4 as Bart confirms them.
-- `CLAUDE.md`: add H4 to the goal section; update the Rung 3 row.
-- Propose to Bart (his call): add M5's and E5's finished outputs to rule 6 and to the `ask` list in `.claude/settings.json`, then to the scripts' guards.
-  - `rung2_ablation.py`'s `PROTECTED` is imported from `rung2_analyze.py`: extend it in `rung2_ablation.py`, or edit `rung2_analyze.PROTECTED`, which guards both scripts. `rung2_replay.py` keeps its own list.
-  - The outputs to add:
-    - in `results/rung2/`: `summary_h3/`, `summary_noprior/`, `summary_h2b/`, `summary_rung2id/`, `summary_e5/`, `summary_e5_h1/`, `replay_long/` (today `rung2_replay.py --mode long` would overwrite it);
-    - in `results/h1b/`: `summary/`, `summary_seeds012345/`;
-    - in `results/overexp/`: `summary/`, `summary_e5/`, `preview/` (today `--mode overexp` would overwrite it);
-    - `M5_results.md` and `E5_results.md`;
-    - optional: `results/rung2/preview/` and `preview_lrF1e-2/` (the 2026-11-11 runs behind the shape-prior decision).
-- After the preview is logged (step 3), `results/rung3/preview/` joins the same lists, so the pre-registered predictions cannot be overwritten.
+### Step 1: log the decisions and readings (before any code or run) (done 2026-11-26)
+- One `/log-experiment` decision entry: the design (section 2, with Bart's choices on section 11) and the readings of section 4 as Bart confirmed them (log: "M6 step 1").
+- `CLAUDE.md`: H4 added to the goal section; the Rung 3 row updated.
+- Finished outputs protected (Bart chose "all of it", 2026-11-26; log: "Finished M5/E5 outputs protected").
+  - **Folders:** M5's and E5's outputs, plus the 2026-11-11 `results/rung2/preview/` and `preview_lrF1e-2/`.
+  - **Rule 6 and settings:** added to CLAUDE.md rule 6 and to the `ask` list in `.claude/settings.json`.
+  - **Scripts:** added to the new `examples/protected.py`, which `rung2_analyze`, `rung2_ablation`, `rung2_replay`, `rung2_preview` and `rung2_headstart` now use.
+  - **Holes closed:** before this, a bare `rung2_preview.py` overwrote `preview_final/`, a bare `rung2_headstart.py` overwrote `summary_headstart*/`, and `rung2_replay.py --mode long` or `--mode overexp` overwrote A1's and E6's outputs.
+- After the preview is logged (step 3), `results/rung3/preview/` joins `protected.FINISHED`, rule 6 and the `ask` list, so the pre-registered predictions cannot be overwritten.
 
 ### Step 2: code and unit tests (section 3, tests 1–2)
 
@@ -457,7 +458,7 @@ Apply the readings as logged; log entries; `M6_results.md`; update `CLAUDE.md`'s
 
 | When | What |
 |---|---|
-| Thu 26 Nov | Step 0 (plan against code: done, D5 and D6 decided); Bart's choices on D1–D4 and his OK on section 4; step 1 (log) |
+| Thu 26 Nov | Steps 0 and 1 done: plan checked against the code, D1–D6 settled, section 4 approved and logged, finished outputs protected. Bart commits the plan with the step-1 entry |
 | Fri 27 Nov | **Design settled.** Steps 2–3: code, unit tests, CUDA check, regression, smokes, preview. Batch launched in the evening (2.3 h, or 3.4 h with `over_exp`) |
 | Sat 28 – Sun 29 | Re-score (about 8 min); `--mode rung3` and its selftest; the readings; log entries (or Mon 30, as Bart's time allows) |
 | Mon 30 Nov | `M6_results.md`; message Wei (section 10) |
@@ -500,7 +501,7 @@ Seeds are never dropped: three seeds are the minimum for a noise estimate.
 
 ---
 
-## 11. Decisions for Bart (D1–D4 open, settle by Fri 27; D5 and D6 decided 2026-11-26; recommended options first)
+## 11. Decisions (all settled by Bart on 2026-11-26: D1–D4 as recommended, D5 and D6 as recorded; log: "M6 step 0", "M6 step 1")
 
 | # | Decision | Recommended | Alternatives | Why |
 |---|---|---|---|---|
