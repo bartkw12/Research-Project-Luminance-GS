@@ -47,6 +47,7 @@ from tools import pixel_project, pixel_project_back, LUT_mapping
 from losses import L_spa, HistogramPriorLoss, gamma_curve, s_curve
 from diagnostics import Diagnostics, MODEL_DEFAULTS
 from rung2 import ExposureCurve, hist_target, init_heights, make_knots, used_range_max
+from rung3 import ZoneExposureCurve, build_zones
 
 
 @dataclass
@@ -211,6 +212,11 @@ class Config:
     # separately (default). "luminance": on the channel-mean grey Y, each channel scaled by L_k(Y) / Y (keeps hue and
     # saturation); F, s_k and the curve loss are unchanged. Needs --curve_model rung2
     rung2_color: Literal["rgb", "luminance"] = "rgb"
+    # M6 (Implementation_guides/M6_rung3_plan.md; pre-registered 2026-11-26): Rung 3. 1 = Rung 2 (no Rung 3 code runs);
+    # 2 = two shared curves mixed per pixel by fixed brightness-zone weights (rung3.py; variant rung3). Needs
+    # --curve_model rung2 with the identity init; rung3_blur = the guide's block size in pixels
+    rung3_zones: int = 1
+    rung3_blur: int = 16
 
     def adjust_steps(self, factor: float):
         self.eval_steps = [int(i * factor) for i in self.eval_steps]
@@ -359,6 +365,21 @@ class Runner:
                                  f"basis: drop --{', --'.join(clash)}")
             if cfg.patch_size is not None or cfg.batch_size != 1:
                 raise SystemExit("--curve_model rung2 needs whole images, one view per step (patch_size None, batch_size 1)")
+        # M6 (plan 2.4): Rung 3 runs only in its pre-registered configuration; the rest is out of scope, so refused
+        if cfg.rung3_zones not in (1, 2):
+            raise SystemExit(f"--rung3_zones {cfg.rung3_zones}: only 1 (Rung 2) or 2 (Rung 3, M6)")
+        if cfg.rung3_zones == 2:
+            bad = [] if cfg.curve_model == "rung2" else [f"--curve_model {cfg.curve_model} (needs rung2)"]
+            for flag, want in (("rung2_attach", "none"), ("rung2_color", "rgb"), ("rung2_prior", "F"),
+                               ("rung2_F_init", "identity"), ("rung2_s_init", "measured"), ("dark_branch", "shared")):
+                if getattr(cfg, flag) != want:
+                    bad.append(f"--{flag} {getattr(cfg, flag)} (needs {want})")
+            if cfg.rung2_knot_spacing == "usedrange":
+                bad.append("--rung2_knot_spacing usedrange")
+            if cfg.rung3_blur < 1:
+                bad.append(f"--rung3_blur {cfg.rung3_blur} (needs >= 1)")
+            if bad:
+                raise SystemExit("--rung3_zones 2 is refused with: " + "; ".join(bad))
         self.s_measured = self.s_gains = None
         if cfg.dark_branch != "shared" or cfg.curve_model == "rung2":
             self.s_measured = self.measure_exposures()
@@ -388,7 +409,7 @@ class Runner:
 
         if cfg.curve_model == "rung2":
             # M2: Rung 2 replaces the curve, the bias and shape networks and the colour basis (none of them is built)
-            self.rung2 = self.build_rung2()
+            self.rung2 = self.build_rung3() if cfg.rung3_zones == 2 else self.build_rung2()  # M6: Rung 3 with zones 2
             self.curve_optimizers = [
                 torch.optim.Adam(self.rung2.f_params(), lr=cfg.rung2_lr_F * math.sqrt(cfg.batch_size), weight_decay=0.0),
                 torch.optim.Adam([self.rung2.s], lr=cfg.rung2_lr_s * math.sqrt(cfg.batch_size), weight_decay=0.0),
@@ -606,6 +627,8 @@ class Runner:
     def rung2_forward(self, pixels: Tensor, image_ids: Tensor) -> Dict[str, Tensor]:
         """curve_forward for Rung 2, with the official branch's keys so train() and the diagnostics read both.
         Official-only quantities are zeros or NaN; the shape prior (one global gamma) fills gamma and pesdo_curve."""
+        if self.cfg.rung3_zones == 2:
+            return self.rung3_forward(pixels, image_ids)
         r = self.rung2
         curve_adj = r.composed_curve(image_ids)  # [1, 255] F(min(1, 2^{s_k} x_b)); attached, for the curve loss
         nan = torch.full((1,), float("nan"), device=self.device)
@@ -624,6 +647,27 @@ class Runner:
             "pixels_enh": r.map_pixels(pixels, image_ids, self.cfg.rung2_attach, self.cfg.rung2_color),
             "projected": projected,  # F's inputs before the gain, [1, H, W] each
             "s_k": r.s[image_ids],
+        }
+
+    def rung3_forward(self, pixels: Tensor, image_ids: Tensor) -> Dict[str, Tensor]:
+        """M6 (plan 2.5): rung2_forward for Rung 3, with the same keys plus the per-zone ones. curve_adj is the
+        share-weighted mean of the zone curves, so the existing readers see one effective curve per view; the training
+        step's loss uses zone_curves, zone_targets and zone_shares instead. pixels_enh never carries gradient."""
+        r = self.rung2
+        curves = r.composed_curves(image_ids)  # [1, M, 255] F_m(min(1, 2^{s_k} x_b)); attached, for the zone curve loss
+        targets, shares = r.zone_targets[image_ids], r.zone_shares[image_ids]  # [1, M, 255], [1, M]; fixed per view
+        curve_adj = (shares[:, :, None] * curves).sum(dim=1)
+        nan = torch.full((1,), float("nan"), device=self.device)
+        return {
+            "curve_bias": torch.zeros_like(curve_adj),
+            "curve_preclamp": curve_adj,
+            "curve_adj": curve_adj,
+            "gamma": r.gamma().reshape(1), "alpha": nan, "beta": nan,
+            "pesdo_curve": r.prior_curve(),
+            "pixels_enh": r.map_pixels(pixels, image_ids),  # sum_m w_m F_m on R, G and B, detached
+            "projected": (pixels[..., 0], pixels[..., 1], pixels[..., 2]),  # the curves' inputs before the gain
+            "s_k": r.s[image_ids],
+            "zone_curves": curves, "zone_targets": targets, "zone_shares": shares,
         }
 
     def train(self):
@@ -760,7 +804,12 @@ class Runner:
             ssimloss_enh = 1.0 - self.ssim(pixels_enh.permute(0,3,1,2), colors_enh.permute(0,3,1,2))
             loss_regress_enh = l1loss_enh * (1.0 - cfg.ssim_lambda) + ssimloss_enh * cfg.ssim_lambda
             
-            if cfg.curve_model == "rung2":
+            if cfg.curve_model == "rung2" and cfg.rung3_zones == 2:
+                # M6: the zone curve loss on this view's fixed zone targets and shares (rung3.ZoneExposureCurve.loss)
+                hist_loss, hist_parts = self.rung2.loss(curve_out["zone_curves"], curve_out["zone_targets"],
+                                                        curve_out["zone_shares"], step, cfg.exp_name,
+                                                        cfg.rung2_smooth_lambda)
+            elif cfg.curve_model == "rung2":
                 # M2: this view's official HE-CDF, shifted one bin (rung2.hist_target), and Rung 2's curve loss
                 target = hist_target(loss_histo.compute_histogram_equalization(pixels))
                 hist_loss, hist_parts = self.rung2.loss(curve_adj, target, step, cfg.exp_name, cfg.rung2_smooth_lambda)
@@ -955,6 +1004,12 @@ class Runner:
             print(f"[rung2] end: |mean s| = {abs(mean_s):.1e}, F strictly increasing, s in "
                   f"[{float(self.rung2.s.min()):+.3f}, {float(self.rung2.s.max()):+.3f}], "
                   f"prior gamma {float(self.rung2.gamma()):.4f}")
+            if cfg.rung3_zones == 2:  # M6: both curves at the dark end, as plan test 4 reads them
+                with torch.no_grad():
+                    Fz = self.rung2.F_zones(self.rung2.grid) * 255
+                lv = [1, 2, 4, 8, 16, 32, 64]
+                print("[rung3] end: both curves strictly increasing; x255 at levels " + ", ".join(map(str, lv)) + ": "
+                      + "; ".join(f"zone {m} [{', '.join(f'{float(Fz[m, b]):.1f}' for b in lv)}]" for m in range(Fz.shape[0])))
 
         if diag is not None:
             diag.final_snapshot(max_steps)
@@ -993,6 +1048,8 @@ class Runner:
         flat = [p for ps in groups.values() for p in ps]
         print(f"[grad_check] Rung 2 (rung2_attach={cfg.rung2_attach}, dark_branch={cfg.dark_branch}, "
               f"rung2_prior={cfg.rung2_prior}, rung2_color={cfg.rung2_color})")
+        if cfg.rung3_zones == 2:
+            print(f"[grad_check]   Rung 3: theta holds all {r.M} zone curves [M, K]; the zone weights are fixed buffers")
         for lname, loss in losses.items():
             if loss is None:
                 continue
@@ -1030,6 +1087,31 @@ class Runner:
               f"{f' (y_max {y_max:.4f})' if y_max is not None else ''}, F init {cfg.rung2_F_init}, s init "
               f"{cfg.rung2_s_init}, prior {cfg.rung2_prior}, attach {cfg.rung2_attach}, lr F {cfg.rung2_lr_F:g}, "
               f"lr s {cfg.rung2_lr_s:g}, colour {cfg.rung2_color}")
+        return model
+
+    # ------------------------------------------------------------------ M6: Rung 3
+    def build_rung3(self) -> ZoneExposureCurve:
+        """Rung 3's curves (rung3.py; plan 2.1): the zone constants from the training photos at their initial exposures
+        (rung3.build_zones on the CPU: guide, centres, weights, zone targets and shares) and two identity-initialised
+        curves on Rung 2's knots. Reads trainset[i] (no DataLoader), so no random numbers are drawn and the view order
+        at a given seed is rung2id's."""
+        cfg = self.cfg
+        n = len(self.trainset)
+        images = [self.trainset[i]["image"][None] / 255.0 for i in range(n)]  # [1, H, W, 3] on the CPU
+        s_init = self.s_measured.detach().cpu()
+        try:
+            zones = build_zones(images, s_init, cfg.rung3_blur, cfg.rung3_zones)
+        except ValueError as e:
+            raise SystemExit(f"--rung3_zones {cfg.rung3_zones}: {e}")
+        knots = make_knots(cfg.rung2_knots, cfg.rung2_knot_spacing)
+        model = ZoneExposureCurve(knots, init_heights(cfg.rung2_F_init, knots), s_init, zones, prior=cfg.rung2_prior,
+                                  blur=cfg.rung3_blur).to(self.device)
+        c1, c2 = (float(c) for c in model.centres)
+        print(f"[rung3] curve parameters: {model.n_params()} ({model.M} x K = {model.K} increments, N = {model.N} "
+              f"exposures, 1 prior gamma); knots {cfg.rung2_knot_spacing}, F init {cfg.rung2_F_init}; guide blur "
+              f"{cfg.rung3_blur} px, centres {255 * 2 ** c1:.2f} / {255 * 2 ** c2:.2f} (x255; c_2 - c_1 = {c2 - c1:.3f} "
+              f"stops); mean zone shares {[round(float(x), 3) for x in model.zone_shares.mean(0)]}; lr F "
+              f"{cfg.rung2_lr_F:g}, lr s {cfg.rung2_lr_s:g}")
         return model
 
     # ------------------------------------------------------------------ M2: exposure-aware dark branch
