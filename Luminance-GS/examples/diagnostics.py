@@ -64,6 +64,8 @@ MODEL_DEFAULTS = {
     "rung2_lr_F": 1e-2,
     "rung2_lr_s": 1e-3,
     "rung2_color": "rgb",  # E5: Rung 2's colour handling (rgb = per channel, the M3 code)
+    "rung3_zones": 1,      # M6: Rung 3's zones (1 = Rung 2) and its guide's block size
+    "rung3_blur": 16,
 }
 
 
@@ -281,8 +283,11 @@ class Diagnostics:
         tic = time.time()
         runner = self.runner
         rung2 = self.cfg.curve_model == "rung2"  # M2: same keys; official-only ones hold zeros or NaN
+        zones = rung2 and self.cfg.rung3_zones == 2  # M6: Rung 3 adds per-zone keys (plan 2.5)
         keys = ["curve_bias", "curve_preclamp", "curve_adj", "pesdo_curve", "cdf_target", "bin_hist",
                 "gamma", "alpha", "beta", "axis1", "axis2", "mean_brightness"]
+        if zones:
+            keys += ["zone_curves", "zone_targets", "zone_shares"]
         acc = {k: [] for k in keys}
         extra = {}
         with rng_guard(), eval_mode(*self._curve_modules()):
@@ -306,7 +311,18 @@ class Diagnostics:
                     acc["axis1"].append(runner.axis1_para[i].detach().cpu().numpy())
                     acc["axis2"].append(runner.axis2_para[i].detach().cpu().numpy())
                 acc["mean_brightness"].append(_f(pixels.mean()))
-            if rung2:
+                if zones:  # [M, 255], [M, 255], [M] per view
+                    for k in ("zone_curves", "zone_targets", "zone_shares"):
+                        acc[k].append(out[k][0].cpu().numpy())
+            if zones:
+                # M6: per-zone arrays under new keys only, so a reader of curve_global or F_heights stops (plan 2.5)
+                r = runner.rung2
+                curve_global = None
+                extra = {"s": r.s.cpu().numpy(), "s_init": r.s_init.cpu().numpy(), "F_knots": r.knots.cpu().numpy(),
+                         "curve_global_zones": r.F_zones(r.grid).cpu().numpy(),
+                         "F_heights_zones": r.zone_heights().cpu().numpy(), "zone_centres": r.centres.cpu().numpy()}
+                self._log_exposures(step, extra["s"], extra["s_init"])
+            elif rung2:
                 r = runner.rung2
                 curve_global = r.F(r.grid).cpu().numpy()  # the shared F on the 255-bin grid
                 extra = {"s": r.s.cpu().numpy(), "s_init": r.s_init.cpu().numpy(),
@@ -318,7 +334,7 @@ class Diagnostics:
             self.out_dir / f"curves_step{step:05d}.npz",
             step=step,
             view_names=np.array(self.view_names),
-            curve_global=curve_global,
+            **({} if curve_global is None else {"curve_global": curve_global}),
             **extra,
             **{k: np.stack(v) if isinstance(v[0], np.ndarray) else np.array(v) for k, v in acc.items()},
         )
@@ -352,8 +368,11 @@ class Diagnostics:
     def _save_rung2_state(self, step: int):
         """M2: Rung 2's learned F and s_k as plain json (committed; curve_state.pt is git-ignored)."""
         r, cfg = self.runner.rung2, self.cfg
+        # M6: Rung 3 writes its curves as F_grid_zones [M][255] and no F_grid (summary: heights_zones, no heights)
+        grid = ({"F_grid_zones": r.F_zones(r.grid).cpu().tolist()} if cfg.rung3_zones == 2
+                else {"F_grid": r.F(r.grid).cpu().tolist()})
         state = {"step": step, "view_names": self.view_names, **r.summary(),
-                 "F_grid": r.F(r.grid).cpu().tolist(), "knot_spacing": cfg.rung2_knot_spacing,
+                 **grid, "knot_spacing": cfg.rung2_knot_spacing,
                  "F_init": cfg.rung2_F_init, "s_init_mode": cfg.rung2_s_init, "attach": cfg.rung2_attach,
                  "smooth_lambda": cfg.rung2_smooth_lambda, "lr_F": cfg.rung2_lr_F, "lr_s": cfg.rung2_lr_s,
                  "dark_branch": cfg.dark_branch, "color": cfg.rung2_color}
@@ -438,6 +457,11 @@ class Diagnostics:
                 stem = Path(self.view_names[i]).stem
                 canvas = np.concatenate([to_uint8(pixels[0]), to_uint8(pseudo[0]), to_uint8(render[0]), to_uint8(gt[0])], axis=1)
                 imageio.imwrite(self.out_dir / f"example_{stem}_in_pseudo_render_gt.png", canvas)
+                if cfg.curve_model == "rung2" and cfg.rung3_zones == 2:
+                    # M6 (plan 2.5): input | w_lit (white = lit zone) | pseudo-target, in its own file
+                    wl = runner.rung2.view_weights(ids)[0, -1]
+                    imageio.imwrite(self.out_dir / f"example_{stem}_wlit.png", np.concatenate(
+                        [to_uint8(pixels[0]), to_uint8(wl), to_uint8(pseudo[0])], axis=1))
                 if extended:
                     diff = ((pseudo0 - pseudo).abs() * 4.0)[0]
                     canvas = np.concatenate([to_uint8(pseudo[0]), to_uint8(pseudo0[0]), to_uint8(diff)], axis=1)
@@ -524,6 +548,8 @@ class Diagnostics:
                 "curve_model": "rung2",
                 "prior": runner.rung2.prior,
                 "rung2": {k: v.detach().cpu() for k, v in runner.rung2.state_dict().items()},
+                # M6: Rung 3's zone count (its state also holds centres, zone_targets, zone_shares; not the weight maps)
+                **({"zones": self.cfg.rung3_zones} if self.cfg.rung3_zones != 1 else {}),
             }, self.out_dir / "curve_state.pt")
             return
         torch.save({
@@ -559,6 +585,13 @@ class Diagnostics:
             if cfg.rung2_knot_spacing == "usedrange":  # the run's knots came from its photos: they must recompute
                 d = float((sd["knots"].to(self.device) - r.knots).abs().max())
                 assert d <= 1e-6, f"usedrange knots differ from the run's by {d:.2e}"
+            zones = st.get("zones", 1)
+            assert zones == cfg.rung3_zones, \
+                f"curve_state.pt holds {zones} zone(s), the re-score built {cfg.rung3_zones} (pass --rung3_zones {zones})"
+            if zones == 2:  # M6: the zone constants came from the run's photos; this build recomputed them
+                for key in ("centres", "zone_targets", "zone_shares"):
+                    d = float((sd[key].to(self.device).double() - getattr(r, key).double()).abs().max())
+                    assert d <= 1e-6, f"Rung 3 {key} differ from the run's by {d:.2e}"
             r.load_state_dict({k: v.to(self.device) for k, v in sd.items()})  # knots from the state
             return str(ckpt_path)
         assert st["axis1"].shape[0] == len(runner.axis1_para), "curve_state.pt has a different number of views"
