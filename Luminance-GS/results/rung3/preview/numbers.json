@@ -1,0 +1,815 @@
+{
+ "meta": {
+  "date": "2026-11-27 13:49",
+  "seconds": 307,
+  "torch": "1.13.1",
+  "args": {
+   "mode": "rung3",
+   "scenes": [
+    "buu",
+    "chair",
+    "sofa",
+    "bike",
+    "shrub"
+   ],
+   "steps": null,
+   "every": null,
+   "check_steps": 10000,
+   "seed": 0,
+   "threads": 2,
+   "out": null
+  },
+  "rung2_replay.py_sha256_16": "2d2838098c61da64",
+  "rung2_preview.py_sha256_16": "160c4a67e8c2909b",
+  "rung2.py_sha256_16": "a91a269e3fe00074",
+  "rung3.py_sha256_16": "77beed49af5ae30a"
+ },
+ "lom": [
+  {
+   "scene": "buu",
+   "set": "lom",
+   "views": 22,
+   "centres_x255": [
+    15.98,
+    31.36
+   ],
+   "c2_minus_c1": 0.9728073477745056,
+   "lit_share_px": 0.4728073179721832,
+   "zone_shares_mean": [
+    0.5350906848907471,
+    0.46490925550460815
+   ],
+   "cdf_gap_mean": 0.7640454769134521,
+   "gamma_rung3": 0.1649409681558609,
+   "gamma_rung2id": 0.16470451653003693,
+   "F_sh_x255": [
+    40.2,
+    51.3,
+    67.7,
+    91.3,
+    150.4,
+    215.6,
+    229.6
+   ],
+   "F_lit_x255": [
+    41.9,
+    51.7,
+    63.0,
+    72.4,
+    84.9,
+    152.2,
+    230.5
+   ],
+   "F_rung2id_x255": [
+    42.2,
+    52.2,
+    66.1,
+    82.8,
+    118.8,
+    187.6,
+    230.0
+   ],
+   "max_F_sh_minus_lit": 0.3861677348613739,
+   "increasing_rung3": true,
+   "increasing_rung2id": true,
+   "s_move_rung3": 0.030004451789089975,
+   "s_move_rung2id": 0.0025785538916062545,
+   "s_rms_rung3_vs_rung2id": 0.03176192828074612,
+   "max_abs_dw_lit_final_vs_init": 0.0607183575630188,
+   "objective_rung3": 0.009920930489897728,
+   "objective_rung2id": 0.00749548152089119,
+   "chroma_px_frac": 0.7633490120737343,
+   "chroma_lit_hard": 0.5590483121829072,
+   "chroma_lit_soft": 0.5512945699329364,
+   "chroma_in_ramp": 0.4803733850817625,
+   "chroma_maxlevel_median": 38.0,
+   "photo_sat_chroma": 0.5249087377040177,
+   "photo_hue_drift_deg": 0.0,
+   "photo_hue_px_frac": 1.0,
+   "photo_zone_sh_x255": 15.326471887528896,
+   "photo_zone_lit_x255": 31.665358340198342,
+   "photo_lit_over_sh": 2.066056596232323,
+   "photo_inverted_views": 0,
+   "photo_inverted_share": 0.0,
+   "rung2id_sat_chroma": 0.35545179232382834,
+   "rung2id_hue_drift_deg": 4.8766342134863585,
+   "rung2id_hue_px_frac": 0.9999444823247995,
+   "rung2id_zone_sh_x255": 114.71657429906455,
+   "rung2id_zone_lit_x255": 177.14905752377078,
+   "rung2id_lit_over_sh": 1.544232458179457,
+   "rung2id_inverted_views": 0,
+   "rung2id_inverted_share": 0.0,
+   "rung3_sat_chroma": 0.4570805582053281,
+   "rung3_hue_drift_deg": 4.502008765380914,
+   "rung3_hue_px_frac": 0.9999926614567264,
+   "rung3_zone_sh_x255": 130.79592414200306,
+   "rung3_zone_lit_x255": 160.99708943204448,
+   "rung3_lit_over_sh": 1.230902954263716,
+   "rung3_inverted_views": 0,
+   "rung3_inverted_share": 0.0,
+   "d_sat_chroma": 0.10162876588149977,
+   "d_hue_drift_deg": -0.3746254481054443,
+   "T8_sh_lit_all_x255": [
+    43.5,
+    2.4,
+    24.3
+   ],
+   "T4_sh_lit_all_x255": [
+    4.7,
+    0.3,
+    2.7
+   ],
+   "seconds": 31.8
+  },
+  {
+   "scene": "chair",
+   "set": "lom",
+   "views": 43,
+   "centres_x255": [
+    7.4,
+    18.67
+   ],
+   "c2_minus_c1": 1.3363410234451294,
+   "lit_share_px": 0.5635712146759033,
+   "zone_shares_mean": [
+    0.4390755891799927,
+    0.5609244108200073
+   ],
+   "cdf_gap_mean": 0.7293484210968018,
+   "gamma_rung3": 0.10867740958929062,
+   "gamma_rung2id": 0.10862953960895538,
+   "F_sh_x255": [
+    58.6,
+    78.2,
+    113.1,
+    161.9,
+    213.3,
+    230.1,
+    238.4
+   ],
+   "F_lit_x255": [
+    54.7,
+    65.2,
+    76.6,
+    89.2,
+    140.5,
+    229.8,
+    238.8
+   ],
+   "F_rung2id_x255": [
+    56.9,
+    71.6,
+    93.3,
+    120.8,
+    173.5,
+    229.4,
+    238.6
+   ],
+   "max_F_sh_minus_lit": 0.34380513429641724,
+   "increasing_rung3": true,
+   "increasing_rung2id": true,
+   "s_move_rung3": 0.006269964686691996,
+   "s_move_rung2id": 0.003105868725741433,
+   "s_rms_rung3_vs_rung2id": 0.003939388504887158,
+   "max_abs_dw_lit_final_vs_init": 0.009816229343414307,
+   "objective_rung3": 0.0072226934134960175,
+   "objective_rung2id": 0.0057598017156124115,
+   "chroma_px_frac": 0.4855100077035055,
+   "chroma_lit_hard": 0.7962385188767043,
+   "chroma_lit_soft": 0.7592781348724142,
+   "chroma_in_ramp": 0.47150925856056886,
+   "chroma_maxlevel_median": 22.0,
+   "photo_sat_chroma": 0.37003995194182043,
+   "photo_hue_drift_deg": 0.0,
+   "photo_hue_px_frac": 1.0,
+   "photo_zone_sh_x255": 7.487035863707925,
+   "photo_zone_lit_x255": 17.361474783094817,
+   "photo_lit_over_sh": 2.3188715933967243,
+   "photo_inverted_views": 0,
+   "photo_inverted_share": 0.0,
+   "rung2id_sat_chroma": 0.22455478401771267,
+   "rung2id_hue_drift_deg": 4.272138433140127,
+   "rung2id_hue_px_frac": 0.9998395863844003,
+   "rung2id_zone_sh_x255": 115.15050996181577,
+   "rung2id_zone_lit_x255": 180.5968895208004,
+   "rung2id_lit_over_sh": 1.5683550996056104,
+   "rung2id_inverted_views": 0,
+   "rung2id_inverted_share": 0.0,
+   "rung3_sat_chroma": 0.32074196168624103,
+   "rung3_hue_drift_deg": 3.8574235374171617,
+   "rung3_hue_px_frac": 0.9998770590050043,
+   "rung3_zone_sh_x255": 131.44403601108596,
+   "rung3_zone_lit_x255": 166.59714874140053,
+   "rung3_lit_over_sh": 1.2674378678341083,
+   "rung3_inverted_views": 0,
+   "rung3_inverted_share": 0.0,
+   "d_sat_chroma": 0.09618717766852836,
+   "d_hue_drift_deg": -0.4147148957229656,
+   "T8_sh_lit_all_x255": [
+    151.0,
+    3.1,
+    68.1
+   ],
+   "T4_sh_lit_all_x255": [
+    60.0,
+    0.4,
+    26.7
+   ],
+   "seconds": 33.0
+  },
+  {
+   "scene": "sofa",
+   "set": "lom",
+   "views": 29,
+   "centres_x255": [
+    10.48,
+    24.56
+   ],
+   "c2_minus_c1": 1.2294865846633911,
+   "lit_share_px": 0.47932103276252747,
+   "zone_shares_mean": [
+    0.519137442111969,
+    0.4808625876903534
+   ],
+   "cdf_gap_mean": 0.7712513208389282,
+   "gamma_rung3": 0.13723671436309814,
+   "gamma_rung2id": 0.1368366926908493,
+   "F_sh_x255": [
+    43.1,
+    54.8,
+    71.7,
+    110.5,
+    198.9,
+    224.1,
+    233.9
+   ],
+   "F_lit_x255": [
+    47.1,
+    57.8,
+    69.5,
+    80.3,
+    103.3,
+    194.6,
+    234.3
+   ],
+   "F_rung2id_x255": [
+    47.2,
+    57.9,
+    72.0,
+    96.3,
+    152.7,
+    209.9,
+    234.0
+   ],
+   "max_F_sh_minus_lit": 0.37514978647232056,
+   "increasing_rung3": true,
+   "increasing_rung2id": true,
+   "s_move_rung3": 0.009816179076493556,
+   "s_move_rung2id": 0.0025724736170088342,
+   "s_rms_rung3_vs_rung2id": 0.00856708704920798,
+   "max_abs_dw_lit_final_vs_init": 0.014690399169921875,
+   "objective_rung3": 0.00860188715159893,
+   "objective_rung2id": 0.006356339901685715,
+   "chroma_px_frac": 0.26736896252397846,
+   "chroma_lit_hard": 0.11889081312083546,
+   "chroma_lit_soft": 0.18826038999142877,
+   "chroma_in_ramp": 0.566914436484912,
+   "chroma_maxlevel_median": 14.0,
+   "photo_sat_chroma": 0.577919934380321,
+   "photo_hue_drift_deg": 0.0,
+   "photo_hue_px_frac": 1.0,
+   "photo_zone_sh_x255": 11.117823978821779,
+   "photo_zone_lit_x255": 25.21691157386221,
+   "photo_lit_over_sh": 2.2681517194279768,
+   "photo_inverted_views": 0,
+   "photo_inverted_share": 0.0,
+   "rung2id_sat_chroma": 0.38854469208741377,
+   "rung2id_hue_drift_deg": 2.580396481724226,
+   "rung2id_hue_px_frac": 1.0,
+   "rung2id_zone_sh_x255": 118.21438637273064,
+   "rung2id_zone_lit_x255": 184.20505852534853,
+   "rung2id_lit_over_sh": 1.5582287755108664,
+   "rung2id_inverted_views": 0,
+   "rung2id_inverted_share": 0.0,
+   "rung3_sat_chroma": 0.45708861427610137,
+   "rung3_hue_drift_deg": 3.4211223698486433,
+   "rung3_hue_px_frac": 0.9999993089350551,
+   "rung3_zone_sh_x255": 133.69541005327784,
+   "rung3_zone_lit_x255": 165.52919065130166,
+   "rung3_lit_over_sh": 1.2381067576316795,
+   "rung3_inverted_views": 0,
+   "rung3_inverted_share": 0.0,
+   "d_sat_chroma": 0.0685439221886876,
+   "d_hue_drift_deg": 0.8407258881244171,
+   "T8_sh_lit_all_x255": [
+    28.7,
+    0.6,
+    15.2
+   ],
+   "T4_sh_lit_all_x255": [
+    1.7,
+    0.1,
+    0.9
+   ],
+   "seconds": 31.7
+  },
+  {
+   "scene": "bike",
+   "set": "lom",
+   "views": 36,
+   "centres_x255": [
+    5.44,
+    8.53
+   ],
+   "c2_minus_c1": 0.6487839221954346,
+   "lit_share_px": 0.517192006111145,
+   "zone_shares_mean": [
+    0.4849761426448822,
+    0.5150238871574402
+   ],
+   "cdf_gap_mean": 0.573322057723999,
+   "gamma_rung3": 0.07458782196044922,
+   "gamma_rung2id": 0.07449152320623398,
+   "F_sh_x255": [
+    68.5,
+    90.9,
+    131.2,
+    198.1,
+    230.7,
+    238.6,
+    244.1
+   ],
+   "F_lit_x255": [
+    63.0,
+    78.7,
+    102.6,
+    155.0,
+    221.1,
+    236.9,
+    244.0
+   ],
+   "F_rung2id_x255": [
+    65.9,
+    84.9,
+    116.7,
+    176.3,
+    225.8,
+    237.6,
+    244.0
+   ],
+   "max_F_sh_minus_lit": 0.17509901523590088,
+   "increasing_rung3": true,
+   "increasing_rung2id": true,
+   "s_move_rung3": 0.001860817777827415,
+   "s_move_rung2id": 0.001853085349258861,
+   "s_rms_rung3_vs_rung2id": 0.0013370690048272178,
+   "max_abs_dw_lit_final_vs_init": 0.006673544645309448,
+   "objective_rung3": 0.004865383729338646,
+   "objective_rung2id": 0.004497146233916283,
+   "chroma_px_frac": 0.13401342197169144,
+   "chroma_lit_hard": 0.7462076870278351,
+   "chroma_lit_soft": 0.7287509867326553,
+   "chroma_in_ramp": 0.42075626350827544,
+   "chroma_maxlevel_median": 13.0,
+   "photo_sat_chroma": 0.6325372300135589,
+   "photo_hue_drift_deg": 0.0,
+   "photo_hue_px_frac": 1.0,
+   "photo_zone_sh_x255": 5.303878236251573,
+   "photo_zone_lit_x255": 9.11601217308392,
+   "photo_lit_over_sh": 1.7187446179998487,
+   "photo_inverted_views": 0,
+   "photo_inverted_share": 0.0,
+   "rung2id_sat_chroma": 0.36511737817337775,
+   "rung2id_hue_drift_deg": 10.399997990489942,
+   "rung2id_hue_px_frac": 0.9833136007925596,
+   "rung2id_zone_sh_x255": 135.18059668441614,
+   "rung2id_zone_lit_x255": 174.71685029566288,
+   "rung2id_lit_over_sh": 1.2924698853308476,
+   "rung2id_inverted_views": 0,
+   "rung2id_inverted_share": 0.0,
+   "rung3_sat_chroma": 0.38938697579784165,
+   "rung3_hue_drift_deg": 9.677154302773365,
+   "rung3_hue_px_frac": 0.9897009464955674,
+   "rung3_zone_sh_x255": 145.57922340929508,
+   "rung3_zone_lit_x255": 163.6795390645663,
+   "rung3_lit_over_sh": 1.1243330966561231,
+   "rung3_inverted_views": 0,
+   "rung3_inverted_share": 0.0,
+   "d_sat_chroma": 0.0242695976244639,
+   "d_hue_drift_deg": -0.7228436877165763,
+   "T8_sh_lit_all_x255": [
+    229.9,
+    93.8,
+    159.8
+   ],
+   "T4_sh_lit_all_x255": [
+    41.2,
+    8.8,
+    24.5
+   ],
+   "seconds": 31.7
+  },
+  {
+   "scene": "shrub",
+   "set": "lom",
+   "views": 30,
+   "centres_x255": [
+    6.09,
+    9.38
+   ],
+   "c2_minus_c1": 0.6229634284973145,
+   "lit_share_px": 0.5200916528701782,
+   "zone_shares_mean": [
+    0.4845634400844574,
+    0.515436589717865
+   ],
+   "cdf_gap_mean": 0.37619656324386597,
+   "gamma_rung3": 0.07646702229976654,
+   "gamma_rung2id": 0.07647015899419785,
+   "F_sh_x255": [
+    81.1,
+    108.1,
+    148.1,
+    193.1,
+    226.5,
+    237.4,
+    243.7
+   ],
+   "F_lit_x255": [
+    66.8,
+    84.3,
+    110.3,
+    150.7,
+    209.4,
+    235.6,
+    243.7
+   ],
+   "F_rung2id_x255": [
+    73.8,
+    95.8,
+    128.6,
+    171.3,
+    218.0,
+    236.3,
+    243.7
+   ],
+   "max_F_sh_minus_lit": 0.17109376192092896,
+   "increasing_rung3": true,
+   "increasing_rung2id": true,
+   "s_move_rung3": 0.0016991791003208643,
+   "s_move_rung2id": 0.0016090425135965015,
+   "s_rms_rung3_vs_rung2id": 0.0007264761239898391,
+   "max_abs_dw_lit_final_vs_init": 0.007048130035400391,
+   "objective_rung3": 0.003975582774728537,
+   "objective_rung2id": 0.0036588844377547503,
+   "chroma_px_frac": 0.8119526039601485,
+   "chroma_lit_hard": 0.6120180978912191,
+   "chroma_lit_soft": 0.5925427306895081,
+   "chroma_in_ramp": 0.5432774798809664,
+   "chroma_maxlevel_median": 11.0,
+   "photo_sat_chroma": 0.7002875438016969,
+   "photo_hue_drift_deg": 0.0,
+   "photo_hue_px_frac": 1.0,
+   "photo_zone_sh_x255": 5.5819169748574495,
+   "photo_zone_lit_x255": 10.325452510267496,
+   "photo_lit_over_sh": 1.8498040291133473,
+   "photo_inverted_views": 0,
+   "photo_inverted_share": 0.0,
+   "rung2id_sat_chroma": 0.4431924864972562,
+   "rung2id_hue_drift_deg": 4.475536764512676,
+   "rung2id_hue_px_frac": 0.9967799867310289,
+   "rung2id_zone_sh_x255": 129.04547257721424,
+   "rung2id_zone_lit_x255": 165.13987383246422,
+   "rung2id_lit_over_sh": 1.2797029646557567,
+   "rung2id_inverted_views": 0,
+   "rung2id_inverted_share": 0.0,
+   "rung3_sat_chroma": 0.45723924401225075,
+   "rung3_hue_drift_deg": 4.245947241978782,
+   "rung3_hue_px_frac": 0.9976469133803672,
+   "rung3_zone_sh_x255": 138.67952451109886,
+   "rung3_zone_lit_x255": 157.04543367028236,
+   "rung3_lit_over_sh": 1.132434180344436,
+   "rung3_inverted_views": 0,
+   "rung3_inverted_share": 0.0,
+   "d_sat_chroma": 0.014046757514994568,
+   "d_hue_drift_deg": -0.2295895225338942,
+   "T8_sh_lit_all_x255": [
+    193.0,
+    101.1,
+    145.6
+   ],
+   "T4_sh_lit_all_x255": [
+    109.6,
+    30.4,
+    68.8
+   ],
+   "seconds": 31.9
+  }
+ ],
+ "vexp": [
+  {
+   "scene": "buu",
+   "set": "vexp",
+   "views": 22,
+   "centres_x255": [
+    15.83,
+    31.28
+   ],
+   "c2_minus_c1": 0.9824106693267822,
+   "lit_share_px": 0.4749639630317688,
+   "zone_shares_mean": [
+    0.5329015851020813,
+    0.4670984148979187
+   ],
+   "cdf_gap_mean": 0.7613089084625244,
+   "gamma_rung3": 0.16573232412338257,
+   "gamma_rung2id": 0.16551131010055542,
+   "F_sh_x255": [
+    37.6,
+    48.6,
+    65.0,
+    89.9,
+    151.9,
+    217.0,
+    231.2
+   ],
+   "F_lit_x255": [
+    34.4,
+    45.1,
+    57.9,
+    68.8,
+    82.3,
+    151.7,
+    232.1
+   ],
+   "F_rung2id_x255": [
+    37.6,
+    48.2,
+    62.7,
+    80.5,
+    117.9,
+    188.0,
+    231.5
+   ],
+   "max_F_sh_minus_lit": 0.39735057950019836,
+   "increasing_rung3": true,
+   "increasing_rung2id": true,
+   "s_move_rung3": 0.03068112989343083,
+   "s_move_rung2id": 0.0058440661984707045,
+   "s_rms_rung3_vs_rung2id": 0.03251648739803121,
+   "max_abs_dw_lit_final_vs_init": 0.06319311261177063,
+   "objective_rung3": 0.01023231539875269,
+   "objective_rung2id": 0.0076953349635005,
+   "seconds": 28.9
+  },
+  {
+   "scene": "chair",
+   "set": "vexp",
+   "views": 43,
+   "centres_x255": [
+    7.26,
+    18.57
+   ],
+   "c2_minus_c1": 1.3550989031791687,
+   "lit_share_px": 0.562912106513977,
+   "zone_shares_mean": [
+    0.43971771001815796,
+    0.5602823495864868
+   ],
+   "cdf_gap_mean": 0.7293769717216492,
+   "gamma_rung3": 0.10845442116260529,
+   "gamma_rung2id": 0.10827132314443588,
+   "F_sh_x255": [
+    57.9,
+    77.2,
+    112.5,
+    162.5,
+    214.8,
+    231.6,
+    239.5
+   ],
+   "F_lit_x255": [
+    46.1,
+    57.7,
+    71.5,
+    86.1,
+    140.8,
+    231.2,
+    239.8
+   ],
+   "F_rung2id_x255": [
+    53.3,
+    68.0,
+    90.4,
+    119.2,
+    174.3,
+    230.7,
+    239.7
+   ],
+   "max_F_sh_minus_lit": 0.35547542572021484,
+   "increasing_rung3": true,
+   "increasing_rung2id": true,
+   "s_move_rung3": 0.00798893609039023,
+   "s_move_rung2id": 0.0039164093038882505,
+   "s_rms_rung3_vs_rung2id": 0.004639653627937791,
+   "max_abs_dw_lit_final_vs_init": 0.014036297798156738,
+   "objective_rung3": 0.00747320894151926,
+   "objective_rung2id": 0.005912894383072853,
+   "seconds": 29.8
+  },
+  {
+   "scene": "sofa",
+   "set": "vexp",
+   "views": 29,
+   "centres_x255": [
+    10.62,
+    24.58
+   ],
+   "c2_minus_c1": 1.2108433246612549,
+   "lit_share_px": 0.4777914583683014,
+   "zone_shares_mean": [
+    0.5204935669898987,
+    0.4795064330101013
+   ],
+   "cdf_gap_mean": 0.7691659331321716,
+   "gamma_rung3": 0.1385313868522644,
+   "gamma_rung2id": 0.13814470171928406,
+   "F_sh_x255": [
+    40.1,
+    51.3,
+    68.6,
+    108.8,
+    198.7,
+    225.7,
+    235.2
+   ],
+   "F_lit_x255": [
+    38.5,
+    49.8,
+    63.5,
+    76.2,
+    99.8,
+    194.6,
+    235.5
+   ],
+   "F_rung2id_x255": [
+    41.8,
+    52.8,
+    68.0,
+    93.2,
+    150.6,
+    210.9,
+    235.2
+   ],
+   "max_F_sh_minus_lit": 0.38783925771713257,
+   "increasing_rung3": true,
+   "increasing_rung2id": true,
+   "s_move_rung3": 0.010965169331797527,
+   "s_move_rung2id": 0.004795791171570245,
+   "s_rms_rung3_vs_rung2id": 0.008591233085883719,
+   "max_abs_dw_lit_final_vs_init": 0.018150925636291504,
+   "objective_rung3": 0.008999662473797798,
+   "objective_rung2id": 0.006607569754123688,
+   "seconds": 29.4
+  },
+  {
+   "scene": "bike",
+   "set": "vexp",
+   "views": 36,
+   "centres_x255": [
+    5.45,
+    8.51
+   ],
+   "c2_minus_c1": 0.6442897319793701,
+   "lit_share_px": 0.5158534646034241,
+   "zone_shares_mean": [
+    0.48632732033729553,
+    0.5136726498603821
+   ],
+   "cdf_gap_mean": 0.5745684504508972,
+   "gamma_rung3": 0.07427167147397995,
+   "gamma_rung2id": 0.07413536310195923,
+   "F_sh_x255": [
+    68.3,
+    90.4,
+    131.4,
+    197.7,
+    231.3,
+    239.4,
+    244.5
+   ],
+   "F_lit_x255": [
+    60.0,
+    75.8,
+    100.6,
+    153.8,
+    221.4,
+    237.8,
+    244.4
+   ],
+   "F_rung2id_x255": [
+    64.5,
+    83.2,
+    115.7,
+    175.6,
+    226.4,
+    238.5,
+    244.4
+   ],
+   "max_F_sh_minus_lit": 0.17807537317276,
+   "increasing_rung3": true,
+   "increasing_rung2id": true,
+   "s_move_rung3": 0.005936361970947043,
+   "s_move_rung2id": 0.005386298484593161,
+   "s_rms_rung3_vs_rung2id": 0.0016595155356811525,
+   "max_abs_dw_lit_final_vs_init": 0.01930248737335205,
+   "objective_rung3": 0.005008414387702942,
+   "objective_rung2id": 0.0046083577908575535,
+   "seconds": 29.3
+  },
+  {
+   "scene": "shrub",
+   "set": "vexp",
+   "views": 30,
+   "centres_x255": [
+    6.07,
+    9.4
+   ],
+   "c2_minus_c1": 0.6313309669494629,
+   "lit_share_px": 0.5202966332435608,
+   "zone_shares_mean": [
+    0.48437270522117615,
+    0.5156272649765015
+   ],
+   "cdf_gap_mean": 0.37751704454421997,
+   "gamma_rung3": 0.07642105966806412,
+   "gamma_rung2id": 0.07637878507375717,
+   "F_sh_x255": [
+    80.5,
+    106.7,
+    146.8,
+    192.8,
+    227.3,
+    238.3,
+    244.2
+   ],
+   "F_lit_x255": [
+    63.6,
+    80.9,
+    107.2,
+    148.9,
+    209.1,
+    236.5,
+    244.1
+   ],
+   "F_rung2id_x255": [
+    72.1,
+    93.6,
+    126.4,
+    170.3,
+    218.4,
+    237.2,
+    244.1
+   ],
+   "max_F_sh_minus_lit": 0.1773661971092224,
+   "increasing_rung3": true,
+   "increasing_rung2id": true,
+   "s_move_rung3": 0.0036955258294947483,
+   "s_move_rung2id": 0.0038151330923404344,
+   "s_rms_rung3_vs_rung2id": 0.0008551560027209666,
+   "max_abs_dw_lit_final_vs_init": 0.011866331100463867,
+   "objective_rung3": 0.004078160505741835,
+   "objective_rung2id": 0.003743121400475502,
+   "seconds": 29.5
+  }
+ ],
+ "stop_reasons": [],
+ "verdict": "pass: the batch can be proposed",
+ "predictions": {
+  "rule": "plan 4.3: saturation, a decision scene's preview change in mean pseudo-target saturation on chromatic pixels (rung3 - rung2id) of at least 0.02 predicts the sign of its LOM validation saturation-ratio change; hue, a bike preview hue-drift change of at least 1.0 deg predicts the direction of its LOM validation hue error (smaller drift -> lower error)",
+  "saturation": {
+   "buu": {
+    "delta": 0.10162876588149977,
+    "prediction": "+"
+   },
+   "chair": {
+    "delta": 0.09618717766852836,
+    "prediction": "+"
+   },
+   "sofa": {
+    "delta": 0.0685439221886876,
+    "prediction": "+"
+   },
+   "bike": {
+    "delta": 0.0242695976244639,
+    "prediction": "+"
+   }
+  },
+  "hue": {
+   "bike": {
+    "delta_deg": -0.7228436877165763,
+    "prediction": null
+   }
+  }
+ }
+}
