@@ -21,6 +21,8 @@ Run from Luminance-GS/examples:
     python rung2_headstart.py                         # the seed-0 check
     python rung2_headstart.py --seeds 0 1 2           # the 3-seed confirmation
     python rung2_headstart.py [--seeds ...] --selftest   # rung2id read from rung2: every rung2id - rung2 difference is 0
+Both outputs are finished (CLAUDE.md rule 6, protected.py): since 2026-11-26 the first two commands refuse before
+anything is written; --selftest still runs.
 """
 
 import argparse
@@ -29,6 +31,8 @@ import json
 from pathlib import Path
 
 import numpy as np
+
+from protected import refuse_finished
 
 EXAMPLES = Path(__file__).resolve().parent
 RESULTS = EXAMPLES.parent / "results"
@@ -274,7 +278,7 @@ def main():
     args = ap.parse_args()
     tag = "" if args.seeds == [0] else "_seeds" + "".join(map(str, args.seeds))
     out = args.out or RUNG2 / (f"smoke_m2/summary_headstart{tag}_selftest" if args.selftest else f"summary_headstart{tag}")
-    out = out.resolve()
+    out = refuse_finished(out, "headstart")  # CLAUDE.md rule 6: summary_headstart/ and summary_headstart_seeds012/
     assert (out.parent == RUNG2.resolve() and out.name.startswith("summary_headstart")) or \
         out.parent == (RUNG2 / "smoke_m2").resolve(), out
     if args.seeds != [0]:

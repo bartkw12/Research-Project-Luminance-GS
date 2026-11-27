@@ -21,10 +21,11 @@ M5 (M5_plan.md step 3, E1 / H2b): --rung2_variant rung2id reads the Rung 2 cells
 (rung2id on LOM and the varying set, rung2idexp in the exp column) and names them so; the analysis logic is
 unchanged. Its H1 verdict on LOM is exploratory (H1 is judged on the cdf init), and the H2 rule's "between 1x and 2x:
 run seeds 3 and 4" outcome reads "inconclusive" (M5 3.2(b)). Default output results/rung2/summary_rung2id/.
---out writes elsewhere. The guard refuses M3's finished folders (rule 6: summary/, summary_seed0/,
-summary_headstart*/, preview_final/) and anything outside results/rung2/summary*/ or a git-ignored results/**/smoke*/
-folder, so the default command (which would write summary/) now refuses:
-    python rung2_analyze.py --rung2_variant rung2id                         -> results/rung2/summary_rung2id/
+--out writes elsewhere. The guard refuses every finished folder (CLAUDE.md rule 6, listed in protected.py: M3's summary/,
+summary_seed0/, summary_headstart*/, preview_final/ and, since 2026-11-26, M5's and E5's outputs such as
+summary_rung2id/) and anything outside results/rung2/summary*/ or a git-ignored results/**/smoke*/ folder. So the
+default command (summary/) and the E1 command below (summary_rung2id/, finished 2026-11-25) now refuse:
+    python rung2_analyze.py --rung2_variant rung2id                         -> results/rung2/summary_rung2id/ (finished)
     python rung2_analyze.py --out ../results/rung2/smoke_m5/analyze_default  the M5 byte-for-byte test of M3's tables
 
 A cell (set, variant) enters the tables only when every scene has a usable run for every requested seed; otherwise
@@ -61,6 +62,7 @@ from build_vexp import fit_exposure_form, slope_r  # noqa: E402
 from rung0_analyze import (INK, INK2, MUTED, SCENES, SERIES, TIMING_EXCLUDE, md_table, read_csv,  # noqa: E402
                            run_name, savefig)
 from vexp_analyze import as_path, fx, last_ok_minutes, paired, pm, recovery_stats, rmse_c  # noqa: E402
+from protected import refuse_finished  # noqa: E402  (rule 6 finished folders: protected.FINISHED)
 
 RESULTS = EXAMPLES.parent / "results"
 RUNG0, RUNG2, VEXP = RESULTS / "rung0", RESULTS / "rung2", RESULTS / "vexp"
@@ -99,8 +101,6 @@ EXPECTED = {  # plan 2.3; keys missing from older cfg.json files take the offici
 }
 RUNG2_SOURCES = {"rung2": {"rung2": "rung2", "rung2exp": "rung2exp"},  # --rung2_variant -> run folders of the cells
                  "rung2id": {"rung2": "rung2id", "rung2exp": "rung2idexp"}}
-PROTECTED = [RUNG2 / n for n in ("summary", "summary_seed0", "summary_headstart", "summary_headstart_seeds012",
-                                 "preview_final")]  # rule 6 (M3's finished outputs, since 2026-11-24)
 CFG_DEFAULTS = {"detach_pseudo_target": False, "curve_model": "official", "dark_branch": "shared",
                 "freeze_color_basis": False, "detach_curve_in_target": False}
 VAL = ["psnr_gtmean", "psnr", "ssim", "lpips"]
@@ -116,11 +116,9 @@ FIG_SCENE = "sofa"  # figure 6
 
 # ------------------------------------------------------------------ mode and output guard
 def guard_out(out: Path) -> Path:
-    """M5 overwrite guard: never M3's finished folders (rule 6); otherwise only results/rung2/summary*/ or a git-ignored
-    results/**/smoke*/ folder."""
-    out = out.resolve()
-    if any(out == p.resolve() or p.resolve() in out.parents for p in PROTECTED):
-        raise SystemExit(f"[rung2_analyze] refusing to write to {out}: a finished M3 folder (rule 6)")
+    """M5 overwrite guard: never a finished folder (rule 6, protected.py); otherwise only results/rung2/summary*/ or a
+    git-ignored results/**/smoke*/ folder."""
+    out = refuse_finished(out, "rung2_analyze")
     in_smoke = any(p.name.startswith("smoke") and RESULTS.resolve() in p.parents for p in out.parents)
     if not (in_smoke or (out.parent == RUNG2.resolve() and out.name.startswith("summary"))):
         raise SystemExit(f"[rung2_analyze] refusing to write to {out}")

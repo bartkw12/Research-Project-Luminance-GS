@@ -19,7 +19,9 @@ scenes per seed, checked against pooled without shrub; shrub never decides):
 Every run must exist, have an ok row in its root's runs.csv, be re-scored against results/rung0/<scene>_baseline_seed0,
 and match its variant's flags, data set, exp_name, seed and step count; otherwise the script stops before any table.
 --selftest reads the arm under test from its reference arm's runs (h1: A from B), so every effect must be exactly 0;
-it writes to the git-ignored results/rung2/smoke_m5/. The output guard refuses M3's finished folders (rule 6).
+it writes to the git-ignored results/rung2/smoke_m5/. The output guard refuses every finished folder (CLAUDE.md rule 6,
+listed in protected.py). Since 2026-11-26 that includes M5's and E5's summaries, so every command below that would
+rewrite one of them now refuses (their outputs are finished); --selftest still runs.
 
 Run from Luminance-GS/examples:
     python rung2_ablation.py --mode h3
@@ -50,7 +52,8 @@ sys.path.insert(0, str(EXAMPLES))
 
 from build_vexp import slope_r  # noqa: E402,F401
 from rung0_analyze import SCENES, TIMING_EXCLUDE, md_table, run_name  # noqa: E402
-from rung2_analyze import (CFG_DEFAULTS, DATASET, EXPECTED, H1_SCENES, LOM_DATA, ND, NAME, PROTECTED, REAL,  # noqa: E402
+from protected import refuse_finished  # noqa: E402
+from rung2_analyze import (CFG_DEFAULTS, DATASET, EXPECTED, H1_SCENES, LOM_DATA, ND, NAME, REAL,  # noqa: E402
                            REF_SEED, REF_VARIANT, RESULTS, RUNG0, RUNG2, RUNG2_FLAGS, VAL, VEXP, VEXP_DATA,
                            dark_fit, fnum, leak_stats, load_run, stat)
 from vexp_analyze import as_path, fx, last_ok_minutes, paired, recovery_stats, rmse_c  # noqa: E402
@@ -79,11 +82,9 @@ DEFAULT_OUT = {"h3": RUNG2 / "summary_h3", "noprior": RUNG2 / "summary_noprior",
 
 # ------------------------------------------------------------------ output guard
 def guard_out(out: Path) -> Path:
-    """Never M3's finished folders (rule 6); otherwise only results/{rung2,h1b,overexp}/summary*/ or a git-ignored
-    results/**/smoke*/ folder."""
-    out = out.resolve()
-    if any(out == p.resolve() or p.resolve() in out.parents for p in PROTECTED):
-        raise SystemExit(f"[rung2_ablation] refusing to write to {out}: a finished M3 folder (rule 6)")
+    """Never a finished folder (rule 6, protected.py); otherwise only results/{rung2,h1b,overexp}/summary*/ or a
+    git-ignored results/**/smoke*/ folder."""
+    out = refuse_finished(out, "rung2_ablation")
     in_smoke = any(p.name.startswith("smoke") and RESULTS.resolve() in p.parents for p in out.parents)
     roots = {RUNG2.resolve(), H1B.resolve(), OVEREXP.resolve()}
     if not (in_smoke or (out.parent in roots and out.name.startswith("summary"))):

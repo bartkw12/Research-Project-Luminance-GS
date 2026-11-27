@@ -5,7 +5,8 @@ photos' HE-CDFs, never on the Gaussians. So a run's whole F and s_k trajectory c
 rendering. The replay differs from a real run only in the random view order (a seeded permutation per epoch
 here, the DataLoader's shuffle there).
 
-    python rung2_preview.py                     (from Luminance-GS/examples, luminancegs env; CPU, ~25 min)
+    python rung2_preview.py --out ../results/rung2/preview_<name>   (from Luminance-GS/examples, luminancegs env; CPU,
+                                                ~25 min; the default preview_final/ is finished, so a bare run refuses)
     python rung2_preview.py --scenes buu --steps 2000 --out ../results/rung2/preview_quick     (quick look)
 
 Per scene, on LOM and on the varying-exposure set: load the training photos with the trainer's own Parser and
@@ -41,7 +42,8 @@ Tables (tables.md, one CSV each, numbers.json):
     P5 quality   pseudo-target PSNR, raw and brightness-matched, against high/, next to detach's.
                  DIAGNOSTIC ONLY: it uses the normal-light images, so it never chooses a setting.
 Writes only under results/rung2/ into a folder named preview* (default results/rung2/preview_final/; preview/ and
-preview_lrF1e-2/ hold the 2026-11-11 runs the decision was based on, with the earlier configuration names).
+preview_lrF1e-2/ hold the 2026-11-11 runs the decision was based on, with the earlier configuration names). All three
+are finished (CLAUDE.md rule 6, protected.py; since 2026-11-26 the guard refuses them).
 """
 
 import argparse
@@ -69,6 +71,7 @@ from build_vexp import fit_exposure_form, slope_r  # noqa: E402
 from datasets.colmap import Dataset, Parser  # noqa: E402
 from diagnostics import load_train_gt, nchw, psnr, psnr_gt_mean  # noqa: E402
 from losses import HistogramPriorLoss  # noqa: E402
+from protected import refuse_finished  # noqa: E402
 from rung0_analyze import INK, INK2, MUTED, SCENES, SEEDS, SERIES, md_table, read_csv, savefig, write_csv  # noqa: E402
 from rung2 import ExposureCurve, hist_target, init_heights, make_knots, used_range_max  # noqa: E402
 from vexp_analyze import recovery_stats, rmse_c  # noqa: E402
@@ -109,8 +112,9 @@ LR_GAP = 5.0              # replay objective more than 5% above the full-batch o
 
 # ------------------------------------------------------------------ output guard
 def guard(out: Path) -> Path:
-    """Write only under results/rung2/, into a folder whose name starts with "preview"."""
-    out = out.resolve()
+    """Write only under results/rung2/, into a folder whose name starts with "preview", and never into a finished one
+    (CLAUDE.md rule 6: preview/, preview_lrF1e-2/ and preview_final/, listed in protected.py)."""
+    out = refuse_finished(out, "rung2_preview")
     if RUNG2.resolve() not in out.parents or not out.name.startswith("preview"):
         raise SystemExit(f"[rung2_preview] refusing to write to {out}: use results/rung2/preview*")
     (out / "figures").mkdir(parents=True, exist_ok=True)

@@ -20,7 +20,8 @@ batch). Readings fixed in the research log on 2026-11-24 before any run:
   50k-step run. Built-in check: the 10k replays' final gap is within 0.01 of the trainer's
   (results/rung2/summary_headstart_seeds012/curves.csv, seeds 0-2).
 Writes only to its mode's folder or to a git-ignored smoke* folder under results/ (tests), never to a folder that
-CLAUDE.md rule 6 protects.
+CLAUDE.md rule 6 protects (protected.py). Both modes' folders are finished since 2026-11-26, so --mode overexp and
+--mode long now refuse unless --out names a smoke* folder.
 """
 
 import argparse
@@ -42,15 +43,13 @@ import torch
 EXAMPLES = Path(__file__).resolve().parent
 sys.path.insert(0, str(EXAMPLES))
 
+from protected import refuse_finished  # noqa: E402
 from rung0_analyze import INK, MUTED, SCENES, SERIES, md_table, savefig, write_csv  # noqa: E402
 from rung2_preview import DEFAULT, F_CLOSE, IDENTITY, build, load_set, replay, weighted_resid255  # noqa: E402
 from vexp_analyze import rmse_c  # noqa: E402
 
 RESULTS = EXAMPLES.parent / "results"
 OUT = {"overexp": RESULTS / "overexp" / "preview", "long": RESULTS / "rung2" / "replay_long"}
-PROTECTED = [RESULTS / "rung0" / "summary", RESULTS / "rung0" / "summary_rung05", RESULTS / "vexp" / "summary",
-             RESULTS / "rung2" / "summary", RESULTS / "rung2" / "summary_seed0", RESULTS / "rung2" / "summary_headstart",
-             RESULTS / "rung2" / "summary_headstart_seeds012", RESULTS / "rung2" / "preview_final"]  # CLAUDE.md rule 6
 LOW_PREVIEW = RESULTS / "rung2" / "preview_final" / "P1_fit.csv"
 HEADSTART = RESULTS / "rung2" / "summary_headstart_seeds012" / "curves.csv"
 LR_F, LR_S, K, LAM = 1e-2, 1e-3, 32, 0.1  # the trainer's Rung 2 defaults (simple_trainer_ours.Config)
@@ -60,11 +59,7 @@ INTERIOR = slice(1, 254)  # grid points b = 1..253 (F(0) = 0 and F(1) = 1 are pi
 
 
 def guard(out: Path, mode: str) -> Path:
-    out = out.resolve()
-    for p in PROTECTED:
-        p = p.resolve()
-        if out == p or p in out.parents:
-            raise SystemExit(f"[rung2_replay] refusing to write to {out}: protected by CLAUDE.md rule 6")
+    out = refuse_finished(out, "rung2_replay")  # CLAUDE.md rule 6 (protected.py)
     res = RESULTS.resolve()
     test = res in out.parents and any(part.startswith("smoke") for part in out.relative_to(res).parts)
     if not (out == OUT[mode].resolve() or test):
