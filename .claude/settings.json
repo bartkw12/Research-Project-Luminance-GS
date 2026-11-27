@@ -53,7 +53,8 @@
       "Edit(/Luminance-GS/results/overexp/summary_e5/**)",
       "Edit(/Luminance-GS/results/overexp/preview/**)",
       "Edit(/Luminance-GS/Implementation_guides/M5_results.md)",
-      "Edit(/Luminance-GS/Implementation_guides/E5_results.md)"
+      "Edit(/Luminance-GS/Implementation_guides/E5_results.md)",
+      "Edit(/Luminance-GS/results/rung3/preview/**)"
     ]
   },
   "hooks": {
