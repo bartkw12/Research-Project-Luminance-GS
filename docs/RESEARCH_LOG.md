@@ -1402,3 +1402,69 @@ Entries up to 2026-10-23 were backfilled from git history, the run folders and t
 - **Next:**
   - Step 3: `rung2_replay.py --mode rung3` (the preview), the regression smoke against `results/vexp/smoke_e5/buu_rung2id_seed0`, and the smokes.
   - Then the preview's predictions, its stop rule and its sha256 go into the log, and Bart's OK on the batch.
+
+### 2026-11-27: M6 step 3, tests 3 and 4: the rung2id path is unchanged; the Rung 3 smokes pass
+
+- **Rung / type:** Rung 3 (M6) · code (tests). `M6_rung3_plan.md` section 3, tests 3 and 4.
+- **What was done:** five 300-step smokes (buu, seed 0), all re-scored against `results/rung0/buu_baseline_seed0`:
+  - `rung2id` and `rung3` in `results/rung3/smoke_m6/` (LOM) and in `results/vexp/smoke_m6/` (varying set);
+  - `rung3` in `results/overexp/smoke_m6/`.
+  - The checks are a read-only scratchpad script.
+- **Reproduce:** branch `main`, commit `490978e`; `examples/` clean apart from the new preview mode in `rung2_replay.py` (next entry). From `examples/`:
+  - `python run_rung0.py --root ../results/rung3/smoke_m6 --variants rung2id rung3 --scenes buu --seeds 0 --max_steps 300`;
+  - the same with `--data_root ../data/LOM_vexp --root ../results/vexp/smoke_m6`;
+  - `--exp_name over_exp --root ../results/overexp/smoke_m6 --variants rung3`;
+  - then `rescore_runs.py --root <each> --ref_root ../results/rung0`.
+- **Results (measured):**
+  - **Test 3, regression** (`results/vexp/smoke_m6/buu_rung2id_seed0` against E5's `results/vexp/smoke_e5/buu_rung2id_seed0`):
+    - F on the grid, s, heights, γ, `exposures_by_step.csv` (88 rows) and every pseudo-target column (5 in `diagnostics/`, 21 in `rescore/pseudo_targets.csv`) are identical (max |Δ| 0).
+    - The 3DGS side differs as in E5's own repeat: validation PSNR by 3.3e-4 dB, render and fit columns by up to 8.8e-3.
+  - **Test 4, smokes:** all 5 runs ok, 0.50–0.57 min each (the LOM `rung2id` timing partner 0.57, `rung3` 0.51).
+    - Each `rung3` run: 87 curve parameters, both curves strictly increasing, |mean s| ≤ 2.2e-8.
+    - State and npz carry the zone keys and none of `F_grid`, `heights`, `curve_global`, `F_heights`. `curve_state.pt` has `zones` 2. There are 3 w_lit images, and the log has the end print. Re-score val PSNR equals the training eval in every run.
+    - Mean zone shares (shadow / lit): LOM 0.535 / 0.465, varying 0.533 / 0.467, `over_exp` 0.493 / 0.507.
+    - Centres (×255): LOM 15.98 / 31.36; varying 15.83 / 31.28; `over_exp` 231.34 / 246.76.
+    - `over_exp` reads `over_exp/` (mean input 0.915; LOM 0.091).
+  - **Preview fidelity:** `rung3.build_zones` on `rung2_preview.load_set("buu", "lom")` gives exactly the zone targets, shares, centres and s_init that the LOM smoke saved in `curve_state.pt` (max |Δ| 0).
+- **Takeaway:**
+  - The default path runs no Rung 3 code (bit-identical curve side), and every Rung 3 output is in place.
+  - On `over_exp`, buu's zones are only log2(246.76 / 231.34) = 0.09 stops apart (LOM 0.97), just above the 0.05 refusal line. *Inferred:* the exploratory overexposure arm barely separates zones, so Rung 3 should differ little from `rung2id` there.
+- **Next:** the preview (test 5) and its entry with the predicted directions and the sha256; then Bart's OK on the batch.
+
+### 2026-11-27: M6 step 3, test 5: the preview passes its stop rule; plan 4.3's predicted directions fixed before the batch
+
+- **Rung / type:** Rung 3 (M6) · experiment (photo-only curve replay) and pre-registered predictions. `M6_rung3_plan.md` test 5 and 4.3. No normal-light image was read, and no 3DGS run exists.
+- **What was done:**
+  - `rung2_replay.py --mode rung3` (new; the trainer's model, optimisers, schedule and gauge) replayed `rung3`'s and `rung2id`'s curve training. 10k steps, seed 0, the same view order for both.
+  - On the LOM low-light photos: everything below. On the varying set: the exposure check only.
+  - The `rung3` zones come from `rung3.build_zones`, which equals the trainer's build bit for bit (previous entry).
+- **Reproduce:** branch `main`, commit `490978e` plus the uncommitted `--mode rung3` in `rung2_replay.py`. From `examples/`: `python rung2_replay.py --mode rung3` (307 s) → `results/rung3/preview/`.
+- **Pre-registration record:** `results/rung3/preview/numbers.json`, sha256 `991f45a9d21bf631d0a7a77a2736b167a8cc07e3ce2d0c0c0a3d77731b93974f`. `--mode rung3` of the analysis checks it.
+- **Stop rule: passes.**
+  - Every curve is strictly increasing on both sets.
+  - max |F_sh − F_lit| is 0.17–0.39 on LOM (threshold 0.01).
+  - s RMS against the `rung2id` replay: at most 0.032 stops on LOM and 0.0325 on the varying set (buu; limit 0.05).
+- **Predicted directions (plan 4.3; LOM; source `tables.md`):**
+
+  | scene | Δ sat, chromatic pixels (rung3 − rung2id) | prediction | lit/shadow brightness: photo, rung2id, rung3 | max \|F_sh − F_lit\| |
+  |---|---|---|---|---|
+  | buu | +0.102 | val sat ratio up | 2.07, 1.54, 1.23 | 0.386 |
+  | chair | +0.096 | up | 2.32, 1.57, 1.27 | 0.344 |
+  | sofa | +0.069 | up | 2.27, 1.56, 1.24 | 0.375 |
+  | bike | +0.024 | up | 1.72, 1.29, 1.12 | 0.175 |
+  | shrub (reported only) | +0.014 | – | 1.85, 1.28, 1.13 | 0.171 |
+
+  - **Hue:** bike's hue drift from the photo changes by −0.72° (rung2id 10.40°, rung3 9.68°). That is below the 1° minimum, so there is **no hue prediction**.
+- **Also measured:**
+  - **Lighting order:** no view in any scene has its shadow zone brighter than its lit zone, for either model.
+  - **Contrast:** the zones flatten the lit/shadow contrast further than `rung2id` already does (risk 1).
+  - **Curves:** F_sh > F_rung2id > F_lit at mid-dark levels; for example buu at grid level 16 gives 150, 119 and 85 (×255). γ is unchanged (buu 0.1649 against 0.1647).
+  - **Fixed weights (D6):** Rung 3's own s drift is larger than `rung2id`'s in buu (0.031 against 0.006 stops RMS on the varying set). If the weights followed the final s, they would change by at most 0.061 in buu (0.007–0.019 elsewhere).
+  - **Section 1.4:** reproduced, except that the soft chromatic shares are 0.55, 0.76, 0.19, 0.73 and 0.59.
+- **Takeaway:**
+  - The preview gives Rung 3 something to test: distinct curves, less desaturation in every scene, no inverted lighting.
+  - *Inferred:* the flatter zone contrast is the main risk for bm PSNR (risk 1). Bike's predicted saturation change (+0.024) barely clears the 0.02 minimum.
+- **Next:**
+  - Add `results/rung3/preview/` to `protected.FINISHED`, rule 6 and the `ask` list.
+  - Write the hash into `rung2_ablation.py --mode rung3` (step 4).
+  - Bart's OK on the batch.
