@@ -37,7 +37,23 @@
       "Edit(/Luminance-GS/results/rung2/summary_headstart/**)",
       "Edit(/Luminance-GS/results/rung2/summary_headstart_seeds012/**)",
       "Edit(/Luminance-GS/results/rung2/preview_final/**)",
-      "Edit(/Luminance-GS/Implementation_guides/Rung2_results.md)"
+      "Edit(/Luminance-GS/Implementation_guides/Rung2_results.md)",
+      "Edit(/Luminance-GS/results/rung2/preview/**)",
+      "Edit(/Luminance-GS/results/rung2/preview_lrF1e-2/**)",
+      "Edit(/Luminance-GS/results/rung2/summary_h3/**)",
+      "Edit(/Luminance-GS/results/rung2/summary_noprior/**)",
+      "Edit(/Luminance-GS/results/rung2/summary_h2b/**)",
+      "Edit(/Luminance-GS/results/rung2/summary_rung2id/**)",
+      "Edit(/Luminance-GS/results/rung2/summary_e5/**)",
+      "Edit(/Luminance-GS/results/rung2/summary_e5_h1/**)",
+      "Edit(/Luminance-GS/results/rung2/replay_long/**)",
+      "Edit(/Luminance-GS/results/h1b/summary/**)",
+      "Edit(/Luminance-GS/results/h1b/summary_seeds012345/**)",
+      "Edit(/Luminance-GS/results/overexp/summary/**)",
+      "Edit(/Luminance-GS/results/overexp/summary_e5/**)",
+      "Edit(/Luminance-GS/results/overexp/preview/**)",
+      "Edit(/Luminance-GS/Implementation_guides/M5_results.md)",
+      "Edit(/Luminance-GS/Implementation_guides/E5_results.md)"
     ]
   },
   "hooks": {
