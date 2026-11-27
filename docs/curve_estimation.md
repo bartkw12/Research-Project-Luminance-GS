@@ -182,3 +182,41 @@ L_hist becomes L_curve: the MSE between F(min(1, 2^{s_k} x_b)) and CDF_k on the 
 - **Colour-preserving ablation:** apply F to the luminance Y and scale RGB, `out = rgb · F(2^{s_k} Y) / max(Y, ε)`, clipped to [0, 1]. This keeps hue and saturation, apart from clipping in highlights.
 - **Brightness:** with mean `s_k` = 0, global brightness is set by F's fit to the HE-CDFs and, for the render, by L_spa. The exposure model does not remove the offset from the ground truth's brightness, so brightness-matched PSNR stays the primary metric.
 - **Noise:** with F detached, its dark-end slope is the only thing that sets how much each photo's noise is amplified. Check that the smoothness weight keeps F off the HE-CDF's steep jump near black.
+
+## Rung 3 as built (M6 step 2, 2026-11-26)
+
+`--rung3_zones 2` (default 1 = Rung 2, and then no Rung 3 code runs), with `--curve_model rung2 --rung2_F_init identity`; variant `rung3`. Design and readings: `Luminance-GS/Implementation_guides/M6_rung3_plan.md`, pre-registered on 2026-11-26.
+
+| Flag | Default | Meaning |
+|---|---|---|
+| `--rung3_zones` | 1 | 1: Rung 2. 2: Rung 3, two zone curves. Any other value is refused |
+| `--rung3_blur` | 16 | block size in pixels of the guide's area average |
+
+- **Model** (`rung3.py`, `ZoneExposureCurve`): L_k(x, p) = w_sh(p)·F_sh(min(1, 2^{s_k} x)) + w_lit(p)·F_lit(min(1, 2^{s_k} x)), on R, G and B.
+  - Two Rung 2 curves on the same knots (θ is [2, K], identity init), one s_k per view (mean 0), one shared γ.
+  - 2K + N + 1 parameters: 87 to 108 per scene.
+- **Weights, fixed per view at s_init (decided 2026-11-26):** `rung3.build_zones`, run on the CPU by `Runner.build_rung3`.
+  - The guide is g = log2(max(G, 1/255)), with G the bilinear upsampling of the adaptive average pool, to (H // 16, W // 16), of min(1, 2^{s_init,k} Y). Y is the channel-mean grey.
+  - w_lit = clamp((g − c_1)/(c_2 − c_1), 0, 1) and w_sh = 1 − w_lit. c_1 and c_2 are the 25th and 75th percentiles of g over every training pixel (numpy float64).
+  - The weights are buffers with no gradient. The learned s_k still enter the curves.
+- **Zone targets and shares**, computed once per view: weighted histograms on `compute_histogram_equalization`'s grey and 1/4 grid, with histc's float32 bins and float64 sums. T_k,m = `hist_target`(CDF_k,m), and π_k,m is the zone's share of the pixels.
+  - With one zone this reproduces Rung 2's target exactly.
+- **Curve loss:** Σ_m π_k,m·`rung2.curve_loss`(L_k,m, T_k,m, prior x^γ on F_m). The rest is as in Rung 2: ×10, Adam at 1e-2 on (θ, ρ) and 1e-3 on s, the gauge, detached.
+- **Code:**
+  - `Runner.build_rung3` draws no random numbers, so the view order at a given seed is `rung2id`'s. It prints the centres and the shares.
+  - `Runner.rung3_forward` returns `rung2_forward`'s keys plus `zone_curves`, `zone_targets` and `zone_shares`. Its `curve_adj` is Σ_m π_m·L_k,m, and `pixels_enh` is the detached mix.
+  - `train()` has a zone-loss branch. At the end of a run it prints both curves at levels 1–64.
+  - Method names differ from `ExposureCurve`'s (`F_zones`, `zone_heights`, `composed_curves`), so a Rung 2 code path fails instead of misreading.
+- **Refused with `--rung3_zones 2`:**
+  - `--curve_model` other than `rung2`, and `--rung2_F_init cdf`;
+  - `--rung2_attach` other than `none`, `--rung2_color` other than `rgb`, `--rung2_prior` other than `F`;
+  - `--rung2_s_init zero`, `--rung2_knot_spacing usedrange`, `--dark_branch` other than `shared`;
+  - c_2 − c_1 below 0.05 stops.
+- **Diagnostics: per-zone arrays under new keys only.**
+  - npz: `curve_global_zones`, `F_heights_zones`, `zone_centres`, `zone_curves`, `zone_targets` and `zone_shares`. No `curve_global` or `F_heights`.
+  - `rung2_state.json`: `F_grid_zones`, `heights_zones`, `zones`, `blur`, `centres` and `zone_shares`. No `F_grid` or `heights`.
+  - `curve_state.pt` adds `zones` and the zone buffers, but not the weight maps.
+  - `_load_run_state` checks the recomputed centres, targets and shares within 1e-6.
+  - Each example view also gets `example_*_wlit.png`: input | w_lit | pseudo-target.
+- **Re-scoring:** `MODEL_FLAGS` and `MODEL_DEFAULTS` gain `rung3_zones` and `rung3_blur`.
+- **Checks (2026-11-26, research log "M6 step 2"):** `test_rung3.py` 9/9 and its `--cuda` check; `test_rung2.py` 16/16; the refusals; a 300-step check run with a re-score.
