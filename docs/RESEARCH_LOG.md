@@ -1277,3 +1277,82 @@ Entries up to 2026-10-23 were backfilled from git history, the run folders and t
   - Bart decides D1–D4 and gives his OK on section 4, by Fri 27 Nov.
   - Then step 1: the decision entry, H4 and the Rung 3 row in `CLAUDE.md`, and the protection lists.
   - Bart commits the plan together with that entry before any M6 code.
+
+### 2026-11-26: M6 step 1: Rung 3 design and readings pre-registered (H4), before any M6 code or run
+
+- **Rung / type:** Rung 3 (M6) · decision. Bart chose D1–D4 as recommended and approved `M6_rung3_plan.md` section 4 as written; D5 and D6 are in the previous entry. No M6 code or run exists.
+- **Design (plan section 2):**
+  - **Flags:** `--rung3_zones 2` (the default 1 is Rung 2, code path untouched), with `--curve_model rung2 --rung2_F_init identity`; variant `rung3`.
+  - **Model:** L_k(x, p) = w_sh(p) F_sh(min(1, 2^{s_k} x)) + w_lit(p) F_lit(min(1, 2^{s_k} x)), on R, G and B.
+    - F_sh and F_lit are Rung 2 curves (K = 32 quadratic knots, identity init). One s_k per view (mean 0) and one γ shared by both curves (D3). M = 2 (D2).
+  - **Weights (D1, D6):** fixed per view and built once on the CPU, with no gradient.
+    - The guide is log2 of the 16-px area average of the s_init-gained grey, bilinear back to full size.
+    - w_lit = clamp((g − c_1)/(c_2 − c_1), 0, 1), with c_1 and c_2 the 25th and 75th percentiles of g over all training pixels.
+  - **Curve loss:** Σ_m π_k,m [w(t) mse(L_k,m, T_k,m) + λ smooth + 0.5 (mse(x^γ, F_m) + 0.01 mse(x^γ, T_k,m))].
+    - T_k,m is the one-bin-shifted HE-CDF of the zone-weighted 1/4-size grey histogram; π_k,m is the zone share.
+    - With M = 1 this equals `ExposureCurve.loss`. Weight 10, Rung 2's learning rates, 10k steps, detached. 87–108 curve parameters (2K + N + 1).
+- **Comparison:** `rung3` − `rung2id`, paired by seed, seeds 0–2.
+  - LOM: `results/rung3/` against `results/rung2/`. Varying set: both in `results/vexp/`.
+  - Noise = sqrt(mean of the arms' seed variances); an effect is real above 2×. Pooled is checked against pooled without shrub; shrub never decides.
+- **H4:** "A per-pixel convex mix of two shared monotone curves, weighted by exposure-aligned local brightness and each fitted to its zone's histogram, changes quality relative to the single global curve, on LOM or the varying set."
+  - **Help:** on either set, pooled bm PSNR higher or pooled LPIPS lower, beyond 2× noise.
+  - **Harm signals:**
+    1. any decision scene's bm PSNR below −2× noise, on either set;
+    2. pooled bm PSNR lower or pooled LPIPS higher beyond 2×, on either set;
+    3. on LOM, the mean over buu, chair, sofa and bike of the per-scene relative change in `rel_l1_pseudo` above +20% (D5);
+    4. on the varying set, a pooled leak above 0.1, or a pooled s_k slope outside −0.9 to −1.1.
+  - **Verdict:** helps, hurts, mixed or no effect, as for H3. No direction is predicted.
+- **Bike's hue (4.2):**
+  - **"Fixes":** bike's LOM hue error falls beyond 2× noise, does not rise beyond 2× on the varying set, and bike's bm PSNR does not fall beyond 2× on either set.
+  - **"Fixes at a cost":** the hue falls, but bike's bm PSNR falls beyond 2×.
+  - **"No fix":** anything else.
+- **Mechanism check (4.3):** the directions come from the photo-only preview (no normal-light image read) and are logged before the batch.
+  - **Saturation:** a decision scene whose preview change in mean pseudo-target saturation on chromatic pixels is at least 0.02 predicts the sign of its LOM validation saturation-ratio change.
+  - **Hue:** a bike preview hue-drift change of at least 1° predicts the direction of its LOM hue error.
+  - **Readings:** as predicted, partly, not as predicted, or no prediction.
+- **Reported without a decision (4.4):**
+  - every metric on both sets, with `detach` as context;
+  - both curves, γ and the zone shares; s against `rung2id`'s; the curve loss at 10k from two sources;
+  - the exploratory H1 rule for `rung3` − `detach`, which changes neither H1 nor H1b;
+  - the optional exploratory `over_exp` arm (D4), which cannot change H1-over.
+- **Limits stated before results:**
+  - locality and zone-wise equalisation change together;
+  - one configuration, not tuned;
+  - seeds re-test mainly the 3DGS randomness;
+  - bike's LOM bm PSNR bar is about 0.005 dB (sd 0.002 dB), so harm 1 and 4.2's cost test fire on almost any bike drop;
+  - flattened contrast between zones would be a legitimate "hurts" (risk 1).
+  - No default changes before the freeze; Rung 3 is reported as the stretch result.
+- **Reproduce:** branch `main`; the plan at commit `1939361` plus the uncommitted step-1 edits (status, step 1, section 11); `Luminance-GS/Implementation_guides/M6_rung3_plan.md` sections 2 and 4.
+- **Next:**
+  - Bart commits the plan with this entry.
+  - Then step 2: code and unit tests (plan section 3, tests 1–2).
+  - No run before the regression, the smokes, the preview (step 3) and Bart's OK on the batch (about 2.3 h, or 3.4 h with `over_exp`, *inferred*).
+
+### 2026-11-26: Finished M5/E5 outputs protected (rule 6), with one shared guard for the analysis scripts
+
+- **Rung / type:** setup · code (analysis and replay scripts only; the trainer is untouched, so no run is affected). Bart chose "all of it" on 2026-11-26.
+- **Why:**
+  - M5's and E5's finished outputs were not protected.
+  - Three scripts could overwrite finished folders with a bare command: `rung2_preview.py` (default `preview_final/`, protected since 2026-11-24), `rung2_headstart.py` (`summary_headstart*/`), and `rung2_replay.py --mode long` / `--mode overexp` (A1's `replay_long/`, E6's `overexp/preview/`).
+- **What was done:**
+  - **New `examples/protected.py`** (stdlib only): `FINISHED`, the 22 finished result folders of CLAUDE.md rule 6, and `refuse_finished(out, tag)`. `python protected.py` lists them.
+  - **Folders newly protected:**
+    - in `results/rung2/`: M5's and E5's `summary_h3/`, `summary_noprior/`, `summary_h2b/`, `summary_rung2id/`, `summary_e5/`, `summary_e5_h1/` and `replay_long/`, plus the 2026-11-11 `preview/` and `preview_lrF1e-2/`;
+    - `results/h1b/summary/` and `summary_seeds012345/`;
+    - `results/overexp/summary/`, `summary_e5/` and `preview/`.
+  - **Scripts:** `rung2_analyze`, `rung2_ablation`, `rung2_replay`, `rung2_preview` and `rung2_headstart` now check `protected.py` before writing anything.
+    - `rung2_analyze.PROTECTED` (M3's folders only) and `rung2_replay.PROTECTED` are removed.
+    - The docstrings say which old commands now refuse.
+  - **CLAUDE.md:** rule 6 lists the new folders and the two `.md` reports, and the repo map names `protected.py`.
+  - **`.claude/settings.json`:** 16 `ask` entries added (52 in total). The `ask` list and `protected.FINISHED` name the same result folders (checked).
+  - The older `rung0_analyze`, `rung05_analyze` and `vexp_analyze` are unchanged and can still overwrite their own outputs.
+- **Reproduce:** branch `main`, commit `1939361` plus uncommitted changes to the five scripts above and the new `protected.py`. From `examples/`: `python protected.py`, then a bare command such as `python rung2_preview.py`, which must refuse.
+- **Results (measured):**
+  - All 22 folders exist.
+  - Each of the four `guard` functions refused 12 finished paths, citing rule 6.
+  - 8 allowed paths (for example `results/rung3/summary`, `results/rung2/preview_new`) are not treated as finished.
+  - These 8 bare commands exit 1 before writing: `rung2_headstart.py`, the same with `--seeds 0 1 2`, `rung2_preview.py`, `rung2_replay.py --mode long`, the same with `--mode overexp`, `rung2_ablation.py --mode lum`, the same with `--mode h3`, and `rung2_analyze.py --rung2_variant rung2id`.
+  - Two selftests still run (exit 0) and write only into git-ignored smoke folders: `rung2_ablation.py --mode noprior --selftest` and `rung2_headstart.py --seeds 0 1 2 --selftest`.
+  - `git status` showed no change under `results/` outside the smoke folders.
+- **Takeaway:** finished outputs from Rung 0 to E5 are now refused by every rung2-era script, not only by Claude's edit prompts.
+- **Next:** once M6's preview is logged (step 3), add `results/rung3/preview/` to `protected.FINISHED`, rule 6 and the `ask` list.
