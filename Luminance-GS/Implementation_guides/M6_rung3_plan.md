@@ -6,7 +6,8 @@ Written on the evening of 2026-11-25 in the project thread, for Claude Code on B
 - Step 0 checked this plan against the code; the corrections are applied below (log: "M6 step 0").
 - Bart decided D5 and D6 at step 0: harm signal 3 is judged on the decision scenes at +20% (section 4.1), and the zone weights are fixed at each view's initial exposure s_init (section 2.1).
 - On 2026-11-26 Bart also chose D1–D4 as recommended and approved section 4 as written.
-- Next: Bart commits this plan with the step-1 entry; then step 2 (code and unit tests).
+- Step 2 done 2026-11-26 (log: "M6 step 2"): the code of section 3's table, apart from `rung2_replay.py --mode rung3`, which is the preview of step 3, and `rung2_ablation.py --mode rung3`, which is step 4. Tests 1 and 2 pass.
+- Next: step 3 (regression, smokes, preview).
 
 **Labels:** every number is *measured* unless marked *inferred*. Sources are named. Numbers from the quick photo check of section 1.4 are *measured* on the training photos only, with a quick script, and step 3's preview recomputes them with the trainer's loader.
 
@@ -118,7 +119,8 @@ L_k(x, p) = w_sh(p) F_sh( min(1, 2^{s_k} x) ) + w_lit(p) F_lit( min(1, 2^{s_k} x
     - the preview can replay precomputed targets, as Rung 2's does.
   - The preview reports how far w_lit at the final s would be from w_lit at s_init (test 5).
 - **The guide exactly**, so that training, preview and re-score agree by construction:
-  - `interpolate(mode="area", scale_factor=1/f)`, then `interpolate(mode="bilinear", size=(H, W), align_corners=False)`. The loader's images are 374 × 499, so the blocks are not exact 16 × 16 squares.
+  - Adaptive average pooling to (H // f, W // f), then `interpolate(mode="bilinear", size=(H, W), align_corners=False)`. The loader's images are 374 × 499, so the blocks are not exact 16 × 16 squares.
+    - As built (2026-11-26), the pooling replaces `interpolate(mode="area", scale_factor=1/f)`. It is the same operation (area mode calls the same pooling, with output size floor(H · 1/f)), but the size comes from integer division instead of a floating-point scale factor.
   - log2 is computed as `torch.log(x) / ln 2`, not `torch.log2`, for the same NVRTC reason as `exp2`.
   - The centres come from numpy float64 `np.percentile(..., method="linear")`.
   - One function, `rung3.build_zones(images, s_init, blur)`, serves both `Runner.build_rung3` and the preview.
@@ -440,7 +442,10 @@ On `over_exp` (if run): `--a_roots ../results/overexp`, `--b_roots ../results/ov
   - **Holes closed:** before this, a bare `rung2_preview.py` overwrote `preview_final/`, a bare `rung2_headstart.py` overwrote `summary_headstart*/`, and `rung2_replay.py --mode long` or `--mode overexp` overwrote A1's and E6's outputs.
 - After the preview is logged (step 3), `results/rung3/preview/` joins `protected.FINISHED`, rule 6 and the `ask` list, so the pre-registered predictions cannot be overwritten.
 
-### Step 2: code and unit tests (section 3, tests 1–2)
+### Step 2: code and unit tests (section 3, tests 1–2) (done 2026-11-26)
+- Built `rung3.py`, `test_rung3.py` and the trainer, diagnostics, re-score and runner changes; the docs are updated.
+- `rung2_replay.py --mode rung3` (the preview) comes with step 3, and `rung2_ablation.py --mode rung3` with step 4.
+- Tests 1 and 2 pass; results are in the log.
 
 ### Step 3: regression, smokes, preview (tests 3–5); ask Bart before the batch
 Log the preview, its stop rule and the predicted directions of section 4.3 in one entry before the batch starts.
