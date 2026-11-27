@@ -1356,3 +1356,49 @@ Entries up to 2026-10-23 were backfilled from git history, the run folders and t
   - `git status` showed no change under `results/` outside the smoke folders.
 - **Takeaway:** finished outputs from Rung 0 to E5 are now refused by every rung2-era script, not only by Claude's edit prompts.
 - **Next:** once M6's preview is logged (step 3), add `results/rung3/preview/` to `protected.FINISHED`, rule 6 and the `ask` list.
+
+### 2026-11-26: M6 step 2: Rung 3 code behind `--rung3_zones`; unit tests and the CUDA check pass
+
+- **Rung / type:** Rung 3 (M6) · code. As pre-registered ("M6 step 1"); `M6_rung3_plan.md` section 3, tests 1–2.
+- **What was done:**
+  - **New `rung3.py`:**
+    - `build_zones`, on the CPU: the guide on the s_init-gained grey, the centres, the weight maps, the zone targets (histc's float32 bins, float64 sums) and the zone shares;
+    - `ZoneExposureCurve`: θ [2, K], s, ρ, with the zone constants as buffers; the weight maps are not saved.
+  - **`simple_trainer_ours.py`:**
+    - `Config.rung3_zones` (default 1) and `Config.rung3_blur` (16);
+    - the refusals of plan 2.4;
+    - `build_rung3`, `rung3_forward` and the zone-loss branch in `train()`;
+    - grad-check and end-of-run prints.
+  - **`diagnostics.py`:**
+    - `MODEL_DEFAULTS`;
+    - npz and state written under new keys only (no `curve_global`, `F_heights`, `F_grid` or `heights`);
+    - `curve_state.pt` gains `zones`;
+    - `_load_run_state` checks the recomputed constants within 1e-6;
+    - `example_*_wlit.png`.
+  - **`rescore_runs.MODEL_FLAGS`**, and in `run_rung0.py` the variant `rung3` (also in `NOT_IN_RUNG0`).
+  - **New `test_rung3.py`.**
+  - **Docs:** `curve_estimation.md` ("Rung 3 as built"), `CLAUDE.md` (flags, repo map), the plan (status, step 2).
+  - The guide's area step is adaptive pooling to (H // 16, W // 16), the same operation as the plan's `interpolate(mode="area", scale_factor=1/16)` but with integer division; the plan now says so.
+- **Reproduce:**
+  - Branch `main`, commit `6679632` plus uncommitted changes to the files above.
+  - From `examples/`: `python test_rung3.py`, `python test_rung3.py --cuda`, `python test_rung2.py`.
+- **Results (measured):**
+  - **Unit tests: 9/9 pass, and `test_rung2.py` 16/16.**
+    - **M = 1:** zone targets, composed curves, pseudo-targets and the loss (steps 0 and 3000, `low` and `over_exp`) equal Rung 2's bit for bit.
+    - **Equal curves with w = 1/2:** they equal Rung 2's to 0.0.
+    - **Histogram:** with weight 1, the counts equal `torch.histc`'s exactly, on 4096 bin-edge values and on three buu training photos (374 × 499).
+    - **Exposure invariance:** guide max |Δ| 4.8e-7 (one float32 ulp); weights 2.4e-7.
+    - **Monotonicity, gradients and refusals** hold.
+  - **CUDA check:** no run-time-compiled kernel fails. GPU against CPU, max |Δ|: pseudo-target 1.2e-7, composed curves 1.8e-7, loss 1.5e-8. Buffers arrive unchanged.
+  - **Trainer refusals on buu data:** the official curve model, `cdf` init, `--rung3_zones 3`, and luminance with `--rung2_s_init zero` all exit with the message.
+  - **300-step check run** (buu, seed 0, `--grad_check`, re-scored; in the scratchpad, not one of the plan's smokes):
+    - 87 curve parameters; centres 15.98 / 31.36 (×255), c_2 − c_1 = 0.973 stops, matching section 1.4's 16.0 / 31.4; mean zone shares 0.535 / 0.465;
+    - no gradient from L_enh or L_low into θ, s or ρ;
+    - both curves strictly increasing; |mean s| = 0;
+    - re-score val PSNR equals the training eval (8.6632); state and npz hold only the new keys.
+- **Takeaway:**
+  - The Rung 3 path is built and, at one zone, reproduces Rung 2 exactly. The default path runs no Rung 3 code; test 3 (regression) checks it.
+  - **Observed** in buu view 17's w_lit map: the large dark colour checker and the figurine's dark base fall in the shadow zone. *Inferred:* objects larger than the 16-px guide block are zoned by their own brightness, not by their surroundings, so the "lit-zone curve for dark objects" mechanism acts mainly on details smaller than about 16 px. The design is unchanged (rule: nothing retuned); the results should say this.
+- **Next:**
+  - Step 3: `rung2_replay.py --mode rung3` (the preview), the regression smoke against `results/vexp/smoke_e5/buu_rung2id_seed0`, and the smokes.
+  - Then the preview's predictions, its stop rule and its sha256 go into the log, and Bart's OK on the batch.
