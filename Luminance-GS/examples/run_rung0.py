@@ -23,6 +23,9 @@ Run from Luminance-GS/examples:
                                               # M5 (Implementation_guides/M5_plan.md): E1/E2, E3 and E6
     python run_rung0.py --root ../results/rung2 --variants rung2idlum
                                               # E5 (E5_luminance_plan.md); also on the varying set and over_exp
+    python run_rung0.py --root ../results/rung3 --variants rung3
+                                              # M6 (M6_rung3_plan.md): Rung 3 on LOM; the varying set goes to
+                                              # results/vexp, over_exp to results/overexp
 --exp_name over_exp trains on <scene>/over_exp/ and is accepted only with a root inside results/overexp/ (run names
 do not include the exposure type, so another root would skip the runs as already done); --exp_name low is refused
 inside results/overexp/.
@@ -64,9 +67,12 @@ VARIANTS = {
     "rung2noprior": ["--curve_model", "rung2", "--rung2_prior", "none"],
     # E5 (E5_luminance_plan.md): the identity init with F applied to the channel-mean grey, RGB scaled by the ratio
     "rung2idlum": ["--curve_model", "rung2", "--rung2_F_init", "identity", "--rung2_color", "luminance"],
+    # M6 (M6_rung3_plan.md, pre-registered 2026-11-26): Rung 3, two shared curves mixed by fixed brightness-zone weights,
+    # on the identity base; the guide's blur keeps its default (16)
+    "rung3": ["--curve_model", "rung2", "--rung2_F_init", "identity", "--rung3_zones", "2"],
 }
 # results/rung0 holds Rungs 0 and 0.5 only (CLAUDE.md rule 6): these variants must go to another root
-NOT_IN_RUNG0 = {"rung2", "rung2exp", "rung2att", "rung2id", "rung2idexp", "rung2noprior", "rung2idlum"}
+NOT_IN_RUNG0 = {"rung2", "rung2exp", "rung2att", "rung2id", "rung2idexp", "rung2noprior", "rung2idlum", "rung3"}
 
 
 def run_name(scene: str, variant: str, seed: int) -> str:
@@ -99,7 +105,7 @@ def main():
         raise SystemExit(f"[run_rung0] --data_root {data} is not LOM_full: pass a --root other than results/rung0")
     if NOT_IN_RUNG0 & set(args.variants) and root == (EXAMPLES.parent / "results" / "rung0").resolve():
         raise SystemExit(f"[run_rung0] {sorted(NOT_IN_RUNG0 & set(args.variants))} do not belong in results/rung0: "
-                         f"pass --root ../results/rung2 (LOM) or ../results/vexp (varying set)")
+                         f"pass --root ../results/rung2 or ../results/rung3 (LOM), or ../results/vexp (varying set)")
     # M5 E6: run names do not include the exposure type, so over_exp runs get their own root (a subtree test, so
     # results/overexp/smoke*/ counts as inside), and low-light runs stay out of it
     in_overexp = root.is_relative_to(OVEREXP.resolve())
