@@ -1,0 +1,16 @@
+finished,run,scene,variant,seed,ok,return_code,minutes
+2026-11-27 14:53:14,buu_rung3_seed0,buu,rung3,0,True,0,4.54
+2026-11-27 14:57:38,chair_rung3_seed0,chair,rung3,0,True,0,4.40
+2026-11-27 15:01:47,sofa_rung3_seed0,sofa,rung3,0,True,0,4.16
+2026-11-27 15:06:33,bike_rung3_seed0,bike,rung3,0,True,0,4.76
+2026-11-27 15:13:00,shrub_rung3_seed0,shrub,rung3,0,True,0,6.45
+2026-11-27 15:17:13,buu_rung3_seed1,buu,rung3,1,True,0,4.23
+2026-11-27 15:21:21,chair_rung3_seed1,chair,rung3,1,True,0,4.13
+2026-11-27 15:25:24,sofa_rung3_seed1,sofa,rung3,1,True,0,4.03
+2026-11-27 15:30:34,bike_rung3_seed1,bike,rung3,1,True,0,5.17
+2026-11-27 15:37:44,shrub_rung3_seed1,shrub,rung3,1,True,0,7.18
+2026-11-27 15:41:56,buu_rung3_seed2,buu,rung3,2,True,0,4.19
+2026-11-27 15:46:00,chair_rung3_seed2,chair,rung3,2,True,0,4.07
+2026-11-27 15:50:07,sofa_rung3_seed2,sofa,rung3,2,True,0,4.11
+2026-11-27 15:54:56,bike_rung3_seed2,bike,rung3,2,True,0,4.82
+2026-11-27 16:01:35,shrub_rung3_seed2,shrub,rung3,2,True,0,6.64

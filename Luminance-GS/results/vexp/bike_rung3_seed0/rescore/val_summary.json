@@ -1,0 +1,21 @@
+{
+ "psnr": 16.15817093849182,
+ "ssim": 0.7692751884460449,
+ "lpips": 0.2730127274990082,
+ "psnr_gtmean": 20.56760549545288,
+ "psnr_png": 16.241230457550003,
+ "psnr_gtmean_png": 20.568781026949924,
+ "mean_render": 0.6128096878528595,
+ "mean_gt": 0.488936610519886,
+ "ang_err_deg": 2.483310103416443,
+ "ang_err_p95_deg": 15.240489482879639,
+ "sat_ratio": 0.5769307911396027,
+ "hue_err_sat_deg": 24.87131118774414,
+ "hue_px_frac": 0.09107118286192417,
+ "hue_excluded_frac": 0.0856630802154541,
+ "n_views": 4,
+ "run": "I:\\Python\\Research\\3DGS\\Luminance-GS\\Luminance-GS\\Luminance-GS\\results\\vexp\\bike_rung3_seed0",
+ "ckpt": "I:\\Python\\Research\\3DGS\\Luminance-GS\\Luminance-GS\\Luminance-GS\\results\\vexp\\bike_rung3_seed0\\ckpts\\ckpt_9999.pt",
+ "ref_depth_run": "I:\\Python\\Research\\3DGS\\Luminance-GS\\Luminance-GS\\Luminance-GS\\results\\rung0\\bike_baseline_seed0",
+ "seconds": 3.6499505043029785
+}
