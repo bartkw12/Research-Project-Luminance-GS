@@ -23,6 +23,8 @@ FINISHED = [RESULTS / p for p in (
     "overexp/summary", "overexp/summary_e5", "overexp/preview",
     # M6: the preview holding plan 4.3's pre-registered predictions (logged 2026-11-27 with its sha256)
     "rung3/preview",
+    # M6 results (since 2026-11-27): --mode rung3, and the two exploratory --mode h1 outputs
+    "rung3/summary", "rung3/summary_h1", "overexp/summary_m6",
 )]
 
 
