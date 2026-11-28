@@ -1468,3 +1468,115 @@ Entries up to 2026-10-23 were backfilled from git history, the run folders and t
   - Add `results/rung3/preview/` to `protected.FINISHED`, rule 6 and the `ask` list.
   - Write the hash into `rung2_ablation.py --mode rung3` (step 4).
   - Bart's OK on the batch.
+
+### 2026-11-27: M6 batch launched (45 `rung3` runs), readings fixed before results
+
+- **Rung / type:** Rung 3 (M6) · experiment (batch). Started by Claude at 14:48 on Bart's explicit request, after the run-batch pre-flight.
+- **Readings:** pre-registered in "M6 step 1" (2026-11-26) and "M6 step 3, test 5" (predictions, sha256 `991f45a9…3974f`). `results/rung3/preview/` is protected.
+- **Done so far:**
+  - `results/rung3/preview/` added to `protected.FINISHED`, rule 6 and the `ask` list. A re-run of the preview now refuses, and the file's sha256 is unchanged.
+  - **Pre-flight:**
+    - HEAD `419ffc7`, clean apart from `.vscode/`;
+    - all 10 scene folders complete (`over_exp/` on LOM);
+    - GPU free (RTX 3080 Ti, no training job); 3.5 TB free;
+    - dry runs give 3 × 15 runs with the planned flags (`--curve_model rung2 --rung2_F_init identity --rung3_zones 2`), none already done.
+  - **Launch:** a detached PowerShell launcher (PID 11148; scratchpad `m6_batch.ps1`) runs plan section 6's three `run_rung0.py` commands, then `rescore_runs.py --ref_root ../results/rung0` on `results/rung3`, `results/vexp` and `results/overexp`. Console: `results/rung3/batch_console_m6.log`.
+  - **Stay-awake:** M5's helper, recreated as scratchpad `stay_awake.ps1` (`SetThreadExecutionState` ES_CONTINUOUS | ES_SYSTEM_REQUIRED, renewed every minute). It watches the launcher and clears the request when the launcher exits. No power setting was changed. Log: `results/rung3/batch_console_m6_stayawake.log`.
+- **Reproduce:** branch `main`, commit `419ffc7`. From `examples/`:
+  - `python run_rung0.py --root ../results/rung3 --variants rung3 --seeds 0 1 2`;
+  - the same with `--data_root ../data/LOM_vexp --root ../results/vexp`;
+  - with `--exp_name over_exp --root ../results/overexp`;
+  - then `rescore_runs.py` on each root.
+  - `rung2_ablation.py` is edited during the batch (next entry); the trainer does not import it.
+- **Results:** pending. The first run (`buu_rung3_seed0`) was at 87% after 3 min 35 s (40 it/s).
+  - *Inferred:* about 3.4 h of training at 4.3–4.8 min per run, then about 8 min of re-scoring, so it should finish around 18:25.
+- **Next:**
+  - When it finishes: check all 45 are `ok` and re-scored.
+  - Run `rung2_ablation.py --mode rung3` (after its selftest) and the exploratory `--mode h1` commands of plan section 7.
+  - Log the readings, write `M6_results.md`, and remind Bart that the helper has stopped by itself.
+
+### 2026-11-27: M6 step 4: `rung2_ablation.py --mode rung3` written; selftest exactly 0
+
+- **Rung / type:** Rung 3 (M6) · code (analysis; the trainer does not import it, so the running batch is unaffected). `M6_rung3_plan.md` section 7 and test 6.
+- **What was done (`rung2_ablation.py`):**
+  - **`--mode rung3`** → `results/rung3/summary/`.
+    - **Arms:** `rung3` − `rung2id` on LOM (`results/rung3` against `results/rung2`), on the varying set (`results/vexp`) and on `over_exp` (`results/overexp`, exploratory), with `detach` as context.
+    - **Readings (plan 4.1–4.3), as logged in "M6 step 1":** H4's help and harm signals (harm 3 = the decision-scene mean of the per-scene change in `rel_l1_pseudo`, +20%); bike's hue; the 4.3 check against the preview's predictions.
+    - **Hash check:** `numbers.json` is read only if its sha256 equals the logged `991f45a9…3974f`; otherwise the script stops.
+    - **Also:** the mechanism (leak, s_k slope, s drift, max |Δs| against `rung2id`), the zone curves, γ, zone shares, the curve loss at 10k (the last 10 logged values and the preview's all-view objective) and three figures.
+  - **`EXPECTED_ALL`:**
+    - `rung3` (`rung3_zones` 2, `rung3_blur` 16);
+    - `rung2id` now also needs `rung3_zones` 1. A `cfg.json` without the key counts as 1, via `CFG_DEFAULTS_ALL`.
+  - **Also:** `results/rung3` among the output guard's roots, and the `rel_l1_pseudo` metric.
+- **Reproduce:** branch `main`, commit `419ffc7` plus uncommitted changes to `rung2_ablation.py`. From `examples/`:
+  - `python rung2_ablation.py --mode rung3 --selftest` → git-ignored `results/rung2/smoke_m5/ablation_rung3_selftest/`.
+- **Results (measured):**
+  - **Selftest** (the `rung3` arms read from `rung2id`'s runs):
+    - all 273 `rung3 − rung2id` effect rows are exactly 0;
+    - the readings come out "no effect", "no fix" and "not as predicted", as they must at zero effect;
+    - the leak (0.009) and the s_k slope (−1.004) it reads are M5 E1's `rung2id` values.
+  - **Hash check:** it refuses a wrong hash and a missing file (simulated in memory; the protected file was not touched).
+  - **Regression of the old modes:** `--mode h1 --a rung3 … --selftest` and `--mode lum --selftest` still pass. E5's F/s/γ check gives max |Δ| 0.0.
+  - **Run time:** the bug found while testing (unequal columns in the mechanism table) is fixed; the selftest now runs in 2 s.
+- **Next:** after the batch, run `--mode rung3` and the two exploratory `--mode h1` commands of plan section 7.
+
+### 2026-11-27: M6 results: H4 **hurts** (Rung 3 −3.5 dB bm PSNR pooled); bike's hue "fixes at a cost"; the 4.3 check "as predicted"
+
+- **Rung / type:** Rung 3 (M6) · experiment. Follows "M6 batch launched" and "M6 step 4" (both today). The readings of "M6 step 1" (2026-11-26) and "M6 step 3, test 5" are applied unchanged; the preview's hash matched (`991f45a9…3974f`).
+- **What was done:**
+  - **Runs:** 45 `rung3` runs (LOM, the varying set, `over_exp`; seeds 0–2; 10k steps), 14:48–18:40. All `ok`, and all re-scored against `results/rung0/<scene>_baseline_seed0`. 4.0–5.2 min per run (shrub 6.4–8.9).
+  - **Analysis:** `--mode rung3`, then the two exploratory `--mode h1` commands of plan section 7.
+  - **Stay-awake helper:** stopped with the launcher; no power setting was changed.
+- **Reproduce:** branch `main`, commit `419ffc7` (training) plus the uncommitted `rung2_ablation.py` (analysis). From `examples/`:
+  - plan section 6's three `run_rung0.py … --variants rung3 --seeds 0 1 2` commands, then `rescore_runs.py` on each root;
+  - `python rung2_ablation.py --mode rung3` → `results/rung3/summary/`;
+  - `--mode h1` → `results/rung3/summary_h1/` and `results/overexp/summary_m6/`.
+- **Results** (`rung3` − `rung2id`, paired by seed, ×noise, * = real; source `results/rung3/summary/tables.md`):
+
+  | scene | LOM bm PSNR | LOM raw PSNR | LOM SSIM | LOM LPIPS | varying bm PSNR | LOM pseudo bm PSNR |
+  |---|---|---|---|---|---|---|
+  | buu | −4.88 (−22.0×) * | −1.57 * | −0.0318 * | +0.0398 * | −4.45 (−13.6×) * | −5.69 |
+  | chair | −3.61 (−15.6×) * | −1.65 * | −0.0315 * | −0.0054 * | −4.03 (−20.0×) * | −3.89 |
+  | sofa | −7.69 (−17.8×) * | −4.01 * | −0.0316 * | +0.0251 * | −8.40 (−14.0×) * | −8.98 |
+  | bike | −0.70 (−9.0×) * | +0.13 * | −0.0166 * | −0.0183 * | −0.92 (−12.3×) * | −1.28 |
+  | shrub | −0.40 (−31.8×) * | −0.09 * | +0.0025 * | +0.0030 | −0.39 (−11.5×) * | −0.60 |
+  | pooled | −3.45 (−45.1×) * | −1.44 * | −0.0218 * | +0.0088 (+6.7×) * | −3.64 (−31.2×) * | −4.09 |
+
+- **Readings:**
+  - **H4 (4.1): hurts.** There is no help signal.
+    - Harm 1 fires in all four decision scenes on both sets, and harm 2 fires for pooled bm PSNR and LPIPS on both sets.
+    - Harm 3 does not fire: +16.4% against the +20% limit (buu −0.9%, chair +31.0%, sofa +27.0%, bike +8.4%).
+    - Harm 4 does not fire: leak 0.008, slope −1.002.
+  - **Bike's hue (4.2): fixes at a cost.** The hue error falls 33.58° → 23.42° on LOM (−10.16°, −7.0×), and by −3.88° on the varying set (−0.9×). Bike's bm PSNR falls by −0.70 dB (LOM) and −0.92 dB (varying).
+  - **4.3: as predicted.** The validation saturation ratio rises in buu (+0.256), chair (+0.180), sofa (+0.244) and bike (+0.022, +3.1×).
+- **Exploratory:**
+  - **H1 rule, `rung3` − `detach`:** 5 of 12 on LOM (pooled −3.04 dB) and 8 of 12 on `over_exp`; neither is supported.
+  - **`over_exp`, `rung3` − `rung2id`:** +0.56 dB pooled (+7.4×), still −0.63 dB below `detach`.
+- **Post hoc** (after the readings; reads the GT): the lit/shadow brightness ratio, with the preview's definition (zone-weighted mean grey, training views; scratchpad script `m6_gt_contrast.py`, not in the repo).
+  - photo: 2.07, 2.32, 2.27, 1.72, 1.85 (equal to the preview's);
+  - **GT: 1.56, 1.70, 1.59, 1.33, 1.56** (buu, chair, sofa, bike, shrub);
+  - `rung2id` pseudo-targets (preview replay): 1.54, 1.57, 1.56, 1.29, 1.28;
+  - `rung3` pseudo-targets (preview replay): 1.23, 1.27, 1.24, 1.12, 1.13.
+- **Takeaway:**
+  - **The cost is in the pseudo-targets.** Pseudo bm PSNR falls by about as much as validation bm PSNR, with the same sign, in every scene. The trainer did what the preview replayed: the curve losses at 10k are within 3% of the preview's (buu 0.00966 against 0.00992).
+  - *Inferred:* equalising each zone's histogram on its own lifts the shadow zone toward the lit one. For example, buu's level 16 maps to 150 on F_sh and 85 on F_lit (×255). So Rung 3's zone contrast (1.12–1.27) falls well below the GT's (1.33–1.70), which one global curve already matches within 0.03 in buu, sofa and bike. This is plan risk 1, realised.
+  - Rung 3 is reported as a negative result, and no default changes (plan 4.5).
+- **Next:**
+  - write `M6_results.md` and update `CLAUDE.md`;
+  - protect `results/rung3/summary/`, `summary_h1/` and `results/overexp/summary_m6/`;
+  - send Wei an update; A2 is optional.
+
+### 2026-11-27: M6 outputs protected (rule 6); `M6_results.md` and `CLAUDE.md` updated
+
+- **Rung / type:** Rung 3 (M6) · setup. Follows "M6 results" (previous entry).
+- **What was done:**
+  - **Protected:** `results/rung3/summary/`, `results/rung3/summary_h1/`, `results/overexp/summary_m6/` and `Implementation_guides/M6_results.md` were added to `protected.FINISHED` (the folders), CLAUDE.md rule 6 and the `ask` list in `.claude/settings.json`.
+  - **`CLAUDE.md`:** H4's verdict, the Rung 3 row, the repo map and the docs index.
+  - **`M6_rung3_plan.md`:** steps 4 and 5 marked done.
+  - The stay-awake helper's log shows "stopped 18:40:47: launcher 11148 exited; sleep request cleared".
+- **Check (measured):**
+  - `python protected.py` lists the three new folders as existing;
+  - re-running `rung2_ablation.py --mode rung3`, and the `--mode h1` command into `summary_h1/`, both refuse (exit 1);
+  - `summary/tables.md` has the same hash before and after.
+- **Rounding note on the previous entry:** "within 0.03 in buu, sofa and bike" uses the exact gaps (0.015, 0.030, 0.033). From the ratios rounded to two decimals, bike's gap reads 0.04, so `M6_results.md` says "within 0.04".
+- **Next:** Bart commits; Wei update (draft in `wei_drafts/` on request); A2 optional.
