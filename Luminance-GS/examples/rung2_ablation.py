@@ -15,6 +15,11 @@ scenes per seed, checked against pooled without shrub; shrub never decides):
              the varying set (results/vexp) and over_exp (results/overexp, exploratory), detach alongside; the built-in
              F/s/gamma identity check; the clipped share from each run's final F and s and its training photos (CPU)
                                                                                            -> results/rung2/summary_e5/
+    rung3    M6 (M6_rung3_plan.md section 4; readings logged 2026-11-26): rung3 - rung2id on LOM (results/rung3 against
+             results/rung2), the varying set (results/vexp) and over_exp (results/overexp, exploratory), detach alongside;
+             H4's help and harm signals, bike's hue, the 4.3 mechanism check against the preview's predictions (refused
+             unless results/rung3/preview/numbers.json has the sha256 logged before the batch), mechanism, zone curves,
+             curve losses, figures                                                         -> results/rung3/summary/
 
 Every run must exist, have an ok row in its root's runs.csv, be re-scored against results/rung0/<scene>_baseline_seed0,
 and match its variant's flags, data set, exp_name, seed and step count; otherwise the script stops before any table.
@@ -34,6 +39,10 @@ Run from Luminance-GS/examples:
     python rung2_ablation.py --mode lum                                                    (E5)
     python rung2_ablation.py --mode h1 --a rung2idlum --a_roots ../results/rung2 --b detach --b_roots ../results/rung0
         --official_roots ../results/rung0 --out ../results/rung2/summary_e5_h1             (E5, exploratory H1 rule)
+    python rung2_ablation.py --mode rung3                                                  (M6)
+    python rung2_ablation.py --mode h1 --a rung3 --a_roots ../results/rung3 ../results/rung2 --b detach --b_roots
+        ../results/rung0 --official_roots ../results/rung0 --extra rung2id --title "M6, exploratory"
+        --out ../results/rung3/summary_h1                                                  (M6, exploratory H1 rule)
     python rung2_ablation.py --mode <mode> --selftest [...]
 """
 
@@ -58,7 +67,7 @@ from rung2_analyze import (CFG_DEFAULTS, DATASET, EXPECTED, H1_SCENES, LOM_DATA,
                            dark_fit, fnum, leak_stats, load_run, stat)
 from vexp_analyze import as_path, fx, last_ok_minutes, paired, recovery_stats, rmse_c  # noqa: E402
 
-H1B, OVEREXP = RESULTS / "h1b", RESULTS / "overexp"
+H1B, OVEREXP, RUNG3 = RESULTS / "h1b", RESULTS / "overexp", RESULTS / "rung3"
 SMOKE = RUNG2 / "smoke_m5"
 STEPS = 10_000
 EXPECTED_ALL = {**EXPECTED,
@@ -66,27 +75,36 @@ EXPECTED_ALL = {**EXPECTED,
                 "rung2noprior": {"detach_pseudo_target": False, "dark_branch": "shared", **RUNG2_FLAGS,
                                  "rung2_prior": "none"},
                 # E5: the colour mode is checked for the identity pair (cfg.json files before E5 have no key: rgb)
-                "rung2id": {**EXPECTED["rung2id"], "rung2_color": "rgb"},
-                "rung2idlum": {**EXPECTED["rung2id"], "rung2_color": "luminance"}}
-CFG_DEFAULTS_ALL = {**CFG_DEFAULTS, "rung2_color": "rgb"}
-NAME = {**NAME, "clip_share": "clipped share"}
-ND = {**ND, "clip_share": 4}
+                # M6: rung2id must have one zone, so a Rung 3 run cannot pass as the base (cfg.json files before M6 have
+                # no key: 1)
+                "rung2id": {**EXPECTED["rung2id"], "rung2_color": "rgb", "rung3_zones": 1},
+                "rung2idlum": {**EXPECTED["rung2id"], "rung2_color": "luminance"},
+                "rung3": {**EXPECTED["rung2id"], "rung2_color": "rgb", "rung3_zones": 2, "rung3_blur": 16}}
+CFG_DEFAULTS_ALL = {**CFG_DEFAULTS, "rung2_color": "rgb", "rung3_zones": 1, "rung3_blur": 16}
+NAME = {**NAME, "clip_share": "clipped share", "rel_l1_pseudo": "pseudo inconsistency (rel. L1)"}
+ND = {**ND, "clip_share": 4, "rel_l1_pseudo": 4}
 M5_TIMING_EXCLUDE = {("vexp", "chair_rung2id_seed2")}  # the PC slept during it (log, 2026-11-25)
 EXTRA = ["hue_err_sat_deg", "ang_err_deg", "sat_ratio", "pseudo_bm", "dark_fit", "num_GS", "params", "minutes"]
 WORSE = {"psnr_gtmean": -1, "ssim": -1, "lpips": +1}  # the H1 rule's worse side per metric (plan 6.5)
 LEAK_MAX, SLOPE_RANGE = 0.1, (-1.1, -0.9)  # M5 3.3 harm signals (varying set, pooled)
 FS_TOL = 1e-5  # E5 built-in check: F, s and gamma of rung2idlum equal rung2id's at the same seed (M3's tolerance)
 DEFAULT_OUT = {"h3": RUNG2 / "summary_h3", "noprior": RUNG2 / "summary_noprior", "init": RUNG2 / "summary_h2b",
-               "lum": RUNG2 / "summary_e5"}
+               "lum": RUNG2 / "summary_e5", "rung3": RUNG3 / "summary"}
+# M6 (M6_rung3_plan.md section 4; readings in the log, 2026-11-26 "M6 step 1"; predictions 2026-11-27 "M6 step 3, test 5")
+PREVIEW_M6 = RUNG3 / "preview" / "numbers.json"
+PREVIEW_M6_SHA256 = "991f45a9d21bf631d0a7a77a2736b167a8cc07e3ce2d0c0c0a3d77731b93974f"  # as logged before the batch
+CONS_HARM = 0.20       # harm 3 (D5): mean per-scene relative change of rel_l1_pseudo over the decision scenes, LOM
+Z_LEVELS = [1, 2, 4, 8, 16, 32, 64]  # grid indices b (x = b / 254) at which the zone curves are reported
+BIKE_VIEW = "29"       # diagnostics.RESCORE_EXAMPLES
 
 
 # ------------------------------------------------------------------ output guard
 def guard_out(out: Path) -> Path:
-    """Never a finished folder (rule 6, protected.py); otherwise only results/{rung2,h1b,overexp}/summary*/ or a
+    """Never a finished folder (rule 6, protected.py); otherwise only results/{rung2,h1b,overexp,rung3}/summary*/ or a
     git-ignored results/**/smoke*/ folder."""
     out = refuse_finished(out, "rung2_ablation")
     in_smoke = any(p.name.startswith("smoke") and RESULTS.resolve() in p.parents for p in out.parents)
-    roots = {RUNG2.resolve(), H1B.resolve(), OVEREXP.resolve()}
+    roots = {RUNG2.resolve(), H1B.resolve(), OVEREXP.resolve(), RUNG3.resolve()}
     if not (in_smoke or (out.parent in roots and out.name.startswith("summary"))):
         raise SystemExit(f"[rung2_ablation] refusing to write to {out}")
     return out
@@ -184,6 +202,8 @@ def value(r, key):
         return float(r["state"]["n_params"]) if r["state"] is not None else float("nan")
     if key == "clip_share":
         return float(r.get("clip_share", float("nan")))
+    if key == "rel_l1_pseudo":  # M6 harm 3: mean over the run's rescore/consistency.csv (shared reference depth)
+        return float(np.mean([fnum(c["rel_l1_pseudo"]) for c in r["cons"]]))
     if key == "minutes":
         root, name = r["dir"].parent, r["dir"].name
         if (root.name, name) in M5_TIMING_EXCLUDE or (root == RUNG0 and name in TIMING_EXCLUDE):
@@ -596,10 +616,287 @@ def mode_lum(a, book_args):
     return book, dec
 
 
+# ------------------------------------------------------------------ M6: Rung 3
+def load_preview_predictions() -> dict:
+    """The preview's numbers.json (plan 4.3's predicted directions), only if its sha256 is the one logged before the
+    batch (2026-11-27, "M6 step 3, test 5"); otherwise stop."""
+    if not PREVIEW_M6.exists():
+        raise SystemExit(f"[rung2_ablation] {PREVIEW_M6} is missing: the pre-registered predictions (plan 4.3) are needed")
+    sha = hashlib.sha256(PREVIEW_M6.read_bytes()).hexdigest()
+    if sha != PREVIEW_M6_SHA256:
+        raise SystemExit(f"[rung2_ablation] {PREVIEW_M6} has sha256 {sha}, not the logged {PREVIEW_M6_SHA256}: the "
+                         f"pre-registered predictions changed; stop and investigate")
+    return {**json.loads(PREVIEW_M6.read_text()), "sha256": sha}
+
+
+def mechanism_rows(book, runs, scenes, seeds, arms):
+    """Plan 4.1 harm 4 and 4.4 (as mode_h3): per arm (variant), the varying-set leak (the varying run against the same
+    variant's LOM run, same seed), the s_k slope on u_k, the paired s RMSE, the s drift on each set; and per seed
+    max |s_rung3 - s_rung2id| on each set."""
+    gains = json.loads((DATASET / "gains.json").read_text())["rows"]
+    u_by = {sc: {r["view"]: r["u"] for r in gains if r["scene"] == sc} for sc in SCENES}
+    ueff_by = {sc: {r["view"]: r["log2_ratio"] for r in gains if r["scene"] == sc} for sc in SCENES}
+    mech = {}
+    for v in arms:
+        for sc in scenes:
+            for s in seeds:
+                rv, rl = runs[f"varying {v}"][(sc, s)], runs[f"LOM {v}"][(sc, s)]
+                sv, sl = rv["state"], rl["state"]
+                names = sv["view_names"]
+                assert names == sl["view_names"], f"{sc} seed {s}: view order differs between the sets"
+                u = np.array([u_by[sc][n] for n in names])
+                ue = np.array([ueff_by[sc][n] for n in names])
+                s_v, s_l = np.array(sv["s_final"]), np.array(sl["s_final"])
+                rec = recovery_stats(s_v, s_l, u, ue)
+                mech[(v, sc, s)] = {"pseudo_leak_paired": leak_stats(rv, rl, u_by[sc])["pseudo_leak_paired"],
+                                    "slope": rec["slope"], "rmse_paired": rec["rmse_paired"],
+                                    "drift_vexp": rmse_c(s_v - np.array(sv["s_init"])),
+                                    "drift_lom": rmse_c(s_l - np.array(sl["s_init"]))}
+    for sc in scenes:
+        for s in seeds:
+            for tag in ("LOM", "varying"):
+                a = np.array(runs[f"{tag} rung3"][(sc, s)]["state"]["s_final"])
+                b = np.array(runs[f"{tag} rung2id"][(sc, s)]["state"]["s_final"])
+                mech[("rung3", sc, s)][f"max_ds_vs_rung2id_{tag.lower()}"] = float(np.abs(a - b).max())
+    mkeys = {"pseudo_leak_paired": 3, "slope": 3, "rmse_paired": 3, "drift_vexp": 4, "drift_lom": 4}
+    extra = {"max_ds_vs_rung2id_lom": 4, "max_ds_vs_rung2id_varying": 4}  # rung3 only
+    rows = []
+    for g in book.G:
+        for v in arms:
+            keys = dict(mkeys, **(extra if v == "rung3" else {}))
+            row = {"scene": g, "arm": v, **({} if v == "rung3" else {k: "–" for k in extra})}
+            for k, nd in keys.items():
+                x = np.array([np.mean([mech[(v, sc, s)][k] for sc in book.G[g]]) for s in seeds])
+                row[k] = stat(x, nd)
+                book.cells.append({"scene": g, "arm": v, "metric": k, **{f"seed{s}": float(y) for s, y in zip(seeds, x)}})
+                book.numbers.setdefault("mechanism", {}).setdefault(g, {}).setdefault(v, {})[k] = x.tolist()
+            rows.append(row)
+    return rows
+
+
+def mode_rung3(a, book_args):
+    """M6 (M6_rung3_plan.md section 4): rung3 - rung2id on LOM (results/rung3 vs results/rung2), the varying set (both in
+    results/vexp) and over_exp (results/overexp, exploratory), detach alongside as context; the readings of 4.1-4.3 as
+    pre-registered; mechanism, zone curves and curve losses reported (4.4); figures."""
+    from rung2_headstart import curve_loss as headstart_curve_loss
+    scenes, seeds = book_args
+    pred = load_preview_predictions()
+    sets = [("LOM", "lom", "low", RUNG3, RUNG2, RUNG0), ("varying", "vexp", "low", VEXP, VEXP, VEXP),
+            ("over_exp", "lom", "over_exp", OVEREXP, OVEREXP, OVEREXP)]
+    arms, ctx = [], []
+    for tag, set_, exp, r3, r2, r0 in sets:
+        arms += [arm(f"{tag} rung3", "rung3", [r3], set_, exp, ref=("rung2id", [r2])),
+                 arm(f"{tag} rung2id", "rung2id", [r2], set_, exp)]
+        ctx.append(arm(f"{tag} detach", "detach", [r0], set_, exp))
+    if a.selftest:
+        arms = [as_selftest(x) for x in arms]
+    runs = load_all(arms + ctx, *book_args)
+    book = Book(runs, *book_args)
+    keys = VAL + EXTRA + ["rel_l1_pseudo"]
+    book.cell_rows("Validation and extras per arm (detach: context only)", [x["name"] for x in arms + ctx], keys)
+    lab = {tag: f"{tag}: rung3 − rung2id" + (" (exploratory)" if tag == "over_exp" else "") for tag, *_ in sets}
+    book.diff_rows("rung3 − rung2id, paired by seed (×noise, * = real above 2×)",
+                   [(lab[tag], f"{tag} rung3", f"{tag} rung2id") for tag, *_ in sets], keys)
+    book.diff_rows("Against detach, paired by seed (context, reported only)",
+                   [(f"{tag}: {v} − detach", f"{tag} {v}", f"{tag} detach") for tag, *_ in sets
+                    for v in ("rung3", "rung2id")], keys)
+    lom, var, over = lab["LOM"], lab["varying"], lab["over_exp"]
+
+    # harm 3 (D5): consistency on LOM, per-scene relative change of rel_l1_pseudo, mean over the decision scenes
+    cons_rows, rel = [], {}
+    for sc in scenes:
+        c3, c2 = (np.array([value(runs[f"LOM {v}"][(sc, s)], "rel_l1_pseudo") for s in seeds]) for v in ("rung3", "rung2id"))
+        rel[sc] = float(c3.mean() / c2.mean() - 1)
+        cons_rows.append({"scene": sc, "rung3": stat(c3, 4), "rung2id": stat(c2, 4), "relative change": f"{rel[sc]:+.1%}",
+                          "decides": "yes" if sc in H1_SCENES else "no (reported)"})
+    dec_sc = [sc for sc in H1_SCENES if sc in rel]
+    cons_mean = float(np.mean([rel[sc] for sc in dec_sc]))
+    pooled3 = np.mean([np.mean([value(runs["LOM rung3"][(sc, s)], "rel_l1_pseudo") for s in seeds]) for sc in scenes])
+    pooled2 = np.mean([np.mean([value(runs["LOM rung2id"][(sc, s)], "rel_l1_pseudo") for s in seeds]) for sc in scenes])
+    cons_rows.append({"scene": "decision-scene mean (decides)", "rung3": "", "rung2id": "",
+                      "relative change": f"{cons_mean:+.1%}", "decides": f"harm if > +{CONS_HARM:.0%}"})
+    cons_rows.append({"scene": "five-scene pooled value (reported)", "rung3": f"{pooled3:.4f}", "rung2id": f"{pooled2:.4f}",
+                      "relative change": f"{pooled3 / pooled2 - 1:+.1%}", "decides": "no"})
+    book.tables["Harm signal 3 (D5): cross-view pseudo-target inconsistency on LOM (rel_l1_pseudo, mean over "
+                "rescore/consistency.csv, shared reference depth; mean ± sd over seeds)"] = cons_rows
+    book.numbers["consistency"] = {"relative_change": rel, "decision_mean": cons_mean,
+                                   "pooled_relative": float(pooled3 / pooled2 - 1)}
+
+    # mechanism (harm 4 and 4.4)
+    book.tables["Mechanism (plan 4.1 harm 4, 4.4): paired pseudo-target leak and s_k slope on u_k (varying set; leak "
+                "pairs each varying run with the same arm's LOM run), paired s RMSE, s drift = rmse_c(s_final − s_init) "
+                "on each set, and max |s_rung3 − s_rung2id| at the same seed"] = \
+        mechanism_rows(book, runs, scenes, seeds, ("rung3", "rung2id"))
+
+    # readings: H4 (4.1)
+    help_, harm = [], []
+    for lb, setname in ((lom, "LOM"), (var, "varying")):
+        for g in ("pooled", "pooled_no_shrub"):
+            bm, lp = book.eff(lb, g, "psnr_gtmean"), book.eff(lb, g, "lpips")
+            if bm["real"] and bm["diff"] > 0:
+                help_.append((g, f"{setname} {g} bm PSNR {fx(bm, 2)}"))
+            if lp["real"] and lp["diff"] < 0:
+                help_.append((g, f"{setname} {g} LPIPS {fx(lp, 4)}"))
+        for sc in H1_SCENES:
+            e = book.eff(lb, sc, "psnr_gtmean")
+            if e["x_noise"] < -REAL:
+                harm.append(f"1: {setname} {sc} bm PSNR {fx(e, 2)} below −2× noise")
+        bm, lp = book.eff(lb, "pooled", "psnr_gtmean"), book.eff(lb, "pooled", "lpips")
+        if bm["real"] and bm["diff"] < 0:
+            harm.append(f"2: {setname} pooled bm PSNR {fx(bm, 2)}")
+        if lp["real"] and lp["diff"] > 0:
+            harm.append(f"2: {setname} pooled LPIPS {fx(lp, 4)}")
+    if cons_mean > CONS_HARM:
+        harm.append(f"3: LOM decision-scene mean consistency change {cons_mean:+.1%} > +{CONS_HARM:.0%}")
+    leak = float(np.mean(book.numbers["mechanism"]["pooled"]["rung3"]["pseudo_leak_paired"]))
+    slope = float(np.mean(book.numbers["mechanism"]["pooled"]["rung3"]["slope"]))
+    if leak > LEAK_MAX:
+        harm.append(f"4: varying pooled leak {leak:.3f} > {LEAK_MAX}")
+    if not (SLOPE_RANGE[0] <= slope <= SLOPE_RANGE[1]):
+        harm.append(f"4: varying pooled s_k slope {slope:.3f} outside {SLOPE_RANGE[0]} to {SLOPE_RANGE[1]}")
+    helps = [t for g, t in help_ if g == "pooled"]
+    helps_ns = [t for g, t in help_ if g == "pooled_no_shrub"]
+    h4 = "mixed" if helps and harm else "helps" if helps else "hurts" if harm else "no effect"
+
+    # readings: bike's hue (4.2)
+    hue_lom, hue_var = book.eff(lom, "bike", "hue_err_sat_deg"), book.eff(var, "bike", "hue_err_sat_deg")
+    hue_ok = bool(hue_lom["real"] and hue_lom["diff"] < 0) and not bool(hue_var["real"] and hue_var["diff"] > 0)
+    bike_cost = [f"{setname} bike bm PSNR {fx(book.eff(lb, 'bike', 'psnr_gtmean'), 2)}" for lb, setname in
+                 ((lom, "LOM"), (var, "varying")) if book.eff(lb, "bike", "psnr_gtmean")["x_noise"] < -REAL]
+    hue_verdict = "fixes at a cost" if hue_ok and bike_cost else "fixes" if hue_ok else "no fix"
+
+    # readings: the mechanism check (4.3), against the logged predictions
+    checks = []
+    for sc, p in pred["predictions"]["saturation"].items():
+        if p["prediction"] is None:
+            continue
+        e = book.eff(lom, sc, "sat_ratio")
+        sign = 1 if p["prediction"] == "+" else -1
+        state = ("holds" if e["real"] and sign * e["diff"] > 0 else "reversed" if e["real"] and sign * e["diff"] < 0
+                 else "not detectable")
+        checks.append({"check": f"{sc} saturation", "preview Δ": f"{p['delta']:+.4f}", "predicted": p["prediction"],
+                       "LOM val sat ratio, rung3 − rung2id": fx(e, 3), "result": state})
+    for sc, p in pred["predictions"]["hue"].items():
+        if p["prediction"] is None:
+            continue
+        e = book.eff(lom, sc, "hue_err_sat_deg")
+        sign = -1 if p["prediction"] == "lower" else 1
+        state = ("holds" if e["real"] and sign * e["diff"] > 0 else "reversed" if e["real"] and sign * e["diff"] < 0
+                 else "not detectable")
+        checks.append({"check": f"{sc} hue", "preview Δ": f"{p['delta_deg']:+.2f}°", "predicted": p["prediction"],
+                       "LOM val sat ratio, rung3 − rung2id": f"hue err {fx(e, 2)}", "result": state})
+    states = [c["result"] for c in checks]
+    mech43 = ("no prediction" if not checks else "not as predicted" if "reversed" in states
+              else "as predicted" if all(s == "holds" for s in states) else "partly" if "holds" in states
+              else "not as predicted")
+    book.tables["Mechanism check (plan 4.3): the logged photo-only predictions against LOM validation"] = checks
+
+    # reported only (4.4): zone curves, gamma, shares, curve losses; skipped in --selftest (rung2id has no zones)
+    prev = {r["scene"]: r for r in pred["lom"]}
+    if not a.selftest:
+        zrows = []
+        for sc in scenes:
+            st3 = [runs["LOM rung3"][(sc, s)]["state"] for s in seeds]
+            st2 = [runs["LOM rung2id"][(sc, s)]["state"] for s in seeds]
+            Fz = np.mean([np.asarray(x["F_grid_zones"]) for x in st3], axis=0)
+            F2 = np.mean([np.asarray(x["F_grid"]) for x in st2], axis=0)
+            zrows.append({"scene": sc,
+                          "rung3 F_sh (×255)": json.dumps([round(255 * float(Fz[0, b]), 1) for b in Z_LEVELS]),
+                          "rung3 F_lit (×255)": json.dumps([round(255 * float(Fz[1, b]), 1) for b in Z_LEVELS]),
+                          "rung2id F (×255)": json.dumps([round(255 * float(F2[b]), 1) for b in Z_LEVELS]),
+                          "max |F_sh − F_lit|": f"{float(np.abs(Fz[0] - Fz[1]).max()):.3f}",
+                          "γ rung3": stat([fnum(x["gamma"]) for x in st3], 4),
+                          "γ rung2id": stat([fnum(x["gamma"]) for x in st2], 4),
+                          "zone shares (shadow, lit)": json.dumps(np.round(np.mean(st3[0]["zone_shares"], 0), 3).tolist()),
+                          "chromatic lit share hard / soft (preview)":
+                              f"{prev[sc]['chroma_lit_hard']:.2f} / {prev[sc]['chroma_lit_soft']:.2f}"})
+            book.numbers.setdefault("zone_curves", {})[sc] = {"F_zones_mean": Fz.tolist(), "F_rung2id_mean": F2.tolist()}
+        book.tables["Zone curves on LOM at grid levels b = 1, 2, 4, 8, 16, 32, 64 (mean over seeds; reported only)"] = zrows
+    lrows = []
+    for sc in scenes:
+        l3 = [headstart_curve_loss(runs["LOM rung3"][(sc, s)]["dir"]) for s in seeds]
+        l2 = [headstart_curve_loss(runs["LOM rung2id"][(sc, s)]["dir"]) for s in seeds]
+        lrows.append({"scene": sc, "rung3, last 10 logged hist_loss": stat(l3, 5), "rung2id, same": stat(l2, 5),
+                      "preview all-view objective rung3": f"{prev[sc]['objective_rung3']:.5f}",
+                      "preview all-view objective rung2id": f"{prev[sc]['objective_rung2id']:.5f}"})
+    book.tables["Curve loss at 10k (plan 4.4; different objectives, reported side by side)"] = lrows
+
+    figures_rung3(a, book, runs, pred, scenes, seeds, lom)
+
+    book.numbers["m6"] = {"h4": h4, "help": helps, "help_pooled_no_shrub": helps_ns, "harm": harm, "pooled_leak": leak,
+                          "pooled_slope": slope, "consistency_decision_mean": cons_mean, "bike_hue": hue_verdict,
+                          "bike_hue_lom": hue_lom, "bike_hue_varying": hue_var, "bike_cost": bike_cost,
+                          "mechanism_4_3": mech43, "checks_4_3": checks, "preview_sha256": pred["sha256"]}
+    ob, obn = book.eff(over, "pooled", "psnr_gtmean"), book.eff(over, "pooled_no_shrub", "psnr_gtmean")
+    dec = [f"- **Pre-registered predictions** (`{PREVIEW_M6.relative_to(RESULTS.parent)}`): sha256 {pred['sha256']} = the "
+           f"value logged before the batch.",
+           f"- **Help signals (pooled):** {'; '.join(helps) or 'none'}. Pooled without shrub: {'; '.join(helps_ns) or 'none'}"
+           f"{'' if bool(helps) == bool(helps_ns) else ' -> **differs from pooled**'}.",
+           f"- **Harm signals:** {'; '.join(harm) or 'none'} (consistency: decision-scene mean {cons_mean:+.1%}, limit "
+           f"+{CONS_HARM:.0%}; varying pooled leak {leak:.3f}, limit {LEAK_MAX}; pooled s_k slope {slope:.3f}, range "
+           f"{SLOPE_RANGE[0]} to {SLOPE_RANGE[1]}).",
+           f"- **H4 (plan 4.1):** **{h4}**.",
+           f"- **Bike's hue (plan 4.2):** LOM {fx(hue_lom, 2)}, varying {fx(hue_var, 2)}; bike bm PSNR cost: "
+           f"{'; '.join(bike_cost) or 'none'} -> **{hue_verdict}**.",
+           f"- **Mechanism check (plan 4.3):** " + ("; ".join(f"{c['check']}: {c['result']}" for c in checks) or "no check")
+           + f" -> **{mech43}**.",
+           f"- **Overexposure (exploratory; cannot change H1-over):** pooled bm PSNR {fx(ob, 2)} (without shrub "
+           f"{fx(obn, 2)})."]
+    return book, dec
+
+
+def figures_rung3(a, book, runs, pred, scenes, seeds, lom):
+    """The plan section 7 figures: zone curves per scene, bike's view 29, validation saturation change against the
+    preview's predicted change. The first two need Rung 3 runs, so --selftest skips them."""
+    import imageio.v2 as imageio
+    import matplotlib.pyplot as plt
+    from rung0_analyze import INK, MUTED, SERIES, savefig
+    figs = a.out_dir / "figures"
+    figs.mkdir(parents=True, exist_ok=True)
+    if not a.selftest:
+        fig, axes = plt.subplots(2, len(scenes), figsize=(3.4 * len(scenes), 6.6), squeeze=False)
+        x = np.linspace(0, 1, 255)
+        for j, sc in enumerate(scenes):
+            zc = book.numbers["zone_curves"][sc]
+            Fz, F2 = np.asarray(zc["F_zones_mean"]), np.asarray(zc["F_rung2id_mean"])
+            for i, xmax in enumerate((1.0, 64 / 254)):
+                ax, k = axes[i, j], x <= xmax + 1e-9
+                ax.plot(x[k], x[k], color=MUTED, lw=1.0, ls="--", label="identity")
+                ax.plot(x[k], F2[k], color=INK, lw=2.0, label="rung2id F")
+                ax.plot(x[k], Fz[0][k], color=SERIES[0], lw=1.6, label="rung3 F_sh (shadow)")
+                ax.plot(x[k], Fz[1][k], color=SERIES[1], lw=1.6, label="rung3 F_lit (lit)")
+                ax.set_title(sc + ("" if i == 0 else " (dark end)"))
+                ax.set_xlabel("input x")
+        h, lab = axes[0, 0].get_legend_handles_labels()
+        fig.legend(h, lab, loc="upper center", ncol=4, bbox_to_anchor=(0.5, 0.0))
+        savefig(fig, "zone_curves_lom", figs)
+        if "bike" in scenes:
+            d3, d2 = runs["LOM rung3"][("bike", seeds[0])]["dir"] / "rescore", runs["LOM rung2id"][("bike", seeds[0])]["dir"] / "rescore"
+            f3, f2, fw = (d3 / f"example_{BIKE_VIEW}_in_pseudo_render_gt.png", d2 / f"example_{BIKE_VIEW}_in_pseudo_render_gt.png",
+                          d3 / f"example_{BIKE_VIEW}_wlit.png")
+            if f3.exists() and f2.exists() and fw.exists():
+                e3, e2, ew = imageio.imread(f3), imageio.imread(f2), imageio.imread(fw)
+                p4, p3 = e3.shape[1] // 4, ew.shape[1] // 3
+                panels = [ew[:, :p3], ew[:, p3:2 * p3], e2[:, p4:2 * p4], e3[:, p4:2 * p4], e3[:, 3 * p4:]]
+                imageio.imwrite(figs / f"bike_{BIKE_VIEW}_input_wlit_rung2id_rung3_gt.png", np.concatenate(panels, axis=1))
+    fig, ax = plt.subplots(figsize=(5.2, 4))
+    for j, (sc, p) in enumerate(pred["predictions"]["saturation"].items()):
+        e = book.eff(lom, sc, "sat_ratio")
+        ax.errorbar(p["delta"], e["diff"], yerr=REAL * e["noise"], fmt="o", color=SERIES[j % len(SERIES)], label=sc,
+                    capsize=3)
+    ax.axhline(0, color=MUTED, lw=0.8)
+    ax.axvline(0, color=MUTED, lw=0.8)
+    ax.set_xlabel("preview: Δ mean pseudo-target saturation, chromatic pixels")
+    ax.set_ylabel("LOM validation: Δ saturation ratio (±2× noise)")
+    ax.set_title("rung3 − rung2id: predicted vs measured")
+    ax.legend(fontsize=8)
+    savefig(fig, "saturation_predicted_vs_measured", figs)
+
+
 # ------------------------------------------------------------------ main
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--mode", required=True, choices=["h3", "noprior", "h1", "init", "lum"])
+    ap.add_argument("--mode", required=True, choices=["h3", "noprior", "h1", "init", "lum", "rung3"])
     ap.add_argument("--seeds", nargs="+", type=int, default=[0, 1, 2])
     ap.add_argument("--scenes", nargs="+", default=SCENES, choices=SCENES)
     ap.add_argument("--selftest", action="store_true", help="read the arm under test from its reference arm's runs")
@@ -624,11 +921,12 @@ def main():
     else:
         out = a.out or DEFAULT_OUT[a.mode]
     out = guard_out(out)
+    a.out_dir = out  # M6: mode_rung3 writes figures there
     t0 = time.time()
     scenes = [s for s in SCENES if s in a.scenes]
     seeds = sorted(set(a.seeds))
     book, dec = {"h1": mode_h1, "noprior": mode_noprior, "init": mode_init, "h3": mode_h3,
-                 "lum": mode_lum}[a.mode](a, (scenes, seeds))
+                 "lum": mode_lum, "rung3": mode_rung3}[a.mode](a, (scenes, seeds))
 
     out.mkdir(parents=True, exist_ok=True)
     meta = {"date": time.strftime("%Y-%m-%d %H:%M"), "seconds": round(time.time() - t0), "mode": a.mode,
@@ -646,9 +944,12 @@ def main():
                "noprior": "No shape prior: rung2noprior − rung2 on LOM (M5 E4)",
                "init": "H2b(a): the identity init on the varying set, init × dark-branch 2×2 (M5 E1)",
                "lum": "E5: the colour-preserving variant, rung2idlum − rung2id on LOM, the varying set and over_exp",
+               "rung3": "M6 (H4): Rung 3, rung3 − rung2id on LOM, the varying set and over_exp (exploratory)",
                "h1": f"H1 rule: {a.a} − {a.b}, LOM {a.exp_name} (M5 E3/E6){' — ' + a.title if a.title else ''}"}[a.mode]
-    prereg = ("docs/RESEARCH_LOG.md (2026-11-25, \"E5 plan approved\"), E5_luminance_plan.md section 4" if a.mode == "lum"
-              else "docs/RESEARCH_LOG.md (2026-11-24), M5_plan.md 3.1–3.6")
+    prereg = {"lum": "docs/RESEARCH_LOG.md (2026-11-25, \"E5 plan approved\"), E5_luminance_plan.md section 4",
+              "rung3": "docs/RESEARCH_LOG.md (2026-11-26, \"M6 step 1\"; the 4.3 predictions 2026-11-27, \"M6 step 3, "
+                       "test 5\"), M6_rung3_plan.md section 4"}.get(a.mode, "docs/RESEARCH_LOG.md (2026-11-24), "
+                                                                            "M5_plan.md 3.1–3.6")
     md = [f"# {heading}\n",
           ("**SELFTEST:** the arm under test is read from its reference arm's runs; every effect must be 0. " if a.selftest
            else "") +
