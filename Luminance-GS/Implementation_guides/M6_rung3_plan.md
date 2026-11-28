@@ -11,7 +11,13 @@ Written on the evening of 2026-11-25 in the project thread, for Claude Code on B
   - the regression is bit-identical on the curve side, and the smokes pass;
   - the preview passes its stop rule;
   - plan 4.3's predicted directions are logged with the sha256 of `results/rung3/preview/numbers.json`, now protected.
-- Next: step 4, the batch, launched by Bart with `/run-batch`.
+- Step 4 done (2026-11-27):
+  - the batch was started at 14:48 on Bart's request, with the stay-awake helper (log: "M6 batch launched"). All 45 runs were `ok` and re-scored by 18:40;
+  - `rung2_ablation.py --mode rung3` is written, and its selftest passes (log: "M6 step 4: --mode rung3").
+- Step 5 done (2026-11-27; log: "M6 results"; `M6_results.md`):
+  - **Readings, applied as logged:** H4 **hurts**, bike's hue **fixes at a cost**, 4.3 **as predicted**.
+  - **Outputs:** `results/rung3/summary/`, `summary_h1/` and `results/overexp/summary_m6/` are protected (rule 6).
+  - **Step 6 (A2)** is optional and not run.
 
 **Labels:** every number is *measured* unless marked *inferred*. Sources are named. Numbers from the quick photo check of section 1.4 are *measured* on the training photos only, with a quick script, and step 3's preview recomputes them with the trainer's loader.
 
@@ -462,9 +468,16 @@ Log the preview, its stop rule and the predicted directions of section 4.3 in on
 
 ### Step 4: batch (section 6), launched by Bart with `/run-batch`
 While it runs (CPU only; do not edit any file the trainer imports): `--mode rung3` and its selftest (test 6).
+- **Started 2026-11-27 14:48** by Claude on Bart's request, after the run-batch pre-flight. A detached launcher runs the three commands of section 6 and then the three re-scores. M5's stay-awake helper, recreated, watches it.
+- **`--mode rung3`:** written, and the selftest passes. All 273 `rung3 − rung2id` effects are 0, and the hash check refuses a changed or missing `numbers.json`.
 
-### Step 5: re-score, analyse, report
+### Step 5: re-score, analyse, report (done 2026-11-27)
 Apply the readings as logged; log entries; `M6_results.md`; update `CLAUDE.md`'s rung table and repo map; propose the commits.
+- **Done 2026-11-27** (log: "M6 results"):
+  - **Re-scores:** all 45 runs were re-scored inside the batch.
+  - **Analysis:** `--mode rung3` and the two exploratory `--mode h1` commands of section 7 were run as written.
+  - **Readings:** H4 hurts; bike's hue fixes at a cost; 4.3 as predicted.
+  - **Post hoc** (after the readings, labelled as such): the GT's lit/shadow brightness ratio, against which the zone targets' flattening (risk 1) is measured. It is in `M6_results.md` section 2.
 
 ### Step 6 (optional): A2, a long replay of the zone curves
 `rung2_replay.py --mode rung3long`: replay `rung3`'s curve training to 50k steps, as A1, and report how far the zone curves at 10k are from their 50k end. CPU, about 10 min (*inferred*). A1 took 698 s for 600k Rung 2 steps, about 1.2 ms per step (*measured*); a Rung 3 step costs about two, and the zone targets are fixed per view as in the trainer. Time 1k steps first and ask Bart if the estimate is above 30 min. It says whether Rung 3 is early-stopped like its base; no decision depends on it.
